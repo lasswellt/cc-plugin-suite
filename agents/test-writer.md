@@ -5,7 +5,7 @@ description: |
   tests following AAA pattern with factory functions. Adapts to project's test
   framework (Vitest or Jest).
 tools: Read, Write, Edit, Bash, Glob, Grep
-permissionMode: acceptEdits
+# Note: permissionMode is not supported for plugin agents (silently ignored by Claude Code)
 maxTurns: 35
 model: sonnet
 memory: project

@@ -4,7 +4,7 @@ description: |
   Vue 3 / Pinia frontend developer. Implements components, stores, composables,
   and routes. Adapts to project's UI framework (Tailwind, Quasar, or Vuetify).
 tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch
-permissionMode: acceptEdits
+# Note: permissionMode is not supported for plugin agents (silently ignored by Claude Code)
 maxTurns: 50
 model: sonnet
 memory: project

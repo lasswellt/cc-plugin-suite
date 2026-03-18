@@ -5,7 +5,7 @@ description: |
   functions, triggers, middleware, and domain schemas. Follows numbered comment
   flow and audit logging patterns.
 tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch
-permissionMode: acceptEdits
+# Note: permissionMode is not supported for plugin agents (silently ignored by Claude Code)
 maxTurns: 50
 model: sonnet
 memory: project

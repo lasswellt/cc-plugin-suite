@@ -4,7 +4,7 @@ description: |
   Architecture analysis specialist. Read-only evaluation of coupling, cohesion,
   module boundaries, and dependency graphs. Use for structural analysis requests.
 tools: Read, Glob, Grep, Bash
-permissionMode: default
+# Note: permissionMode is not supported for plugin agents (silently ignored by Claude Code)
 maxTurns: 15
 model: sonnet
 background: true

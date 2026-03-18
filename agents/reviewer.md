@@ -5,7 +5,7 @@ description: |
   file. Identifies correctness issues, security vulnerabilities, and pattern
   violations. Use for code review requests.
 tools: Read, Write, Bash, Glob, Grep
-permissionMode: default
+# Note: permissionMode is not supported for plugin agents (silently ignored by Claude Code)
 maxTurns: 20
 model: sonnet
 background: true
