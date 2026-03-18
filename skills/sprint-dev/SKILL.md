@@ -311,6 +311,16 @@ npm run test 2>&1       # or test runner equivalent
 npm run build 2>&1
 ```
 
+### 4.2.5 Completeness Gate
+
+Run the completeness gate on all files changed during the sprint:
+```bash
+# Collect all files modified in this sprint
+CHANGED_FILES=$(git diff --name-only sprint-${SPRINT_NUMBER}/base..HEAD -- '*.ts' '*.tsx' '*.vue')
+```
+Invoke: `/cc-plugin-suite:completeness-gate` with the sprint's source directories.
+If the score is below C (70), flag critical findings in the integration report but do not block — the sprint review will make the final call.
+
 ### 4.3 Fix Integration Issues
 
 If verification fails:

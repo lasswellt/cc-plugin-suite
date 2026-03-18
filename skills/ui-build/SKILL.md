@@ -193,6 +193,15 @@ Run through every created file:
 - [ ] Naming follows project conventions
 - [ ] Responsive behavior is defined (not just desktop)
 
+### 5.1.5 Completeness Gate
+
+Run the completeness gate on all created/modified UI files:
+```bash
+CHANGED_FILES=$(git diff --name-only HEAD~1 -- '*.vue' '*.ts')
+```
+Invoke: `/cc-plugin-suite:completeness-gate` scoped to the changed files.
+Verify that three-state coverage (check 2.10) passes for all new data views. Any critical or high findings must be resolved before proceeding.
+
 ### 5.2 Accessibility Audit
 For every interactive element:
 - [ ] Buttons have accessible names

@@ -235,6 +235,15 @@ If there are new type errors, fix them before proceeding.
 
 If the build fails with new errors, fix them.
 
+### 3.3.5 Completeness Check
+
+Run the completeness gate on all files modified by the fix:
+```bash
+CHANGED_FILES=$(git diff --name-only HEAD~1 -- '*.ts' '*.tsx' '*.vue')
+```
+Invoke: `/cc-plugin-suite:completeness-gate` scoped to the changed files.
+If any **critical** findings exist in the changed files, fix them before proceeding. Medium/low findings are acceptable for a targeted bug fix.
+
 ### 3.4 Manual Verification (if reproduction steps are available)
 
 If the issue included clear reproduction steps, describe how the fix addresses each step:

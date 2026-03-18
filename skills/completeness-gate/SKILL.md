@@ -1,0 +1,332 @@
+---
+name: completeness-gate
+description: "Scans code for placeholder patterns, incomplete implementations, and production readiness issues. Returns structured findings with file:line references."
+allowed-tools: Read, Bash, Glob, Grep
+model: sonnet
+argument-hint: "<scope: path or 'all'>"
+---
+
+## Project Context
+!`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
+
+## Additional Resources
+- For grep patterns, severity rules, and output schemas, see [reference.md](reference.md)
+
+---
+
+# Production Completeness Gate
+
+You are a production readiness scanner. You check code for placeholder patterns, incomplete implementations, and anti-mock violations. You produce a structured report of findings. Execute every phase in order. Do NOT skip phases.
+
+---
+
+## SAFETY RULES (NON-NEGOTIABLE)
+
+1. **This skill is READ-ONLY** — never modify source files, test files, or configuration files.
+2. **Never skip checks or ignore findings** — run all 11 check categories against all files in scope.
+3. **Report ALL violations** — even in test files (tagged with `"in_test": true` in findings).
+4. **Never suppress findings** — unless an explicit override exists in `.completeness-gate.json`.
+5. **Never execute source code** — only read and grep. No `node`, `tsx`, or `npx` execution of project code.
+
+---
+
+## Phase 0: PARSE — Understand Scope
+
+### 0.0 Register Session
+
+Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md). Generate a SESSION_ID = `"completeness-gate-<8-char-random-hex>"`, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, and check for conflicting sessions before proceeding.
+
+### 0.1 Parse Arguments
+
+Extract the scope argument from `$ARGUMENTS`:
+- A file path (e.g., `src/stores/auth.ts`) — scan that single file
+- A directory path (e.g., `src/stores/`) — scan all files in that directory recursively
+- `all` or no argument — scan all standard source directories
+
+When scope is `all`, scan these directories (whichever exist):
+```
+src/ pages/ components/ composables/ stores/ functions/ server/ lib/ utils/ api/ middleware/
+```
+
+### 0.2 Validate Scope
+
+```bash
+# Verify the scope path exists
+[ -e "<scope-path>" ] && echo "SCOPE VALID" || echo "SCOPE NOT FOUND"
+```
+
+If scope is invalid, inform the user and stop.
+
+---
+
+## Phase 1: DISCOVER — Build File List
+
+### 1.1 Collect Target Files
+
+Use Glob to find all source files in scope:
+```
+*.ts, *.tsx, *.js, *.jsx, *.vue
+```
+
+Exclude these directories:
+```
+node_modules, dist, .nuxt, .output, coverage, .cc-sessions, __snapshots__
+```
+
+### 1.2 Separate Source and Test Files
+
+Classify files into two groups:
+- **Source files**: Files NOT matching `*.test.*`, `*.spec.*`, or located in `__tests__/`
+- **Test files**: Files matching `*.test.*`, `*.spec.*`, or located in `__tests__/`
+
+### 1.3 Report File Counts
+
+Print: `"Scanning N source files + M test files in <scope>"`
+
+---
+
+## Phase 2: SCAN — Run All Checks
+
+Run all 11 check categories against target files. For each violation, record a finding object:
+
+```json
+{
+  "check_id": "<check-id>",
+  "severity": "<critical|high|medium|low>",
+  "file": "<relative-path>",
+  "line": 0,
+  "snippet": "<matching line trimmed>",
+  "message": "<human-readable explanation>",
+  "in_test": false
+}
+```
+
+Use the exact grep patterns from [reference.md](reference.md) for each check.
+
+### 2.1 Placeholder Returns
+
+Grep for `return\s*\{\s*\}`, `return\s*\[\s*\]`, and `return\s*null` in non-utility source files. Filter out legitimate patterns (guard clauses, explicit null returns documented with comments).
+
+**Check ID**: `placeholder-returns`
+
+### 2.2 Not-Implemented Throws
+
+Grep for throw statements containing placeholder messages:
+```
+throw new Error(['"](?:Not implemented|TODO|not yet|NYI|FIXME|PLACEHOLDER)
+```
+Case-insensitive match.
+
+**Check ID**: `not-implemented-throws`
+
+### 2.3 Empty Function Bodies
+
+Grep for functions and methods with empty bodies — opening brace, optional whitespace or single-line comments only, closing brace. Exclude intentional no-ops (event handler type stubs in interfaces, abstract method declarations).
+
+**Check ID**: `empty-function-bodies`
+
+### 2.4 TODO/FIXME/STUB Comments
+
+Grep for annotation comments in source files:
+```
+//\s*(TODO|FIXME|PLACEHOLDER|STUB|HACK|XXX):?\s
+```
+
+**Check ID**: `todo-fixme-comments`
+
+### 2.5 Empty Catch Blocks
+
+Grep for catch blocks with empty bodies:
+```
+catch\s*\([^)]*\)\s*\{\s*\}
+```
+
+**Check ID**: `empty-catch-blocks`
+
+### 2.6 Log-and-Return Functions
+
+Identify functions whose body consists solely of `console.log`/`console.warn`/`console.error` calls optionally followed by a return statement. These indicate stub implementations.
+
+**Check ID**: `log-and-return`
+
+### 2.7 No-Op Event Handlers
+
+Grep for empty arrow functions used as event handlers:
+```
+\(\)\s*=>\s*\{\s*\}
+() => {}
+```
+Exclude test files and mock setups.
+
+**Check ID**: `noop-handlers`
+
+### 2.8 Hardcoded Sample Data
+
+Grep for large inline object arrays in non-test, non-fixture, non-seed files. Look for patterns like:
+```
+const\s+\w+\s*=\s*\[.*\{
+```
+Flag arrays of 3+ inline objects with property names like `name`, `title`, `id`, `label` that suggest sample/placeholder data.
+
+**Check ID**: `hardcoded-sample-data`
+
+### 2.9 Console.log Leftovers
+
+Grep for `console\.log\(` in source files. Exclude files in `logger/`, `logging/`, or files named `logger.*`.
+
+**Check ID**: `console-log-leftovers`
+
+### 2.10 Three-State UI Coverage
+
+For `.vue` files that contain data-fetching patterns (`useAsyncData`, `useFetch`, `useLazyFetch`, store action calls, `$fetch`), check that the template also contains:
+- Loading state handling (e.g., `v-if` with `loading`, `pending`, `isLoading`)
+- Error state handling (e.g., `v-if` with `error`, `isError`)
+
+Flag files that fetch data but lack either loading or error states.
+
+**Check ID**: `three-state-ui`
+
+### 2.11 End-to-End Wiring
+
+Scan store files (files in `stores/` or files using `defineStore`) for actions that do not call any API/service function. Look for action methods that lack `fetch`, `$fetch`, `axios`, `httpsCallable`, `api.`, or service function calls.
+
+**Check ID**: `unwired-store-actions`
+
+---
+
+## Phase 3: ANALYZE — Classify and Score
+
+### 3.1 Severity Classification
+
+Apply these severity rules to all findings:
+
+| Severity | Criteria |
+|----------|----------|
+| **Critical** | Not-implemented throws in non-test code, empty function bodies in business logic (stores, API handlers, middleware) |
+| **High** | Placeholder returns in business logic, TODO/FIXME in store actions or API handlers, no-op handlers bound to user interactions, unwired store actions |
+| **Medium** | Console.log leftovers, hardcoded sample data, missing three-state UI, empty catch blocks |
+| **Low** | TODO comments in utilities or helpers, no-op handlers in non-critical paths |
+
+Test file findings are always capped at **Low** severity regardless of the check.
+
+### 3.2 Check for Overrides
+
+Look for `.completeness-gate.json` in the project root. If found, parse it and apply overrides:
+
+```json
+{
+  "ignore": {
+    "files": ["path/to/legacy/**"],
+    "checks": ["console-log-leftovers"],
+    "inline": "completeness-ignore"
+  }
+}
+```
+
+- **files**: Glob patterns for files to exclude entirely
+- **checks**: Check IDs to skip
+- **inline**: Comment marker that suppresses the finding on that line
+
+Remove any findings that match override rules. Record the count of suppressed findings.
+
+If `.completeness-gate.json` is not found, proceed without overrides.
+If it contains invalid JSON, warn and proceed without overrides.
+
+### 3.3 Calculate Score
+
+```
+score = 100 - (critical_count * 10) - (high_count * 5) - (medium_count * 2) - (low_count * 0.5)
+```
+
+Clamp to range 0-100.
+
+Assign grade:
+| Score | Grade |
+|-------|-------|
+| 90-100 | A |
+| 80-89 | B |
+| 70-79 | C |
+| 60-69 | D |
+| < 60 | F |
+
+---
+
+## Phase 4: REPORT — Output Findings
+
+### 4.1 Write JSON Report
+
+Write the structured report to `${SESSION_TMP_DIR}/completeness-gate.json`:
+
+```json
+{
+  "timestamp": "<ISO-8601>",
+  "scope": "<scanned scope>",
+  "files_scanned": { "source": 0, "test": 0 },
+  "score": 0,
+  "grade": "A",
+  "summary": { "critical": 0, "high": 0, "medium": 0, "low": 0, "total": 0, "suppressed": 0 },
+  "findings": [
+    {
+      "check_id": "placeholder-returns",
+      "severity": "high",
+      "file": "src/stores/auth.ts",
+      "line": 42,
+      "snippet": "return {}",
+      "message": "Placeholder empty object return in store action",
+      "in_test": false
+    }
+  ]
+}
+```
+
+### 4.2 Print Summary
+
+Print a concise summary to the user:
+
+```
+Completeness Gate: <GRADE> (<score>/100)
+  Critical: N | High: N | Medium: N | Low: N
+  Files scanned: N source + N test
+  Suppressed by overrides: N
+
+Top issues:
+  1. [severity] file:line - message
+  2. [severity] file:line - message
+  3. [severity] file:line - message
+  4. [severity] file:line - message
+  5. [severity] file:line - message
+```
+
+Show up to 10 top issues, ordered by severity (critical first) then by file path.
+
+If score is 100, print:
+```
+Completeness Gate: A (100/100)
+  No issues found. Code is production-ready.
+```
+
+### 4.3 Follow-Up Suggestions
+
+| Condition | Suggested Skill | Rationale |
+|---|---|---|
+| Critical or high findings in stores | `implement` | Complete the stub implementations |
+| Missing three-state UI | `ui-build` | Add loading/error state handling |
+| TODO comments reference issues | `fix-issue` | Resolve the referenced issues |
+| Low score (< 70) | `codebase-audit` | Full quality audit recommended |
+
+### 4.4 Session Cleanup
+
+1. Update `.cc-sessions/${SESSION_ID}.json`: set `status` to `completed`
+2. Release any held locks
+3. Append `session_end` to the operations log
+
+---
+
+## Error Recovery
+
+- **No files found in scope**: Report "No files in scope" with score 100 and grade A. No findings.
+- **Grep command fails**: Log the failed check, continue with remaining checks. Note incomplete coverage in report.
+- **`.completeness-gate.json` is invalid JSON**: Warn `"Override file is invalid JSON — proceeding without overrides"` and continue.
+- **`SESSION_TMP_DIR` is not available**: Fall back to printing the JSON report to stdout instead of writing to a file.
+- **Scope directory does not exist**: Inform user `"Directory <path> does not exist"` and stop.
+- **Permission denied on files**: Skip unreadable files, note them in the report summary.
