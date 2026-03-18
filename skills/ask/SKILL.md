@@ -27,6 +27,15 @@ Match the user's request against this routing table:
 | "check pages", "console errors", "smoke"  | browse         | → fix-issue (per finding)        |
 | "roadmap", "plan phases"                  | roadmap        | → sprint-plan                    |
 | "audit codebase", "code quality"          | codebase-audit | → roadmap                        |
+| "performance", "bundle size", "slow"      | perf-profile   | → fix-issue (per finding)        |
+| "migrate", "upgrade library", "update X"  | migrate        | —                                |
+| "bootstrap", "scaffold", "new project"    | bootstrap      | → sprint-plan                    |
+| "ship", "deploy", "release", "publish"    | ship           | —                                |
+| "generate docs", "document API"           | doc-gen        | —                                |
+| "dependencies", "outdated", "npm audit"   | dep-health     | —                                |
+| "quality dashboard", "metrics"            | quality-metrics| → (context-dependent)            |
+| "completeness", "production ready"        | completeness-gate | → fix-issue (per finding)     |
+| "retrospective", "improve plugin"         | retrospective  | —                                |
 
 If the request does not clearly match any row, ask the user to clarify before
 proceeding.
