@@ -35,7 +35,7 @@ Skills auto-detect the project's tech stack at invocation time via `scripts/dete
 claude --plugin-dir ./cc-plugin-suite
 ```
 
-## Skills (11)
+## Skills (15)
 
 | Skill | Description | Invocation |
 |-------|-------------|------------|
@@ -50,15 +50,10 @@ claude --plugin-dir ./cc-plugin-suite
 | **sprint-review** | Reviews sprint quality with automated checks and parallel reviewer agents. | `/cc-plugin-suite:sprint-review` |
 | **codebase-audit** | 5-pillar quality audit (Architecture, Performance, Security, Maintainability, Robustness). | `/cc-plugin-suite:codebase-audit` |
 | **roadmap** | Generates phased implementation roadmaps from research documents. | `/cc-plugin-suite:roadmap [full\|refresh\|extend\|status]` |
-
-## Commands (4)
-
-| Command | Description |
-|---------|-------------|
-| `/cc-plugin-suite:ask <request>` | Task intake — classifies vague requests and dispatches to the right skill(s) |
-| `/cc-plugin-suite:sprint [flags]` | Full sprint cycle: plan → implement → review |
-| `/cc-plugin-suite:implement [flags]` | Sprint implementation phase only |
-| `/cc-plugin-suite:review [flags]` | Sprint review and quality gate only |
+| **ask** (orchestrator) | Task intake — classifies vague requests and dispatches to the right skill(s). | `/cc-plugin-suite:ask <request>` |
+| **sprint** (orchestrator) | Full sprint cycle: plan → implement → review. | `/cc-plugin-suite:sprint [flags]` |
+| **implement** (orchestrator) | Sprint implementation phase only. | `/cc-plugin-suite:implement [flags]` |
+| **review** (orchestrator) | Sprint review and quality gate only. | `/cc-plugin-suite:review [flags]` |
 
 ## Agents (5)
 
@@ -85,9 +80,8 @@ cc-plugin-suite/
 │   └── marketplace.json         # Self-hosted marketplace catalog
 ├── scripts/
 │   └── detect-stack.sh          # Dynamic stack detection
-├── skills/                      # 11 skills with SKILL.md + reference.md
+├── skills/                      # 15 skills with SKILL.md + reference.md
 ├── agents/                      # 5 specialized agents
-├── commands/                    # 4 orchestration commands
 └── hooks/                       # Pre/post edit hooks
 ```
 
@@ -104,7 +98,23 @@ This enables skills to adapt their patterns for Tailwind vs Quasar vs Vuetify, V
 
 ### Progressive Disclosure
 
-SKILL.md files stay under 500 lines. Detailed reference material lives in `reference.md` files loaded on demand, keeping the initial prompt lean.
+SKILL.md files stay under 500 lines. Detailed reference material lives in `reference.md` files that Claude loads on demand when it needs specific templates or schemas, keeping the initial prompt lean.
+
+## Agent Permission Mode
+
+Plugin agents do not support the `permissionMode` frontmatter field — it is silently ignored by Claude Code. All plugin agents run with default permission prompts regardless of what is specified.
+
+To get `acceptEdits` behavior for an agent, copy it from the plugin cache into your project's `.claude/agents/` directory where it becomes a project-level agent with full frontmatter support:
+
+```bash
+cp ~/.claude/plugins/cache/cc-plugin-suite/agents/backend-dev.md .claude/agents/backend-dev.md
+```
+
+Then add `permissionMode: acceptEdits` to the project-level copy.
+
+## Skill Permissions
+
+The `allowed-tools` field in skill frontmatter grants auto-permission — tools listed are automatically approved without prompting while the skill is active. It does not restrict which tools the skill can use; unlisted tools can still be used with user approval.
 
 ## Contributing
 
