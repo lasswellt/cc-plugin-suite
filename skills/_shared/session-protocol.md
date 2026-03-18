@@ -2,6 +2,9 @@
 
 Shared reference for multi-session safety. All skills that write shared state must follow this protocol to prevent collisions when multiple Claude Code sessions run concurrently.
 
+**Companion protocols:**
+- [verbose-progress.md](verbose-progress.md) — Required verbose output and activity feed logging. All skills MUST follow both protocols.
+
 ---
 
 ## Session Registration
@@ -33,6 +36,19 @@ Execute this preamble **before any other work** in the skill:
 5. Read ALL .cc-sessions/*.json files.
    Check for conflicting sessions using the conflict matrix below.
    If a conflict is found, ABORT with a conflict report.
+
+6. Read the activity feed (.cc-sessions/activity-feed.jsonl) —
+   print a summary of recent activity (last 30 minutes) per
+   verbose-progress.md. This provides cross-instance awareness.
+
+7. Log skill_start to the activity feed per verbose-progress.md.
+
+8. Print session registration confirmation per verbose-progress.md:
+   [<skill-name>] Session registered: <SESSION_ID>
+   [<skill-name>]   ├─ Checking for conflicts...
+   [<skill-name>]   ├─ <conflict status> ✓
+   [<skill-name>]   ├─ Recent activity: <summary>
+   [<skill-name>]   └─ Ready to proceed
 ```
 
 ### Session Temp Directory
@@ -159,3 +175,5 @@ Every skill's final phase must:
 2. Release any held locks (delete `<file>.lock` files)
 3. Optionally remove the session temp directory if no artifacts need to be preserved
 4. Append `session_end` to the operation log
+5. Log `skill_complete` to the activity feed (`.cc-sessions/activity-feed.jsonl`) with status and summary per [verbose-progress.md](verbose-progress.md)
+6. Print skill completion message per verbose-progress.md

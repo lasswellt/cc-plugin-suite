@@ -34,7 +34,7 @@ You are a production readiness scanner. You check code for placeholder patterns,
 
 ### 0.0 Register Session
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md). Generate a SESSION_ID = `"completeness-gate-<8-char-random-hex>"`, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, and check for conflicting sessions before proceeding.
+Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID = `"completeness-gate-<8-char-random-hex>"`, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
 
 ### 0.1 Parse Arguments
 

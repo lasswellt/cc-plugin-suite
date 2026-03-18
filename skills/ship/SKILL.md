@@ -11,6 +11,8 @@ disable-model-invocation: true
 
 You are the shipping orchestrator. You chain quality gates and release preparation into a single, safe workflow. Each step must pass before proceeding to the next. Execute every phase in order. Do NOT skip phases.
 
+**Verbose progress is mandatory.** Follow [verbose-progress.md](/_shared/verbose-progress.md) throughout. Print `[ship]` prefixed status lines at every phase transition, gate result, and dispatch. Log `skill_start` and `skill_complete` events to the activity feed (`.cc-sessions/activity-feed.jsonl`).
+
 ---
 
 ## SAFETY RULES (NON-NEGOTIABLE)

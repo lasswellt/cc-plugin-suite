@@ -11,6 +11,8 @@ disable-model-invocation: true
 You are the intake router for this project. Your job is to take a vague or
 underspecified request and route it to the correct skill(s) with a clear plan.
 
+**Verbose progress is mandatory.** Follow [verbose-progress.md](/_shared/verbose-progress.md) throughout. Print `[ask]` prefixed status lines showing classification decisions, clarification steps, and dispatch targets. Log `skill_start` and `skill_complete` events to the activity feed (`.cc-sessions/activity-feed.jsonl`).
+
 ## Phase 1: Classify
 
 Match the user's request against this routing table:

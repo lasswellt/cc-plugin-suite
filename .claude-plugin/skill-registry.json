@@ -1,0 +1,265 @@
+{
+  "version": "0.2.0",
+  "updated": "2026-03-18T00:00:00Z",
+  "description": "Registry of all skills in cc-plugin-suite with metadata for discovery, routing, and status tracking.",
+  "skills": [
+    {
+      "name": "ask",
+      "category": "orchestrator",
+      "description": "Task intake router — classifies vague requests and dispatches to the right skill(s)",
+      "model": "opus",
+      "modifies_code": false,
+      "uses_agents": false,
+      "uses_sessions": false,
+      "dependencies": []
+    },
+    {
+      "name": "sprint",
+      "category": "orchestrator",
+      "description": "Full sprint cycle orchestrator — plan, implement, review",
+      "model": "opus",
+      "modifies_code": false,
+      "uses_agents": false,
+      "uses_sessions": false,
+      "dependencies": ["sprint-plan", "sprint-dev", "sprint-review"]
+    },
+    {
+      "name": "implement",
+      "category": "orchestrator",
+      "description": "Sprint implementation phase only — routes to sprint-dev",
+      "model": "opus",
+      "modifies_code": false,
+      "uses_agents": false,
+      "uses_sessions": false,
+      "dependencies": ["sprint-dev"]
+    },
+    {
+      "name": "review",
+      "category": "orchestrator",
+      "description": "Sprint review phase only — routes to sprint-review",
+      "model": "opus",
+      "modifies_code": false,
+      "uses_agents": false,
+      "uses_sessions": false,
+      "dependencies": ["sprint-review"]
+    },
+    {
+      "name": "ship",
+      "category": "orchestrator",
+      "description": "End-to-end shipping workflow — review, completeness gate, quality metrics, release",
+      "model": "opus",
+      "modifies_code": true,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": ["sprint-review", "completeness-gate", "quality-metrics", "release"]
+    },
+    {
+      "name": "sprint-plan",
+      "category": "sprint-lifecycle",
+      "description": "Plans sprints from roadmap epics with research-backed stories",
+      "model": "opus",
+      "modifies_code": true,
+      "uses_agents": true,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "sprint-dev",
+      "category": "sprint-lifecycle",
+      "description": "Implements planned sprints with coordinated agent teams in isolated worktrees",
+      "model": "opus",
+      "modifies_code": true,
+      "uses_agents": true,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "sprint-review",
+      "category": "sprint-lifecycle",
+      "description": "Reviews sprint quality with automated checks and parallel reviewer agents",
+      "model": "opus",
+      "modifies_code": true,
+      "uses_agents": true,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "roadmap",
+      "category": "sprint-lifecycle",
+      "description": "Generates phased implementation roadmaps from research documents",
+      "model": "opus",
+      "modifies_code": true,
+      "uses_agents": true,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "research",
+      "category": "core-dev",
+      "description": "Investigates libraries, APIs, cloud services, and architecture patterns",
+      "model": "opus",
+      "modifies_code": true,
+      "uses_agents": true,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "fix-issue",
+      "category": "core-dev",
+      "description": "Resolves GitHub issues end-to-end with root cause analysis",
+      "model": "opus",
+      "modifies_code": true,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "refactor",
+      "category": "core-dev",
+      "description": "Performs safe, incremental refactoring with test verification after each step",
+      "model": "opus",
+      "modifies_code": true,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "test-gen",
+      "category": "core-dev",
+      "description": "Generates tests for target files matching project conventions",
+      "model": "sonnet",
+      "modifies_code": true,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "ui-build",
+      "category": "core-dev",
+      "description": "Builds production-grade Vue 3 UI native to the project",
+      "model": "opus",
+      "modifies_code": true,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "browse",
+      "category": "core-dev",
+      "description": "Automated browser testing via Playwright MCP — captures console errors and network failures",
+      "model": "opus",
+      "modifies_code": false,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "bootstrap",
+      "category": "core-dev",
+      "description": "Scaffolds new projects, features, or packages with proper conventions",
+      "model": "opus",
+      "modifies_code": true,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "codebase-audit",
+      "category": "quality",
+      "description": "Comprehensive 5-pillar code quality audit with 10 parallel agents",
+      "model": "opus",
+      "modifies_code": false,
+      "uses_agents": true,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "completeness-gate",
+      "category": "quality",
+      "description": "Scans code for placeholder patterns and production readiness issues",
+      "model": "sonnet",
+      "modifies_code": false,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "quality-metrics",
+      "category": "quality",
+      "description": "Collects, stores, and visualizes code quality metrics over time",
+      "model": "sonnet",
+      "modifies_code": false,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "dep-health",
+      "category": "quality",
+      "description": "Audits npm dependencies for vulnerabilities, outdated packages, and license compliance",
+      "model": "sonnet",
+      "modifies_code": true,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "perf-profile",
+      "category": "quality",
+      "description": "Profiles bundle size, runtime performance, and Lighthouse scores",
+      "model": "opus",
+      "modifies_code": false,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "doc-gen",
+      "category": "docs-release",
+      "description": "Generates API docs, component docs, architecture diagrams, and changelogs",
+      "model": "opus",
+      "modifies_code": true,
+      "uses_agents": true,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "release",
+      "category": "docs-release",
+      "description": "Manages semantic versioning, changelogs, and releases",
+      "model": "opus",
+      "modifies_code": true,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "migrate",
+      "category": "docs-release",
+      "description": "Handles framework, library, and tooling migrations with incremental safety",
+      "model": "opus",
+      "modifies_code": true,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "retrospective",
+      "category": "meta",
+      "description": "Analyzes completed sessions to identify improvement patterns for plugin self-improvement",
+      "model": "opus",
+      "modifies_code": true,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": []
+    }
+  ],
+  "categories": {
+    "orchestrator": "Meta-skills that coordinate other skills",
+    "sprint-lifecycle": "Full sprint workflow — planning, implementation, review",
+    "core-dev": "Core development tasks — research, fix, refactor, test, UI, scaffold",
+    "quality": "Quality assurance — audit, completeness, metrics, dependencies, performance",
+    "docs-release": "Documentation, release management, migrations",
+    "meta": "Plugin self-improvement and analysis"
+  }
+}

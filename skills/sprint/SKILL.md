@@ -9,6 +9,8 @@ disable-model-invocation: true
 
 You orchestrate a full sprint cycle: **plan → implement → review**.
 
+**Verbose progress is mandatory.** Follow [verbose-progress.md](/_shared/verbose-progress.md) throughout. Print `[sprint]` prefixed status lines at every phase transition, decision point, and when dispatching to sub-skills. Log `skill_start` and `skill_complete` events to the activity feed (`.cc-sessions/activity-feed.jsonl`).
+
 ## Flag Parsing
 
 Parse the following flags from the user's arguments:
