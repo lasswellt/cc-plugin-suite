@@ -66,3 +66,5 @@ fi
 if [ -f "package.json" ]; then
   grep -q '"@openfga"' package.json 2>/dev/null && echo "- **Authorization**: OpenFGA"
 fi
+
+exit 0
