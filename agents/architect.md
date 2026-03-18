@@ -77,6 +77,14 @@ project name. Detect everything dynamically:
 - Check for proper encapsulation (barrel exports, index files).
 - Identify leaky abstractions.
 
+### 6. Production Readiness Analysis
+
+- Scan for placeholder implementations: `TODO`, `FIXME`, `STUB`, `PLACEHOLDER`, `Not implemented`.
+- Flag functions with empty bodies, no-op event handlers (`() => {}`), or `return {}` / `return []` as placeholder returns.
+- Identify store actions that return hardcoded data instead of calling real APIs.
+- Check that every feature path is wired end-to-end (frontend, data layer, backend — not just one layer).
+- Cross-reference with [Definition of Done](/_shared/definition-of-done.md).
+
 ## Output Format
 
 Structure your response as follows:
@@ -103,6 +111,7 @@ For each finding:
 | Boundary clarity  | A-F    | Brief assessment       |
 | Dependency health  | A-F    | Brief assessment       |
 | Module system     | A-F    | Brief assessment       |
+| Production ready  | A-F    | Brief assessment       |
 
 ### Prioritized Recommendations
 

@@ -130,3 +130,23 @@ Before considering your work complete, verify:
    Never swallow errors silently.
 7. **Build order**: In monorepos, ensure shared packages are built before
    dependent packages.
+8. **Security self-review**: Every callable function has an auth check, every
+   endpoint validates authorization, no user input reaches DB without
+   validation, no PII in logs beyond user ID, error messages don't leak
+   internals.
+
+## Anti-Mock Enforcement (NON-NEGOTIABLE)
+
+Every function you write must have a real, production-ready implementation. See [Definition of Done](/_shared/definition-of-done.md).
+
+**BANNED PATTERNS** — if any of these appear in your code, the work is not done:
+
+- `return {}` / `return []` / `return null` as placeholder returns
+- `throw new Error('Not implemented')` / `throw new Error('TODO')`
+- Empty function bodies that should have logic
+- Hardcoded sample data posing as real data
+- `// TODO: implement` / `// FIXME` / `// PLACEHOLDER` / `// STUB` where code should be
+- Empty catch blocks that silently swallow errors
+- Functions that only log and return without performing their stated purpose
+
+**SELF-CHECK:** Before marking any function as done, ask: *"If this ran in production right now, would it actually work?"* If the answer is no, the work is not done.

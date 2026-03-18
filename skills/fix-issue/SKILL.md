@@ -29,6 +29,10 @@ Resolve a GitHub issue end-to-end: fetch context, identify root cause, implement
 
 ## Phase 0: FETCH ISSUE — Load Context from GitHub
 
+### 0.0 Register Session
+
+Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md). Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, and check for conflicting sessions before proceeding.
+
 ### 0.1 Parse Arguments
 
 Extract the issue number from `$ARGUMENTS`. If not provided, ask the user.
@@ -112,11 +116,23 @@ Follow the execution path:
 2. Trace data flow through the affected code
 3. Identify where behavior diverges from expected
 
-### 1.4 Optional: Spawn Research Subagent
+### 1.4 Research (Mandatory or Optional Based on Conditions)
 
-For complex issues that require external knowledge (third-party API changes, library bugs, platform-specific behavior):
+Research is **MANDATORY** when ANY of these are true:
+- Issue involves third-party library behavior or API changes
+- Error message is not directly traceable to project code
+- Issue mentions a version update/migration as trigger
+- Root cause confidence after Phase 1.3 is Medium or Low
+- Issue has been open for more than 7 days
 
-Use `SendMessage` to spawn a research subagent:
+Research is **OPTIONAL** only when ALL are true:
+- Root cause confidence is High
+- Fix is a clear few-line change in project code
+- No third-party behavior involved
+
+When skipping research, document **WHY** it was skipped.
+
+When research is needed, use `SendMessage` to spawn a research subagent:
 ```
 You are a research subagent investigating a bug.
 
@@ -128,15 +144,10 @@ TASKS:
 1. Search for known issues with the library/API involved.
 2. Check if there are documented workarounds.
 3. Check for recent version changes that could cause this.
-4. Write findings to /tmp/issue-research.md
+4. Write findings to ${SESSION_TMP_DIR}/issue-research.md
 
 LIMITS: Max 5 web searches. Focus on the specific error, not general background.
 ```
-
-Only spawn this agent if:
-- The issue involves third-party library behavior
-- The error message is opaque and not traceable in the codebase
-- The issue mentions a specific version or update as a trigger
 
 ### 1.5 Identify Root Cause
 

@@ -24,10 +24,14 @@ Run a comprehensive 5-pillar code quality audit by spawning 10 parallel agents. 
 
 ## Phase 0: SETUP — Prepare Audit Environment
 
+### 0.0 Register Session
+
+Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md). Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, and check for conflicting sessions before proceeding.
+
 ### 0.1 Create Working Directories
 
 ```bash
-AUDIT_DIR="/tmp/codebase-audit"
+AUDIT_DIR="${SESSION_TMP_DIR}/codebase-audit"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 AUDIT_RUN="${AUDIT_DIR}/${TIMESTAMP}"
 rm -rf "${AUDIT_DIR}"

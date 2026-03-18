@@ -340,3 +340,8 @@ Each reviewer agent must format findings consistently.
 - [ ] Types are specific (no unnecessary `any` or `unknown`)
 - [ ] Functions are reasonably sized (< 50 lines preferred)
 - [ ] Comments explain "why" not "what"
+- [ ] No placeholder/mock/stub implementations in production code
+- [ ] No functions that return hardcoded data instead of calling services
+- [ ] No empty function bodies that should have logic
+- [ ] All features wired end-to-end (not just frontend or just backend)
+- [ ] Circuit-breaker blocked stories are explicitly documented

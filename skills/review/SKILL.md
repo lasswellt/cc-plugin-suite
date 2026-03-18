@@ -20,6 +20,14 @@ Parse the following flags from the user's arguments:
 If no sprint number is provided, review the most recent sprint or the current
 set of uncommitted changes.
 
+## Pre-Flight Validation
+
+Before invoking sprint-review, verify:
+
+1. **Sprint exists**: Read `sprint-registry.json` and confirm the target sprint has `status: review` or `status: in-progress`. If not found, inform the user and stop.
+2. **Stories exist**: Verify story files exist in `sprints/sprint-${N}/stories/` with at least one having `status: done`.
+3. **No conflicting sessions**: Check `.cc-sessions/*.json` for active `sprint-review` sessions on the same sprint. If a conflict exists, warn the user and stop.
+
 ## Execution
 
 Invoke the **sprint-review** skill with the parsed context:

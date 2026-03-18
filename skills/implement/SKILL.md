@@ -19,6 +19,17 @@ Parse the following flags from the user's arguments:
 At least one flag must be provided. If neither is given, ask the user which
 stories or sprint to implement.
 
+## Pre-Flight Validation
+
+Before invoking sprint-dev, verify:
+
+1. **Sprint exists**: Read `sprint-registry.json` and confirm the target sprint has `status: planned` or `status: in-progress`. If not found, inform the user and stop.
+2. **Stories exist**: Verify story files exist in `sprints/sprint-${N}/stories/`. If `--stories` was specified, confirm each story ID maps to an existing file.
+3. **No conflicting sessions**: Check `.cc-sessions/*.json` for active `sprint-dev` sessions on the same sprint. If a conflict exists, warn the user and stop.
+4. **Build baseline**: Confirm the project builds cleanly (or note pre-existing errors) before spawning agents.
+
+All code produced must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder implementations, no empty handlers, no stub returns.
+
 ## Execution
 
 Invoke the **sprint-dev** skill with the parsed context:

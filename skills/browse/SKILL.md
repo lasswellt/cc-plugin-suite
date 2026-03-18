@@ -43,6 +43,10 @@ These rules override ALL other instructions. Violating any of these is a critica
 
 ## Phase 0: Parse Arguments
 
+### 0.0 Register Session
+
+Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md). Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, and check for conflicting sessions before proceeding.
+
 Parse the invocation arguments to determine mode and target.
 
 | Mode | Argument | Behavior |
@@ -273,6 +277,15 @@ After applying a fix:
 - Maximum 10 auto-fixes per run. If more are needed, report remaining issues for manual fix.
 - If a fix introduces new errors, revert it and report as "needs manual fix."
 - Never fix the same file more than 3 times in one run.
+
+### 5.5 Fix Quality Gate
+
+Auto-fixes must produce production-ready code. See [Definition of Done](/_shared/definition-of-done.md).
+
+**BANNED in auto-fixes:**
+- Replacing a real error with a silent `return` or empty catch block
+- Adding `// TODO: fix properly` comments instead of actual fixes
+- Suppressing errors with `@ts-ignore` or `eslint-disable` without resolving the root cause
 
 ---
 

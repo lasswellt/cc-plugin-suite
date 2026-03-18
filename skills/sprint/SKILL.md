@@ -19,6 +19,17 @@ Parse the following flags from the user's arguments:
 
 If no flags are provided, run all three phases in sequence.
 
+## Pre-Flight Validation
+
+Before starting any phase, verify:
+
+1. **Roadmap exists**: Check for `roadmap-registry.json` or `epic-registry.json`. If neither exists, inform the user that a roadmap is needed first and stop.
+2. **Epics available**: If `--epics` was specified, confirm each epic ID exists and is unblocked. If no epics are specified, confirm at least one epic has unmet dependencies resolved.
+3. **No conflicting sessions**: Check `.cc-sessions/*.json` for active sprint-plan, sprint-dev, or sprint-review sessions. If a conflict exists, warn the user and stop.
+4. **Clean working tree**: Run `git status --porcelain`. If there are uncommitted changes, warn the user.
+
+All phases enforce the [Definition of Done](/_shared/definition-of-done.md). No phase is complete if delivered code contains placeholder implementations.
+
 ## Phase 1: Sprint Planning
 
 Invoke the **sprint-plan** skill.

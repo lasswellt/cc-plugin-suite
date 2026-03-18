@@ -16,5 +16,8 @@ Thumbs.db
 # Claude Code local settings
 .claude/settings.local.json
 
-# Temp files from skill execution
+# Session state (machine-local, not committed)
+.cc-sessions/
+
+# Legacy temp files from skill execution (migrated to .cc-sessions/)
 /tmp/

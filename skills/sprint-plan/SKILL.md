@@ -22,6 +22,8 @@ Plan a sprint by selecting unblocked epics from the roadmap, conducting parallel
 
 ## Phase 0: CONTEXT — Load Project State
 
+0. **Register session.** Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md). Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, and check for conflicting sessions before proceeding.
+
 1. **Locate registry files.** Search the repo for sprint/roadmap registry files:
    ```
    Glob: **/sprint-registry.json, **/roadmap-registry.json, **/epic-registry.json, **/epics/**/*.md
@@ -71,6 +73,13 @@ mkdir -p "${SPRINT_DIR}/research"
 
 ### 1.4 Write Sprint Manifest
 
+**Registry Lock — `${SPRINT_DIR}/manifest.json`**: Before writing, acquire a file-based lock per [session-protocol.md](/_shared/session-protocol.md):
+1. CHECK if `${SPRINT_DIR}/manifest.json.lock` exists — if stale (session completed/failed or >4h old with dead PID), delete it.
+2. ACQUIRE by writing `${SPRINT_DIR}/manifest.json.lock` with `{ "session_id": "${SESSION_ID}", "acquired": "<ISO-8601>" }`.
+3. VERIFY by re-reading the lock file — confirm it contains YOUR `SESSION_ID`. If not, wait up to 60s (check every 5s), then ABORT with conflict report.
+4. OPERATE — read, modify, and write the registry file.
+5. RELEASE — delete `${SPRINT_DIR}/manifest.json.lock` and append `lock_released` to the operation log.
+
 Write `${SPRINT_DIR}/manifest.json`:
 ```json
 {
@@ -101,7 +110,7 @@ Use `TeamCreate` to create a team named `sprint-${SPRINT_NUMBER}-research`.
 
 ### 2.2 Spawn Research Agents
 
-Spawn 3-4 named agents using `SendMessage`. Each agent writes findings to `/tmp/` files as they go.
+Spawn 3-4 named agents using `SendMessage`. Each agent writes findings to `${SESSION_TMP_DIR}/` files as they go.
 
 **Required agents:**
 
@@ -122,23 +131,23 @@ Spawn 3-4 named agents using `SendMessage`. Each agent writes findings to `/tmp/
 Send each agent a message with:
 1. The list of selected epics (IDs, titles, descriptions).
 2. Their specific research focus (see reference.md for prompt templates).
-3. Output file path: `/tmp/sprint-${SPRINT_NUMBER}-research-<agent-name>.md`
+3. Output file path: `${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-<agent-name>.md`
 4. Instruction to use `SendMessage` with `STEER:` prefix to redirect cross-cutting findings to sibling agents.
 
 **Cross-steering protocol:**
 ```
 SendMessage to <sibling-agent>:
-STEER: <topic> — Found relevant info for your area: <summary>. Details in /tmp/sprint-N-research-<my-name>.md section <heading>.
+STEER: <topic> — Found relevant info for your area: <summary>. Details in ${SESSION_TMP_DIR}/sprint-N-research-<my-name>.md section <heading>.
 ```
 
 ### 2.4 Collect Research
 
 Wait for all agents to complete. Read their output files:
 ```
-/tmp/sprint-${SPRINT_NUMBER}-research-domain-researcher.md
-/tmp/sprint-${SPRINT_NUMBER}-research-library-researcher.md
-/tmp/sprint-${SPRINT_NUMBER}-research-codebase-analyst.md
-/tmp/sprint-${SPRINT_NUMBER}-research-infra-analyst.md  (if spawned)
+${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-domain-researcher.md
+${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-library-researcher.md
+${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-codebase-analyst.md
+${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-infra-analyst.md  (if spawned)
 ```
 
 Copy research files into `${SPRINT_DIR}/research/`.
@@ -246,6 +255,13 @@ gh issue create --title "S${SPRINT_NUMBER}-XXX: <story title>" \
 Record issue numbers back into story frontmatter as `github_issue: <number>`.
 
 ### 4.5 Update Sprint Registry
+
+**Registry Lock — `sprint-registry.json`**: Before writing, acquire a file-based lock per [session-protocol.md](/_shared/session-protocol.md):
+1. CHECK if `sprint-registry.json.lock` exists — if stale (session completed/failed or >4h old with dead PID), delete it.
+2. ACQUIRE by writing `sprint-registry.json.lock` with `{ "session_id": "${SESSION_ID}", "acquired": "<ISO-8601>" }`.
+3. VERIFY by re-reading the lock file — confirm it contains YOUR `SESSION_ID`. If not, wait up to 60s (check every 5s), then ABORT with conflict report.
+4. OPERATE — read, modify, and write the registry file.
+5. RELEASE — delete `sprint-registry.json.lock` and append `lock_released` to the operation log.
 
 Update `sprint-registry.json`:
 ```json

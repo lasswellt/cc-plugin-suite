@@ -28,6 +28,20 @@ CONVENTIONS:
 
 COMMIT FORMAT: feat(sprint-${N}/backend): S${N}-XXX <description>
 
+ANTI-MOCK RULES (CRITICAL — NON-NEGOTIABLE):
+- Every function MUST have a real, production implementation
+- BANNED: return {}, return [], throw new Error('Not implemented'), empty bodies
+- BANNED: hardcoded sample data, TODO/FIXME where code should be
+- SELF-CHECK: Before DONE, verify every function would work in production
+
+PROJECT CONVENTIONS (from discovery):
+${CONVENTIONS_GUIDE}
+
+REUSABLE ASSETS (use these, do not recreate):
+${REUSABLE_ASSETS}
+
+SESSION TMP DIR: ${SESSION_TMP_DIR}
+
 WORKFLOW:
 1. Read the story file completely.
 2. Implement all files listed in the story's `files` field.
@@ -63,6 +77,20 @@ CONVENTIONS:
 - All interactive elements need keyboard navigation and ARIA attributes.
 
 COMMIT FORMAT: feat(sprint-${N}/frontend): S${N}-XXX <description>
+
+ANTI-MOCK RULES (CRITICAL — NON-NEGOTIABLE):
+- Every component and function MUST be fully implemented
+- BANNED: TODO placeholder content, no-op event handlers, empty composables
+- BANNED: hardcoded sample data, return {}, return []
+- SELF-CHECK: Mount the component mentally — does every button do something real?
+
+PROJECT CONVENTIONS (from discovery):
+${CONVENTIONS_GUIDE}
+
+REUSABLE ASSETS (use these, do not recreate):
+${REUSABLE_ASSETS}
+
+SESSION TMP DIR: ${SESSION_TMP_DIR}
 
 WORKFLOW:
 1. Read the story file completely.
@@ -102,6 +130,17 @@ CONVENTIONS:
 - Aim for happy path + 2-3 edge cases per function.
 
 COMMIT FORMAT: feat(sprint-${N}/tests): S${N}-XXX <description>
+
+ANTI-MOCK RULES (CRITICAL — NON-NEGOTIABLE):
+- Every test MUST verify real behavior, not just mock return values
+- BANNED: expect(true).toBe(true), it.skip, tests that pass regardless of implementation
+- BANNED: assertions weaker than the function's contract (only toBeDefined when shape matters)
+- SELF-CHECK: For each test, ask: "If I broke the implementation, would this test fail?"
+
+PROJECT CONVENTIONS (from discovery):
+${CONVENTIONS_GUIDE}
+
+SESSION TMP DIR: ${SESSION_TMP_DIR}
 
 WORKFLOW:
 1. Read the story file completely.

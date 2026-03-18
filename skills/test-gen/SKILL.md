@@ -22,6 +22,10 @@ Generate tests for a target file by analyzing its exports, parameters, side effe
 
 ## Phase 0: PARSE TARGET — Identify What to Test
 
+### 0.0 Register Session
+
+Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md). Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, and check for conflicting sessions before proceeding.
+
 ### 0.1 Parse Arguments
 
 Extract the target file path from `$ARGUMENTS`. If not provided, ask the user.
@@ -61,21 +65,37 @@ Read the target file and extract:
 - **Dependencies**: What the file imports (these may need mocking)
 - **Branching logic**: if/else, switch, ternary (each branch needs a test)
 
-### 1.2 Find Existing Test Patterns
+### 1.2 Find Existing Test Patterns (Broad Discovery)
 
-Search for existing test files to learn project conventions:
+Search for ALL test files in the project:
 ```bash
-# Find test files
-find . -name "*.test.*" -o -name "*.spec.*" | grep -v node_modules | head -20
+find . -name "*.test.*" -o -name "*.spec.*" | grep -v node_modules | head -40
 ```
 
-Read 2-3 representative test files to learn:
+Read from **3 categories** (minimum 6 files total):
+
+**Category A — Same type as target** (2-3 files):
+Tests for similar files in the same directory pattern as the target. These show how code like yours is typically tested.
+
+**Category B — Well-established tests** (2 files):
+The largest/most comprehensive test files in the project. These reveal the team's full testing vocabulary (custom matchers, setup patterns, assertion depth).
+
+**Category C — Test utilities/factories** (all found):
+```bash
+find . -path "*/test*" -name "*.ts" -o -path "*/test*" -name "*.js" | grep -E "(helper|util|setup|factory|fixture|mock)" | grep -v node_modules | head -10
+```
+Helper files, factories, mock setups. These are shared infrastructure you MUST use.
+
+From these files, extract:
 - **Test runner**: Vitest (`import { describe, it, expect } from 'vitest'`) or Jest (globals or imports)
 - **File naming**: `*.test.ts` vs `*.spec.ts` vs `__tests__/*.ts`
 - **File location**: Co-located (next to source) vs centralized (`tests/` directory)
-- **Mocking pattern**: `vi.mock()` vs `jest.mock()`, manual mocks, fixture factories
-- **Assertion style**: `expect().toBe()`, `expect().toEqual()`, custom matchers
+- **Import style**: Named imports, default imports, barrel imports
+- **Mocking strategy**: `vi.mock()` vs `jest.mock()`, manual mocks, fixture factories
+- **Assertion depth**: Shallow (`toBeDefined`) vs deep (`toEqual` with full shape)
 - **Setup/teardown**: `beforeEach`, `afterEach`, `beforeAll`, factory functions
+- **Factory patterns**: How test data is constructed (factory functions, fixtures, inline)
+- **Custom matchers**: Any project-specific matchers or assertion helpers
 - **Describe/it style**: Nested describes, BDD style ("should..."), or flat
 
 ### 1.3 Detect Test Runner
@@ -211,6 +231,16 @@ Generate the test file following project conventions. Use the AAA pattern for ev
 - **No network calls.** All external calls must be mocked.
 - **Clean up.** If a test creates side effects, clean them in `afterEach`.
 - **Follow existing patterns.** If the project uses factory functions, use them. If it uses inline objects, do the same.
+
+### 3.4 Test Integrity Gate
+
+Every generated test must verify real behavior. See [Definition of Done](/_shared/definition-of-done.md).
+
+**BANNED in generated tests:**
+- `expect(true).toBe(true)` or equivalent no-op assertions
+- Tests that only assert `.toBeDefined()` when the shape matters
+- Tests that pass regardless of implementation changes
+- `it.skip` or `describe.skip` — no skipped tests in delivered work
 
 ---
 

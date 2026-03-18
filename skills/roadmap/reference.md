@@ -362,6 +362,17 @@ After all agents complete:
 - Verify story count estimates are reasonable (5-15 stories per epic)
 - Verify cross-phase dependencies are minimal (phases should be largely independent)
 
+#### 7.6 Write Epic Registry
+
+**Registry Lock — `docs/roadmap/epic-registry.json`**: Before writing, acquire a file-based lock per [session-protocol.md](/_shared/session-protocol.md):
+1. CHECK if `docs/roadmap/epic-registry.json.lock` exists — if stale (session completed/failed or >4h old with dead PID), delete it.
+2. ACQUIRE by writing `docs/roadmap/epic-registry.json.lock` with `{ "session_id": "${SESSION_ID}", "acquired": "<ISO-8601>" }`.
+3. VERIFY by re-reading the lock file — confirm it contains YOUR `SESSION_ID`. If not, wait up to 60s (check every 5s), then ABORT with conflict report.
+4. OPERATE — read, modify, and write the registry file.
+5. RELEASE — delete `docs/roadmap/epic-registry.json.lock` and append `lock_released` to the operation log.
+
+Write/update `docs/roadmap/epic-registry.json` using the Epic Registry JSON Schema defined below. Include all epics generated across all phases, their dependency graph, and phase groupings.
+
 ---
 
 ### Phase 8: SUMMARY AND MANIFEST — Final Outputs
@@ -404,6 +415,13 @@ Write `docs/roadmap/SUMMARY.md`:
 ```
 
 #### 8.2 Update Indexes
+
+**Registry Lock — `docs/roadmap/roadmap-registry.json`**: Before writing, acquire a file-based lock per [session-protocol.md](/_shared/session-protocol.md):
+1. CHECK if `docs/roadmap/roadmap-registry.json.lock` exists — if stale (session completed/failed or >4h old with dead PID), delete it.
+2. ACQUIRE by writing `docs/roadmap/roadmap-registry.json.lock` with `{ "session_id": "${SESSION_ID}", "acquired": "<ISO-8601>" }`.
+3. VERIFY by re-reading the lock file — confirm it contains YOUR `SESSION_ID`. If not, wait up to 60s (check every 5s), then ABORT with conflict report.
+4. OPERATE — read, modify, and write the registry file.
+5. RELEASE — delete `docs/roadmap/roadmap-registry.json.lock` and append `lock_released` to the operation log.
 
 Write/update `docs/roadmap/roadmap-registry.json`:
 ```json

@@ -44,6 +44,10 @@ If no argument is provided, default to `full`.
 
 ## Phase 0: CONTEXT — Load Project State
 
+### 0.0 Register Session
+
+Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md). Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, and check for conflicting sessions before proceeding.
+
 ### 0.1 Locate Registry Files
 
 Search for existing roadmap artifacts:
@@ -181,7 +185,7 @@ Prioritize research by:
 Use ToolSearch to check for Context7 MCP tools. If available:
 - Look up documentation for detected libraries/frameworks.
 - Focus on APIs, migration guides, and best practices relevant to high-complexity capabilities.
-- Cache results in `/tmp/roadmap-research/context7/`.
+- Cache results in `${SESSION_TMP_DIR}/roadmap-research/context7/`.
 
 ### 1B.3 Web Research (max 12)
 
@@ -191,7 +195,7 @@ Use WebSearch for:
 - Security advisories for planned integrations.
 - Performance benchmarks for chosen technologies.
 
-Cache results in `/tmp/roadmap-research/web/`.
+Cache results in `${SESSION_TMP_DIR}/roadmap-research/web/`.
 
 ### 1B.4 Synthesize Research Cache
 

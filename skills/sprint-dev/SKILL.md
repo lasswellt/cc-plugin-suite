@@ -22,6 +22,7 @@ Implement a planned sprint by spawning coordinated agent teams in isolated workt
 
 ## Phase 0: CONTEXT — Load Project State
 
+0. **Register session.** Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md). Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, and check for conflicting sessions before proceeding.
 1. **Check for incomplete sprints.** Search for `sprint-registry.json` and check for sprints with `status: in-progress`. If one exists, resume it (skip to Phase 1 with that sprint). Warn the user.
 2. **Build codebase inventory.** Run:
    ```bash
@@ -38,6 +39,45 @@ Implement a planned sprint by spawning coordinated agent teams in isolated workt
 4. **Load detected stack.** Note framework, package manager, test runner, and build system from the stack profile above.
 
 **Gate:** Build must succeed (or pre-existing errors must be cataloged) before spawning agents.
+
+---
+
+## Phase 0.5: DISCOVER — Learn Project Conventions
+
+Before any agent writes code, research the codebase to build a conventions guide.
+
+### 0.5.1 Read Representative Files
+
+Read 2-3 existing files from each layer:
+- **Backend**: Cloud functions, Zod schemas, services
+- **Stores**: Pinia stores, composables
+- **Pages/Components**: Vue pages, feature components
+- **Tests**: Unit tests, integration tests
+
+### 0.5.2 Build Conventions Guide
+
+From the files read, document:
+- **Auth pattern**: How auth is checked (middleware, per-function, etc.)
+- **Error format**: How errors are structured and returned
+- **Response shape**: Standard response envelope
+- **Validation approach**: Zod, Joi, or manual — and where schemas live
+- **Component style**: Script setup, Options API, or mixed
+- **CSS approach**: Tailwind, Quasar, Vuetify, or scoped CSS
+- **Store pattern**: Setup syntax vs options syntax, naming conventions
+- **Loading UI**: Skeleton loaders, spinners, or conditional rendering
+- **Test structure**: AAA, BDD, or custom — describe/it nesting style
+- **File naming**: kebab-case, camelCase, PascalCase per directory
+
+### 0.5.3 Identify Reusable Assets
+
+Search for existing composables, utilities, and shared components:
+```bash
+find . -path '*/composables/*' -o -path '*/utils/*' -o -path '*/shared/*' -o -path '*/components/base/*' | grep -v node_modules | head -30
+```
+
+Build a **REUSE THESE — do not recreate** list with file paths and what each provides.
+
+**Gate:** Conventions guide must be complete before spawning agents.
 
 ---
 
@@ -74,6 +114,13 @@ If the manifest has `carry_forward` entries, load those stories and add them to 
 
 ### 1.6 Update Sprint Status
 
+**Registry Lock — `sprint-registry.json`**: Before writing, acquire a file-based lock per [session-protocol.md](/_shared/session-protocol.md):
+1. CHECK if `sprint-registry.json.lock` exists — if stale (session completed/failed or >4h old with dead PID), delete it.
+2. ACQUIRE by writing `sprint-registry.json.lock` with `{ "session_id": "${SESSION_ID}", "acquired": "<ISO-8601>" }`.
+3. VERIFY by re-reading the lock file — confirm it contains YOUR `SESSION_ID`. If not, wait up to 60s (check every 5s), then ABORT with conflict report.
+4. OPERATE — read, modify, and write the registry file.
+5. RELEASE — delete `sprint-registry.json.lock` and append `lock_released` to the operation log.
+
 Update `sprint-registry.json`: set sprint status to `in-progress`, record `started_date`.
 
 ---
@@ -99,7 +146,7 @@ Based on story assignments, spawn only the agents that have stories:
 
 For each agent, create an isolated git worktree:
 ```bash
-git worktree add -b sprint-${SPRINT_NUMBER}/<role> .worktrees/<role> HEAD
+git worktree add -b sprint-${SPRINT_NUMBER}/<role> .worktrees/sprint-${SPRINT_NUMBER}/<role> HEAD
 ```
 
 ### 2.4 Spawn Agents
@@ -110,6 +157,9 @@ For each agent, send spawn instructions via `SendMessage`. Include:
 3. List of assigned stories in dependency order.
 4. Project conventions (detected stack, coding patterns, naming conventions).
 5. Commit message format: `feat(sprint-${N}/<role>): S${N}-XXX <description>`.
+6. Project conventions guide from Phase 0.5 (full text, not a file reference).
+7. Reusable assets list — composables, utilities, and shared components agents must use.
+8. Anti-mock rules — Every function must be fully implemented, no placeholders. See [Definition of Done](/_shared/definition-of-done.md).
 
 ### 2.5 Create Tasks with Dependency Ordering
 
@@ -275,17 +325,39 @@ If verification fails:
 ### 4.4 Clean Up Worktrees
 
 ```bash
-git worktree remove .worktrees/backend 2>/dev/null
-git worktree remove .worktrees/frontend 2>/dev/null
-git worktree remove .worktrees/tests 2>/dev/null
-git worktree remove .worktrees/infra 2>/dev/null
+git worktree remove .worktrees/sprint-${SPRINT_NUMBER}/backend 2>/dev/null
+git worktree remove .worktrees/sprint-${SPRINT_NUMBER}/frontend 2>/dev/null
+git worktree remove .worktrees/sprint-${SPRINT_NUMBER}/tests 2>/dev/null
+git worktree remove .worktrees/sprint-${SPRINT_NUMBER}/infra 2>/dev/null
 ```
 
-### 4.5 Shutdown Team
+### 4.5 E2E Verification (Best-Effort)
+
+After build verification passes, run an automated browser smoke test if Playwright MCP is available:
+
+1. **Check availability**: Verify Playwright MCP tools are accessible.
+2. **Start dev server**: `npm run dev &` (or equivalent). Wait for ready signal.
+3. **Smoke test changed routes**: Identify changed page files from the diff. Navigate to the first 10 routes.
+4. **Evaluate results**:
+   - 0 Critical + 0 Error = **PASS**
+   - 1+ Critical = **CONDITIONAL** — include findings in sprint report
+   - 1+ Error only = **PASS with notes**
+5. **Clean up**: Kill the dev server process.
+
+Skip gracefully if Playwright is unavailable — document as a gap, not a failure.
+
+### 4.6 Shutdown Team
 
 Gracefully shutdown the development team. Send `HALT:` to any remaining agents.
 
-### 4.6 Update Sprint Registry
+### 4.7 Update Sprint Registry
+
+**Registry Lock — `sprint-registry.json`**: Before writing, acquire a file-based lock per [session-protocol.md](/_shared/session-protocol.md):
+1. CHECK if `sprint-registry.json.lock` exists — if stale (session completed/failed or >4h old with dead PID), delete it.
+2. ACQUIRE by writing `sprint-registry.json.lock` with `{ "session_id": "${SESSION_ID}", "acquired": "<ISO-8601>" }`.
+3. VERIFY by re-reading the lock file — confirm it contains YOUR `SESSION_ID`. If not, wait up to 60s (check every 5s), then ABORT with conflict report.
+4. OPERATE — read, modify, and write the registry file.
+5. RELEASE — delete `sprint-registry.json.lock` and append `lock_released` to the operation log.
 
 Update `sprint-registry.json`:
 ```json
@@ -299,21 +371,34 @@ Update `sprint-registry.json`:
 }
 ```
 
-### 4.7 Update Story Statuses
+### 4.8 Update Story Statuses
+
+For each story file, acquire `<story-file>.lock` before modifying the status field, then release after writing. This prevents concurrent sprint-review from reading partially-updated statuses.
 
 For each story file, update frontmatter `status`:
 - `done` — Implemented and passes verification.
 - `incomplete` — Partially implemented or has failing tests.
 - `blocked` — Could not be completed (circuit breaker triggered).
 
-### 4.8 Final Commit
+### 4.8.5 Blocked Story Accountability
+
+For every story marked `blocked`:
+
+1. **Document WHY** it was blocked (circuit breaker details, specific errors, missing dependencies).
+2. **Document what work WAS completed** and what REMAINS.
+3. **Create carry-forward entry** in the manifest's `carry_forward` array.
+4. **Sprint summary MUST include a prominent warning** with blocked count and story IDs.
+
+**Never silently drop blocked stories.** They must be visible in the sprint report and carry forward to the next sprint.
+
+### 4.9 Final Commit
 
 ```bash
 git add -A
 git commit -m "feat(sprint-${N}): complete sprint implementation — ${COMPLETED}/${TOTAL} stories"
 ```
 
-### 4.9 Final Output
+### 4.10 Final Output
 
 Print summary to user:
 

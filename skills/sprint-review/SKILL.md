@@ -22,6 +22,8 @@ Review sprint quality through automated checks and parallel reviewer agents. Run
 
 ## Phase 0: CONTEXT — Load Sprint State
 
+0. **Register session.** Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md). Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, and check for conflicting sessions before proceeding.
+
 1. **Find the sprint to review.** Read `sprint-registry.json` and find the sprint with `status: review` or `status: in-progress`. If the user specified a sprint number, use that. If no sprint is ready for review, inform the user and STOP.
 
 2. **Load incomplete stories.** Read all story files in `${SPRINT_DIR}/stories/`. Categorize:
@@ -109,7 +111,7 @@ Record:
 
 ### 1.5 Quality Gate Summary
 
-Write intermediate results to `/tmp/sprint-${SPRINT_NUMBER}-quality-gates.json`:
+Write intermediate results to `${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-quality-gates.json`:
 ```json
 {
   "type_check": { "pass": true, "errors": 0, "details": [] },
@@ -118,6 +120,40 @@ Write intermediate results to `/tmp/sprint-${SPRINT_NUMBER}-quality-gates.json`:
   "build": { "pass": true, "errors": 0 }
 }
 ```
+
+---
+
+## Phase 1.5: PATTERN ANALYSIS — Anti-Mock Scan and Convention Check
+
+### 1.5.1 Anti-Mock Scan
+
+Scan all changed files for placeholder/mock code:
+```bash
+git diff --name-only ${SPRINT_BASE}..HEAD | xargs grep -n -E \
+  '(TODO|FIXME|PLACEHOLDER|STUB|Not implemented|throw new Error.*implement|return \{\}|return \[\])' 2>/dev/null
+```
+
+Any matches are **Critical findings** — code is not production-ready. Record each match with file, line, and pattern.
+
+### 1.5.2 Convention Compliance
+
+Check changed files against project conventions:
+- **Backend files**: Have auth/validation patterns? Use project's error format?
+- **Frontend files**: Handle loading, empty, and error states (three-state pattern)?
+- **Store actions**: Call real APIs (not returning hardcoded data)?
+- **Test files**: Assert meaningfully (not just `toBeDefined()` or `expect(true).toBe(true)`)?
+
+### 1.5.3 Architectural Compliance
+
+Check for improper cross-layer imports:
+- Frontend files should not import directly from server/functions directories
+- Backend files should not import Vue components
+- Test files should not import from other test files' internals
+
+### 1.5.4 Completeness Check
+
+- Verify all files listed in done stories actually exist
+- Check for silently dropped circuit-breaker stories (stories that were blocked but not documented)
 
 ---
 
@@ -131,7 +167,7 @@ Use `TeamCreate` to create a team named `sprint-${SPRINT_NUMBER}-review`.
 
 Collect the diff for reviewers:
 ```bash
-git diff ${SPRINT_BASE}..HEAD > /tmp/sprint-${SPRINT_NUMBER}-full-diff.patch
+git diff ${SPRINT_BASE}..HEAD > ${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-full-diff.patch
 ```
 
 Also list all new and modified files with their sizes for assignment:
@@ -141,14 +177,14 @@ git diff --stat ${SPRINT_BASE}..HEAD
 
 ### 2.3 Spawn Reviewer Agents
 
-Spawn 3-4 specialized reviewers. Each writes findings to `/tmp/` files.
+Spawn 3-4 specialized reviewers. Each writes findings to session-scoped temp files.
 
 | Agent Name | Focus | Output File |
 |---|---|---|
-| `security-reviewer` | Auth, input validation, secrets, injection, XSS, CSRF | `/tmp/sprint-${N}-review-security.md` |
-| `backend-reviewer` | API design, error handling, data validation, performance | `/tmp/sprint-${N}-review-backend.md` |
-| `frontend-reviewer` | Component design, accessibility, UX, responsive, state mgmt | `/tmp/sprint-${N}-review-frontend.md` |
-| `pattern-reviewer` | Code consistency, naming, DRY, architecture, test coverage | `/tmp/sprint-${N}-review-patterns.md` |
+| `security-reviewer` | Auth, input validation, secrets, injection, XSS, CSRF | `${SESSION_TMP_DIR}/sprint-${N}-review-security.md` |
+| `backend-reviewer` | API design, error handling, data validation, performance | `${SESSION_TMP_DIR}/sprint-${N}-review-backend.md` |
+| `frontend-reviewer` | Component design, accessibility, UX, responsive, state mgmt | `${SESSION_TMP_DIR}/sprint-${N}-review-frontend.md` |
+| `pattern-reviewer` | Code consistency, naming, DRY, architecture, test coverage | `${SESSION_TMP_DIR}/sprint-${N}-review-patterns.md` |
 
 ### 2.4 Reviewer Instructions
 
@@ -183,6 +219,32 @@ Categorize all findings:
 - **Major**: Broken functionality, missing error handling, accessibility violations. Should fix.
 - **Minor**: Code style, naming, minor performance. Fix if time permits.
 - **Info**: Suggestions, alternative approaches, future improvements. Document only.
+
+---
+
+## Phase 2.5: BROWSER VERIFICATION (Best-Effort)
+
+If Playwright MCP is available and a dev server can start:
+
+### 2.5.1 Identify Changed Routes
+
+From changed page files, determine which routes were added or modified.
+
+### 2.5.2 Smoke Test
+
+Navigate to each changed route. For each page:
+- Check for console errors (Critical or Error severity)
+- Check for placeholder/sample data visible on screen (Warning)
+- Check for broken layouts or missing content (Warning)
+
+### 2.5.3 Integrate Findings
+
+Add browser findings to the review report:
+- Console errors → Error or Critical severity
+- Placeholder data visible → Warning severity
+- Visual issues → Minor severity
+
+Skip gracefully if Playwright is unavailable — document as a gap in the report, not a failure.
 
 ---
 
@@ -281,6 +343,13 @@ Write `${SPRINT_DIR}/review-report.md` using the template from reference.md. Inc
 | **FAIL** | Any quality gate fails after auto-fix. Or: critical findings exist. |
 
 ### 4.3 Update Sprint Registry
+
+**Registry Lock — `sprint-registry.json`**: Before writing, acquire a file-based lock per [session-protocol.md](/_shared/session-protocol.md):
+1. CHECK if `sprint-registry.json.lock` exists — if stale (session completed/failed or >4h old with dead PID), delete it.
+2. ACQUIRE by writing `sprint-registry.json.lock` with `{ "session_id": "${SESSION_ID}", "acquired": "<ISO-8601>" }`.
+3. VERIFY by re-reading the lock file — confirm it contains YOUR `SESSION_ID`. If not, wait up to 60s (check every 5s), then ABORT with conflict report.
+4. OPERATE — read, modify, and write the registry file.
+5. RELEASE — delete `sprint-registry.json.lock` and append `lock_released` to the operation log.
 
 Update `sprint-registry.json`:
 ```json

@@ -214,3 +214,18 @@ Before considering your work complete, verify:
    Prefer real implementations when feasible.
 8. **Tests are independent**: No test depends on another test's state or execution
    order.
+
+## Test Integrity Rules (NON-NEGOTIABLE)
+
+Every test must verify real behavior. See [Definition of Done](/_shared/definition-of-done.md).
+
+**BANNED PATTERNS** — if any of these appear in your tests, the work is not done:
+
+- Tests that only assert mock return values (you're testing the mock, not the code)
+- `expect(true).toBe(true)` or equivalent no-op assertions
+- Assertions weaker than the function's contract (e.g., only `toBeDefined()` when shape matters)
+- `it.skip`, `xit`, `describe.skip` — no skipped tests in delivered work
+- Tests that pass regardless of implementation (the test is worthless)
+- Tests that only assert `.toHaveBeenCalled()` without verifying results
+
+**SELF-CHECK:** For each test, ask: *"If I broke the implementation, would this test fail?"* If the answer is no, the test is not doing its job.

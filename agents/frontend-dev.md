@@ -212,3 +212,22 @@ Before considering your work complete, verify:
 4. **Imports resolve**: All imports point to existing files or installed packages.
 5. **Three-state coverage**: Every data view handles loading, empty, and error.
 6. **Responsive**: Components work on mobile and desktop.
+7. **Component test exists**: Every new component must have at least one test
+   that mounts and verifies it renders without errors.
+
+## Anti-Mock Enforcement (NON-NEGOTIABLE)
+
+Every component and function you write must be fully implemented. See [Definition of Done](/_shared/definition-of-done.md).
+
+**BANNED PATTERNS** — if any of these appear in your code, the work is not done:
+
+- Components with TODO placeholder content instead of real UI
+- Store actions that return hardcoded data instead of calling real APIs
+- Event handlers that are no-ops (`() => {}`)
+- Composables with empty `execute()` functions
+- `return {}` / `return []` / `return null` as placeholder returns
+- `// TODO: implement` / `// FIXME` / `// PLACEHOLDER` / `// STUB` where code should be
+- Empty catch blocks that silently swallow errors
+- Components that render static text where dynamic data should be
+
+**SELF-CHECK:** Mount the component mentally. Does every button do something real? Does every data display come from a real store/composable? If not, the work is not done.

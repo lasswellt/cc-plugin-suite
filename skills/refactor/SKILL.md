@@ -35,9 +35,15 @@ These rules override ALL other instructions. Violating any of these is a critica
 
 7. **ABORT on regression.** If a step introduces test failures that you cannot resolve by reverting the step, stop and report the issue to the user.
 
+8. **NEVER leave placeholder code behind.** Refactored code must remain fully implemented. See [Definition of Done](/_shared/definition-of-done.md). No `TODO`, `FIXME`, `STUB`, or empty function bodies in the output.
+
 ---
 
 ## Phase 0: PARSE ARGUMENTS — Understand the Target
+
+### 0.0 Register Session
+
+Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md). Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, and check for conflicting sessions before proceeding.
 
 ### 0.1 Parse Invocation
 
@@ -168,6 +174,42 @@ Read the test files to understand:
 - What behaviors are tested
 - What mocking patterns are used
 - What assertions exist (these define the behavioral contract)
+
+---
+
+## Phase 2.5: RESEARCH PATTERNS — Study Similar Code
+
+Before planning the refactoring, research how similar code is structured elsewhere in the project.
+
+### 2.5.1 Find Similar Files
+
+Search for files with similar responsibilities to the target:
+```bash
+# Files in the same directory or with similar names/patterns
+find . -path '*/$(dirname <target>)/*' -name '*.ts' -o -name '*.vue' | grep -v node_modules | head -15
+```
+
+### 2.5.2 Read Exemplar Files
+
+Read 2-3 of the cleanest/smallest files that do similar work. Note:
+- **Organization**: How are functions ordered? Public API first or last?
+- **Dependency injection**: How are external dependencies handled?
+- **Public API structure**: What is exported and how?
+- **Function size**: How large are individual functions?
+- **Error handling**: How are errors caught and propagated?
+
+### 2.5.3 Document Refactoring Target Pattern
+
+Write a brief "REFACTORING TARGET PATTERN" that describes the ideal structure based on the exemplar files. This pattern guides every step in Phase 3.
+
+```
+TARGET PATTERN:
+- Organization: <how to order functions and sections>
+- Dependencies: <how to handle external deps>
+- Public API: <what to export and how>
+- Function size: <target max lines>
+- Error handling: <pattern to follow>
+```
 
 ---
 

@@ -30,7 +30,9 @@ Recent commits:
 
 ## Write-As-You-Go Protocol
 
-1. At the start of your review, create `/tmp/review-findings.md` with a header:
+1. At the start of your review, create the findings file with a header.
+   If a `SESSION_TMP_DIR` is provided in your instructions, write to
+   `${SESSION_TMP_DIR}/review-findings.md`. Otherwise, use `/tmp/review-findings.md`.
    ```markdown
    # Code Review Findings
    **Date**: (current date)
@@ -110,6 +112,15 @@ This ensures findings are preserved even if the review is interrupted.
 - Constants: UPPER_SNAKE_CASE for true constants
 - Boolean variables: `is`/`has`/`should` prefix
 
+### 9. Feature Completeness (Anti-Mock)
+- No placeholder functions (grep for: `Not implemented`, `TODO`, `FIXME`, `PLACEHOLDER`, `STUB`)
+- No functions with empty bodies that should have logic
+- No hardcoded sample/mock data in non-test files
+- No `return {}` / `return []` / `return null` as stand-ins for real logic
+- Store actions actually call APIs (not returning hardcoded data)
+- Event handlers actually do something (not `() => {}`)
+- Every feature path wired end-to-end (not just frontend or just backend)
+
 ## Output Format
 
 For each finding, use this format:
@@ -146,7 +157,7 @@ At the end of the review, append:
 ## Constraints
 
 - **Findings only**: Never create, modify, or delete source files. Only write to
-  `/tmp/review-findings.md`.
+  the review findings file (`${SESSION_TMP_DIR}/review-findings.md` or `/tmp/review-findings.md`).
 - **Evidence-based**: Every finding must reference a specific file and line.
 - **Actionable**: Every finding must include a concrete fix suggestion.
 - Do not assume project names, package scopes, or directory structures. Discover

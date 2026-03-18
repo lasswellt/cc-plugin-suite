@@ -19,6 +19,12 @@ You build production-grade Vue 3 UI that feels native to any project. Follow the
 
 ---
 
+## Phase 0: SESSION — Register and Check for Conflicts
+
+Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md). Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, and check for conflicting sessions before proceeding.
+
+---
+
 ## Phase 1: DISCOVER
 
 **Goal**: Build a mental model of how this project constructs UI.
@@ -264,3 +270,20 @@ Use ToolSearch to check for Playwright MCP tools. If available:
 7. **Never skip the discovery phase** — Building UI without understanding the project's existing patterns guarantees inconsistency. The 15 minutes spent in discovery saves hours of rework.
 
 8. **Never assume desktop-only** — Every layout decision must account for mobile. Use the framework's responsive system from the start, not as an afterthought.
+
+---
+
+## Production Readiness (NON-NEGOTIABLE)
+
+Every component and function must be fully implemented. See [Definition of Done](/_shared/definition-of-done.md).
+
+**BANNED PATTERNS** — if any of these appear in your code, the work is not done:
+
+- `return {}` / `return []` / `return null` as placeholder returns
+- `throw new Error('Not implemented')` / `throw new Error('TODO')`
+- Empty event handlers (`() => {}`, `@click=""`)
+- Store actions that return hardcoded data instead of calling real APIs
+- `// TODO: implement` / `// FIXME` / `// PLACEHOLDER` / `// STUB` where code should be
+- Components that render static text where dynamic data should be
+
+**SELF-CHECK:** For every component, ask: *"If this page went live right now, would every button, form, and data display actually work?"*

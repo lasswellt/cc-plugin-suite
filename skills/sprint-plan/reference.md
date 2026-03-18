@@ -174,7 +174,7 @@ INSTRUCTIONS:
 1. For each epic, identify external APIs, services, or protocols involved.
 2. Research current best practices, authentication patterns, rate limits, and error handling.
 3. Look for official documentation, migration guides, and known gotchas.
-4. Write findings to: /tmp/sprint-${SPRINT_NUMBER}-research-domain-researcher.md
+4. Write findings to: ${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-domain-researcher.md
 
 OUTPUT FORMAT:
 ## Epic: <epic-id> — <epic-title>
@@ -207,7 +207,7 @@ INSTRUCTIONS:
 2. Check compatibility with the detected stack (especially framework version).
 3. Find implementation examples, especially for complex integrations.
 4. Note any required peer dependencies or breaking changes.
-5. Write findings to: /tmp/sprint-${SPRINT_NUMBER}-research-library-researcher.md
+5. Write findings to: ${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-library-researcher.md
 
 OUTPUT FORMAT:
 ## Epic: <epic-id> — <epic-title>
@@ -240,7 +240,7 @@ INSTRUCTIONS:
 2. Identify reusable patterns (composables, utilities, components, schemas).
 3. Map integration points where new code must connect to existing code.
 4. Flag potential conflicts (naming collisions, import cycles, shared state).
-5. Write findings to: /tmp/sprint-${SPRINT_NUMBER}-research-codebase-analyst.md
+5. Write findings to: ${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-codebase-analyst.md
 
 OUTPUT FORMAT:
 ## Epic: <epic-id> — <epic-title>
@@ -271,7 +271,7 @@ INSTRUCTIONS:
 2. Identify infrastructure changes needed for the selected epics.
 3. Check security rules for required updates.
 4. Note any environment variables or secrets that must be configured.
-5. Write findings to: /tmp/sprint-${SPRINT_NUMBER}-research-infra-analyst.md
+5. Write findings to: ${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-infra-analyst.md
 
 OUTPUT FORMAT:
 ## Epic: <epic-id> — <epic-title>

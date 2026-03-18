@@ -21,6 +21,10 @@ Investigate a topic by spawning parallel research agents, collecting findings, a
 
 ## Phase 0: PARSE TOPIC — Understand What to Research
 
+### 0.0 Register Session
+
+Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md). Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, and check for conflicting sessions before proceeding.
+
 ### 0.1 Extract Research Topic
 
 Parse the user's request to identify:
@@ -57,7 +61,7 @@ find . -maxdepth 3 -name 'package.json' -not -path '*/node_modules/*' | head -10
 ### 1.1 Create Working Directory
 
 ```bash
-RESEARCH_DIR="/tmp/research"
+RESEARCH_DIR="${SESSION_TMP_DIR}/research"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 rm -rf "${RESEARCH_DIR}"
 mkdir -p "${RESEARCH_DIR}"
@@ -84,7 +88,7 @@ Send each agent a message via `SendMessage` with:
 
 1. **Research topic and questions** — Full context of what to investigate.
 2. **Detected stack profile** — So findings are relevant to the project.
-3. **Output file path** — `/tmp/research/<agent-name>.md`
+3. **Output file path** — `${SESSION_TMP_DIR}/research/<agent-name>.md`
 4. **Research limits** — See below.
 5. **Write-as-you-go rule** — "Write findings to your output file as you discover them. Do NOT accumulate in memory."
 6. **Cross-steering protocol** — Use `STEER:` prefix via `SendMessage` to redirect cross-cutting findings to sibling agents.
@@ -93,7 +97,7 @@ Send each agent a message via `SendMessage` with:
 ```
 SendMessage to web-researcher:
 STEER: migration-complexity — The library's official docs mention a codemods tool for v2->v3 migration.
-Check community reports on how well it works in practice. Details in /tmp/research/library-docs.md section "Migration".
+Check community reports on how well it works in practice. Details in ${SESSION_TMP_DIR}/research/library-docs.md section "Migration".
 ```
 
 ### 1.5 Research Limits Per Agent
@@ -116,7 +120,7 @@ You are library-docs, a research agent specializing in official documentation an
 TOPIC: ${TOPIC}
 RESEARCH QUESTIONS: ${QUESTIONS}
 PROJECT STACK: ${STACK_PROFILE}
-OUTPUT FILE: /tmp/research/library-docs.md
+OUTPUT FILE: ${SESSION_TMP_DIR}/research/library-docs.md
 
 TASKS:
 1. Find official documentation for the topic/library.
@@ -136,7 +140,7 @@ You are web-researcher, a research agent specializing in community knowledge and
 TOPIC: ${TOPIC}
 RESEARCH QUESTIONS: ${QUESTIONS}
 PROJECT STACK: ${STACK_PROFILE}
-OUTPUT FILE: /tmp/research/web-researcher.md
+OUTPUT FILE: ${SESSION_TMP_DIR}/research/web-researcher.md
 
 TASKS:
 1. Search for recent blog posts, tutorials, and guides (prefer content from the last 12 months).
@@ -156,7 +160,7 @@ You are codebase-analyst, a research agent specializing in impact analysis.
 TOPIC: ${TOPIC}
 RESEARCH QUESTIONS: ${QUESTIONS}
 PROJECT STACK: ${STACK_PROFILE}
-OUTPUT FILE: /tmp/research/codebase-analyst.md
+OUTPUT FILE: ${SESSION_TMP_DIR}/research/codebase-analyst.md
 
 TASKS:
 1. Identify all files and modules related to the research topic.
@@ -176,7 +180,7 @@ You are infra-analyst, a research agent specializing in infrastructure and deplo
 TOPIC: ${TOPIC}
 RESEARCH QUESTIONS: ${QUESTIONS}
 PROJECT STACK: ${STACK_PROFILE}
-OUTPUT FILE: /tmp/research/infra-analyst.md
+OUTPUT FILE: ${SESSION_TMP_DIR}/research/infra-analyst.md
 
 TASKS:
 1. Check cloud service documentation for relevant features, quotas, and pricing.
@@ -193,7 +197,7 @@ Write findings immediately to your output file. Use STEER: to redirect findings 
 
 Poll for agent completion by checking output files:
 ```bash
-for f in /tmp/research/*.md; do
+for f in ${SESSION_TMP_DIR}/research/*.md; do
   [ -s "$f" ] && echo "DONE: $f" || echo "PENDING: $f"
 done
 ```
@@ -206,12 +210,12 @@ done
 
 ### 2.1 Read All Agent Output Files
 
-Read every file in `/tmp/research/`:
+Read every file in `${SESSION_TMP_DIR}/research/`:
 ```
-/tmp/research/library-docs.md
-/tmp/research/web-researcher.md
-/tmp/research/codebase-analyst.md
-/tmp/research/infra-analyst.md  (if spawned)
+${SESSION_TMP_DIR}/research/library-docs.md
+${SESSION_TMP_DIR}/research/web-researcher.md
+${SESSION_TMP_DIR}/research/codebase-analyst.md
+${SESSION_TMP_DIR}/research/infra-analyst.md  (if spawned)
 ```
 
 ### 2.2 Handle Agent Failures
@@ -266,7 +270,7 @@ Before finalizing:
 ### 3.3 Clean Up
 
 ```bash
-rm -rf /tmp/research
+rm -rf ${SESSION_TMP_DIR}/research
 ```
 
 ---
