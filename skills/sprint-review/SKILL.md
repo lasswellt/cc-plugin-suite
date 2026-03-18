@@ -390,6 +390,14 @@ git add sprint-registry.json
 git commit -m "review(sprint-${N}): ${STATUS} — ${FINDINGS_CRITICAL}c/${FINDINGS_MAJOR}M/${FINDINGS_MINOR}m findings, ${AUTO_FIXES} auto-fixes"
 ```
 
+### 4.5.5 Record Quality Metrics
+
+After the review commit, collect a quality metrics snapshot for trend tracking:
+```
+Invoke: /cc-plugin-suite:quality-metrics collect
+```
+This stores a timestamped JSON snapshot in `docs/metrics/` that can be used for trend analysis across sprints. The metrics are informational and do not gate the review.
+
 ### 4.6 Final Output
 
 Print summary to user:
