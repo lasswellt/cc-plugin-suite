@@ -1,0 +1,12 @@
+{
+  "name": "cc-plugin-suite",
+  "version": "0.1.0",
+  "description": "Production-grade development skills for Vue.js, Nuxt, and GCP Firebase projects. Includes research, refactoring, sprint planning, code review, UI building, and browser testing workflows.",
+  "author": {
+    "name": "lasswellt"
+  },
+  "homepage": "https://github.com/lasswellt/cc-plugin-suite",
+  "repository": "https://github.com/lasswellt/cc-plugin-suite",
+  "license": "MIT",
+  "keywords": ["vue", "nuxt", "firebase", "sprint", "development-workflow"]
+}

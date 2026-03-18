@@ -1,0 +1,12 @@
+{
+  "name": "cc-plugin-suite",
+  "owner": { "name": "lasswellt" },
+  "plugins": [
+    {
+      "name": "cc-plugin-suite",
+      "source": "./",
+      "description": "Production-grade development skills for Vue/Nuxt + Firebase",
+      "version": "0.1.0"
+    }
+  ]
+}
