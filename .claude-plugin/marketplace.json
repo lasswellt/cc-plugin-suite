@@ -1,15 +1,15 @@
 {
   "name": "cc-plugin-suite",
   "metadata": {
-    "description": "Production-grade development skills for Vue.js, Nuxt, and GCP Firebase projects"
+    "description": "Production-grade development skills for Vue.js, Nuxt, and GCP Firebase projects with quality gates, release management, and self-improvement"
   },
   "owner": { "name": "lasswellt" },
   "plugins": [
     {
       "name": "cc-plugin-suite",
       "source": "./",
-      "description": "Production-grade development skills for Vue/Nuxt + Firebase",
-      "version": "0.1.0"
+      "description": "Production-grade development skills for Vue/Nuxt + Firebase with 25 skills, 6 agents, and 6 hooks",
+      "version": "0.2.0"
     }
   ]
 }

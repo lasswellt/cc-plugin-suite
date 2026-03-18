@@ -53,6 +53,14 @@ SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"
 | fix-issue | `/tmp/issue-research.md` | `${SESSION_TMP_DIR}/issue-research.md` |
 | roadmap | `/tmp/roadmap-research/` | `${SESSION_TMP_DIR}/roadmap-research/` |
 | reviewer agent | `/tmp/review-findings.md` | `${SESSION_TMP_DIR}/review-findings.md` |
+| completeness-gate | — | `${SESSION_TMP_DIR}/completeness-gate.json` |
+| quality-metrics | — | `${SESSION_TMP_DIR}/quality-metrics.json` |
+| dep-health | — | `${SESSION_TMP_DIR}/dep-health-report.md` |
+| doc-gen | — | `${SESSION_TMP_DIR}/doc-gen/` |
+| perf-profile | — | `${SESSION_TMP_DIR}/perf-profile.md` |
+| migrate | — | `${SESSION_TMP_DIR}/migrate-progress.json` |
+| release | — | `${SESSION_TMP_DIR}/release-state.json` |
+| retrospective | — | `${SESSION_TMP_DIR}/retrospective/` |
 
 ---
 
@@ -126,6 +134,20 @@ Logged operations: `session_start`, `session_end`, `lock_acquired`, `lock_releas
 | research | research | OK — session-scoped, no shared state |
 | roadmap | roadmap | **BLOCK** — one at a time |
 | codebase-audit | codebase-audit | OK — session-scoped, read-only on codebase |
+| completeness-gate | completeness-gate | OK — read-only, session-scoped |
+| completeness-gate | sprint-dev | OK — read-only scan during implementation |
+| quality-metrics | quality-metrics | OK — writes to date-stamped files |
+| dep-health (upgrade) | dep-health (upgrade) | **BLOCK** — concurrent package modifications |
+| dep-health (audit) | dep-health (audit) | OK — read-only |
+| perf-profile | perf-profile | OK — read-only, session-scoped |
+| migrate | migrate | **BLOCK** — concurrent migrations would conflict |
+| migrate | sprint-dev | **BLOCK** — both modify source files |
+| release (prepare) | release (prepare) | **BLOCK** — one release at a time |
+| release | sprint-dev | WARN — release should happen after sprint completion |
+| retrospective | retrospective | **BLOCK** — one at a time |
+| doc-gen | doc-gen | OK — writes to timestamped files |
+| bootstrap | bootstrap | OK — creates new files only |
+| ship | ship | **BLOCK** — one shipping workflow at a time |
 
 ---
 
