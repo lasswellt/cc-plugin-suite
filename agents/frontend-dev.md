@@ -3,6 +3,12 @@ name: frontend-dev
 description: |
   Vue 3 / Pinia frontend developer. Implements components, stores, composables,
   and routes. Adapts to project's UI framework (Tailwind, Quasar, or Vuetify).
+
+  <example>
+  Context: User needs a new page with a data table and form
+  user: "Build a user management page with a list table and edit form"
+  assistant: "I'll delegate this to the frontend-dev agent to implement the Vue components, Pinia store, and route."
+  </example>
 tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch
 # Note: permissionMode is not supported for plugin agents (silently ignored by Claude Code)
 maxTurns: 50

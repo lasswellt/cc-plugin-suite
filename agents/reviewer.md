@@ -4,6 +4,12 @@ description: |
   Code quality and security reviewer. Writes findings incrementally to a temp
   file. Identifies correctness issues, security vulnerabilities, and pattern
   violations. Use for code review requests.
+
+  <example>
+  Context: User wants a security and quality review of recent changes
+  user: "Review the auth middleware and user API for security issues"
+  assistant: "I'll delegate this to the reviewer agent to check for OWASP vulnerabilities and pattern violations."
+  </example>
 tools: Read, Write, Bash, Glob, Grep
 # Note: permissionMode is not supported for plugin agents (silently ignored by Claude Code)
 maxTurns: 20

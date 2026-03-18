@@ -3,6 +3,12 @@ name: architect
 description: |
   Architecture analysis specialist. Read-only evaluation of coupling, cohesion,
   module boundaries, and dependency graphs. Use for structural analysis requests.
+
+  <example>
+  Context: User wants to understand the dependency structure before a refactor
+  user: "Analyze the architecture of our monorepo — I need to know if there are circular dependencies"
+  assistant: "I'll delegate this to the architect agent to map the dependency graph and evaluate module boundaries."
+  </example>
 tools: Read, Glob, Grep, Bash
 # Note: permissionMode is not supported for plugin agents (silently ignored by Claude Code)
 maxTurns: 15

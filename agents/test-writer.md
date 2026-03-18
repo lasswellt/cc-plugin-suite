@@ -4,6 +4,12 @@ description: |
   Test specialist for unit tests, integration tests, and E2E tests. Generates
   tests following AAA pattern with factory functions. Adapts to project's test
   framework (Vitest or Jest).
+
+  <example>
+  Context: User needs tests for a newly implemented store
+  user: "Write tests for the user profile store including error handling"
+  assistant: "I'll delegate this to the test-writer agent to generate unit tests with factory functions and edge cases."
+  </example>
 tools: Read, Write, Edit, Bash, Glob, Grep
 # Note: permissionMode is not supported for plugin agents (silently ignored by Claude Code)
 maxTurns: 35
