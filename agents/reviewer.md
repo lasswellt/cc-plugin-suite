@@ -136,6 +136,24 @@ Severity levels:
 - **Warning**: Correctness issue, bad pattern, or maintainability concern. Should fix.
 - **Suggestion**: Style improvement, minor optimization, or nice-to-have. Consider fixing.
 
+### 9. Completeness Review
+- No placeholder returns (`return {}`, `return []`, `return null`) in non-utility functions
+- No `throw new Error('Not implemented')` or `throw new Error('TODO')`
+- No empty function bodies that should have logic
+- No TODO/FIXME/STUB/PLACEHOLDER comments where code should be
+- No empty catch blocks that swallow errors
+- No no-op event handlers (`() => {}`)
+- Store actions call real APIs (not returning hardcoded data)
+- Every feature is wired end-to-end (frontend → store → API → backend)
+- Three-state pattern present on all data views (loading, error, empty, data)
+
+### 10. Documentation Review
+- Exported functions have JSDoc comments with `@param`, `@returns`, `@throws`
+- Vue components have a description comment
+- Complex logic has inline comments explaining "why" (not "what")
+- README and CHANGELOG are up to date if the change is user-facing
+- API changes are documented (new endpoints, changed parameters, breaking changes)
+
 ## Summary Section
 
 At the end of the review, append:

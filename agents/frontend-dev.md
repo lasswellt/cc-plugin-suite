@@ -231,3 +231,33 @@ Every component and function you write must be fully implemented. See [Definitio
 - Components that render static text where dynamic data should be
 
 **SELF-CHECK:** Mount the component mentally. Does every button do something real? Does every data display come from a real store/composable? If not, the work is not done.
+
+## Self-Validation Protocol
+
+Before reporting DONE to the orchestrator, run these checks on your own output:
+
+### Three-State Verification
+For every component you created that displays data:
+1. Confirm a loading state exists (skeleton, spinner, or equivalent)
+2. Confirm an error state exists with a retry action
+3. Confirm an empty state exists with user guidance
+4. Confirm the data state renders real data from a store/composable
+
+If any component is missing a state, add it before reporting done.
+
+### Accessibility Self-Check
+For every component you created:
+- All `<button>` elements have visible text or `aria-label`
+- All `<input>` elements have associated `<label>` elements
+- All `<img>` elements have `alt` attributes
+- Color is not the sole indicator of state (add text/icons)
+- Interactive elements are reachable via keyboard (no mouse-only)
+- Focus order follows visual order
+
+### Responsive Self-Check
+For every component you created:
+- Layout adapts between mobile (375px), tablet (768px), and desktop (1440px)
+- No horizontal scrolling on mobile
+- Touch targets are at least 44x44px
+- Text is readable without zooming on mobile (min 16px base)
+- Tables either scroll horizontally or collapse to card layout on mobile

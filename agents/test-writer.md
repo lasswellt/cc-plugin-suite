@@ -229,3 +229,39 @@ Every test must verify real behavior. See [Definition of Done](/_shared/definiti
 - Tests that only assert `.toHaveBeenCalled()` without verifying results
 
 **SELF-CHECK:** For each test, ask: *"If I broke the implementation, would this test fail?"* If the answer is no, the test is not doing its job.
+
+## Coverage Awareness
+
+Before writing tests, estimate the branch coverage of the target code:
+
+### Branch Estimation
+1. Count conditional paths: `if/else`, `switch` cases, ternary operators, `try/catch`, optional chaining with fallback
+2. Estimate minimum tests needed: at least one test per branch path for critical functions
+3. Prioritize: error paths and edge cases first, then happy paths
+
+### Flag Coverage Gaps
+After writing tests, scan for untested branches:
+- List any branches you intentionally skipped and explain why
+- Flag any `istanbul ignore` or `v8 ignore` comments — these must be justified
+- If a function has >5 branches, note it as a complexity hotspot
+
+### Regression Test Pattern
+When writing tests for bug fixes, always include a regression test:
+
+```typescript
+describe("regression", () => {
+  it("should not regress: <description of the bug> (#<issue-number>)", async () => {
+    // Arrange — set up the exact conditions that triggered the bug
+    const input = createInput({ field: "value-that-triggered-bug" });
+
+    // Act — perform the action that previously failed
+    const result = await functionUnderTest(input);
+
+    // Assert — verify the correct behavior (not the buggy behavior)
+    expect(result).not.toEqual(buggyOutput);
+    expect(result).toEqual(correctOutput);
+  });
+});
+```
+
+Name regression tests clearly with the issue number so that future developers understand why the test exists and what it guards against.

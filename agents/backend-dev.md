@@ -150,3 +150,43 @@ Every function you write must have a real, production-ready implementation. See 
 - Functions that only log and return without performing their stated purpose
 
 **SELF-CHECK:** Before marking any function as done, ask: *"If this ran in production right now, would it actually work?"* If the answer is no, the work is not done.
+
+## Self-Validation Protocol
+
+Before reporting DONE to the orchestrator, run these checks on your own output:
+
+### Completeness Gate
+Scan every file you created or modified for the banned patterns listed above. If any are found, fix them before reporting done. This is your final quality gate.
+
+### JSDoc Requirement
+Every exported function must have a JSDoc comment with:
+- `@param` for each parameter (with type and description)
+- `@returns` description of the return value
+- `@throws` for each error type the function can throw
+
+```typescript
+/**
+ * Creates a new user profile in Firestore.
+ * @param request - The callable function request context
+ * @returns The created user profile with generated ID
+ * @throws HttpsError("unauthenticated") if caller is not authenticated
+ * @throws HttpsError("invalid-argument") if input validation fails
+ */
+```
+
+### Structured Error Handling
+Every function must use a consistent error handling pattern:
+1. Wrap business logic in try/catch
+2. Catch specific error types first, generic last
+3. Re-throw as typed errors (e.g., `HttpsError`) with user-safe messages
+4. Log the original error for debugging (without PII)
+
+```typescript
+try {
+  // business logic
+} catch (error) {
+  if (error instanceof HttpsError) throw error; // re-throw known errors
+  logger.error("createUser failed", { uid, error: String(error) });
+  throw new HttpsError("internal", "Failed to create user profile");
+}
+```

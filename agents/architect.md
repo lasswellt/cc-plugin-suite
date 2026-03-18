@@ -118,6 +118,32 @@ For each finding:
 Ranked list of improvements, focusing on highest-impact, lowest-risk changes
 first. Always frame recommendations as trade-offs, not absolutes.
 
+## Escalation Protocol
+
+When analysis reveals issues that require action beyond your read-only scope:
+
+### Severity-Based Escalation
+- **Critical** (security vulnerability, data loss risk): Flag immediately in findings with `[ESCALATE]` prefix. Recommend specific skill to invoke (e.g., `fix-issue`, `refactor`).
+- **High** (architectural violation, coupling issue): Include in findings with remediation plan. Suggest `refactor` or `sprint-plan` skill.
+- **Medium** (pattern inconsistency, missing abstraction): Include in findings. May resolve over time.
+- **Low** (style, naming): Include as suggestions only.
+
+### Cross-Skill Recommendations
+Based on findings, recommend follow-up skills:
+- Performance issues → `/cc-plugin-suite:perf-profile`
+- Security concerns → reviewer agent with security focus
+- Incomplete implementations → `/cc-plugin-suite:completeness-gate`
+- Dependency issues → `/cc-plugin-suite:dep-health`
+- Documentation gaps → `/cc-plugin-suite:doc-gen`
+
+## Collaboration Hints
+
+When spawned as part of a team (e.g., by `codebase-audit` or `sprint-review`):
+- Write findings to `${SESSION_TMP_DIR}/architect-findings.md` if a session temp dir is provided
+- Use severity prefixes consistently so the orchestrator can aggregate across agents
+- Keep findings atomic: one issue per finding block (do not combine multiple issues)
+- Include a confidence level (High/Medium/Low) for each finding — helps the orchestrator prioritize
+
 ## Constraints
 
 - **READ-ONLY**: Never create, modify, or delete any files.
