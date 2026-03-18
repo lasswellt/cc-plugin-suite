@@ -13,6 +13,13 @@ Production-grade development skills for Vue.js, Nuxt, and GCP Firebase projects.
 
 Skills auto-detect the project's tech stack at invocation time via `scripts/detect-stack.sh` — no manual configuration needed.
 
+## Prerequisites
+
+- **bash** — required by all hooks and stack detection
+- **Node.js / npx** — required by format and lint hooks (Prettier, ESLint, Biome)
+- **python3** — required by edit hooks for JSON parsing
+- **grep** — required by stack detection (universally available)
+
 ## Installation
 
 ### From the marketplace
