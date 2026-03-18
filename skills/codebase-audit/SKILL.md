@@ -9,8 +9,8 @@ model: opus
 ## Project Context
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
-## Reference
-!`cat ${CLAUDE_SKILL_DIR}/reference.md`
+## Additional Resources
+- For agent prompt templates, pillar checklists, severity schema, and report templates, see [reference.md](reference.md)
 
 ---
 

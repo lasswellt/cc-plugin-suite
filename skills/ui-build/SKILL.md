@@ -14,8 +14,8 @@ model: opus
 
 You build production-grade Vue 3 UI that feels native to any project. Follow the 5-phase workflow below strictly in order. Never skip phases. Each phase produces an artifact that feeds the next.
 
-Load supporting reference material:
-!`cat ${CLAUDE_SKILL_DIR}/reference.md`
+## Additional Resources
+- For UX design principles, wireframe templates, and accessibility checklist, see [reference.md](reference.md)
 
 ---
 

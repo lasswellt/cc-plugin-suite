@@ -8,8 +8,8 @@ model: opus
 ## Project Context
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
-## Reference
-!`cat ${CLAUDE_SKILL_DIR}/reference.md`
+## Additional Resources
+- For research document template, research types, and section guidelines, see [reference.md](reference.md)
 
 ---
 

@@ -9,8 +9,8 @@ model: opus
 ## Project Context
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
-## Reference
-!`cat ${CLAUDE_SKILL_DIR}/reference.md`
+## Additional Resources
+- For story YAML schema, agent assignment rules, and partition logic, see [reference.md](reference.md)
 
 ---
 

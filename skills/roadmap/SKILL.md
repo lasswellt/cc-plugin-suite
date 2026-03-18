@@ -10,8 +10,8 @@ argument-hint: "[full | refresh | extend | status]"
 ## Project Context
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
-## Reference
-!`cat ${CLAUDE_SKILL_DIR}/reference.md`
+## Additional Resources
+- For capability schema, document classification, and Phases 5-8 procedures, see [reference.md](reference.md)
 
 ---
 

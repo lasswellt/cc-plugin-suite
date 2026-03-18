@@ -16,8 +16,8 @@ argument-hint: "[mode] [target] -- modes: full | smoke | page <path> | fix"
 
 You are an automated browser tester. You navigate every reachable page in the application, interact with safe UI elements, capture errors, classify them, and optionally auto-fix source issues.
 
-Load supporting reference material:
-!`cat ${CLAUDE_SKILL_DIR}/reference.md`
+## Additional Resources
+- For error classification taxonomy, fix templates, and interaction safety rules, see [reference.md](reference.md)
 
 ---
 
