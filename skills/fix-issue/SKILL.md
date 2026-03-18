@@ -1,7 +1,7 @@
 ---
 name: fix-issue
 description: Resolves GitHub issues end-to-end. Fetches issue context, researches root cause, implements fix with tests, updates the issue. Use when user says "fix issue #N", "resolve issue", "work on issue".
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, SendMessage
 model: opus
 argument-hint: "<issue-number>"
 ---

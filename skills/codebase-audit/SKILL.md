@@ -1,7 +1,8 @@
 ---
 name: codebase-audit
 description: Comprehensive 5-pillar code quality audit spanning Architecture, Performance, Security, Maintainability, and Robustness. Spawns 10 parallel agents (2 per pillar) for thorough analysis. Produces findings formatted for roadmap and sprint planning. Use when user says "audit codebase", "code quality review", "full audit".
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch, TeamCreate, SendMessage
+disable-model-invocation: true
 model: opus
 ---
 
@@ -9,7 +10,7 @@ model: opus
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Reference
-See `${CLAUDE_SKILL_DIR}/reference.md` for agent prompt templates, pillar checklists, severity schema, report templates, and epic format.
+!`cat ${CLAUDE_SKILL_DIR}/reference.md`
 
 ---
 

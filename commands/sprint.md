@@ -1,4 +1,5 @@
 ---
+name: sprint
 description: "Full sprint cycle: plan, implement, review"
 argument-hint: "--epics EP-001,EP-002 | --plan-only | --skip-review"
 disable-model-invocation: true

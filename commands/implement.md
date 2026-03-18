@@ -1,4 +1,5 @@
 ---
+name: implement
 description: "Sprint implementation phase only"
 argument-hint: "--sprint NNN | --stories STORY-XXX-001,STORY-XXX-002"
 disable-model-invocation: true

@@ -1,7 +1,7 @@
 ---
 name: sprint-review
 description: Reviews sprint quality with automated checks and parallel reviewer agents. Runs type-check, lint, tests, build verification. Spawns security, backend, frontend, and pattern reviewers. Auto-fixes common failures. Use when user says "review sprint", "check quality", "run review".
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch, TeamCreate, SendMessage
 disable-model-invocation: true
 model: opus
 ---
@@ -10,7 +10,7 @@ model: opus
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Reference
-See `${CLAUDE_SKILL_DIR}/reference.md` for review report template, quality gate checklist, auto-fix strategies, changed package detection rules, and review finding format.
+!`cat ${CLAUDE_SKILL_DIR}/reference.md`
 
 ---
 

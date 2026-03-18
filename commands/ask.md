@@ -1,4 +1,5 @@
 ---
+name: ask
 description: "Task intake: classifies vague requests and dispatches to the right skill(s)"
 argument-hint: "<describe what you want to do>"
 model: opus

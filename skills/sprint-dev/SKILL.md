@@ -1,7 +1,7 @@
 ---
 name: sprint-dev
 description: Implements planned sprints with coordinated agent teams. Spawns backend-dev, frontend-dev, and test-writer agents in isolated worktrees. Distributes stories as tasks with dependency ordering and monitors progress. Use when user says "implement sprint", "develop stories", "start coding".
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, TeamCreate, SendMessage, TaskCreate, TaskUpdate, TaskList
 disable-model-invocation: true
 model: opus
 ---
@@ -10,7 +10,7 @@ model: opus
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Reference
-See `${CLAUDE_SKILL_DIR}/reference.md` for agent prompt templates, coordination patterns, story distribution rules, and seed data protocol.
+!`cat ${CLAUDE_SKILL_DIR}/reference.md`
 
 ---
 

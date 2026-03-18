@@ -1,7 +1,8 @@
 ---
 name: roadmap
 description: Generates phased implementation roadmaps from research documents. Extracts capabilities, assesses codebase state, clusters features into domains, resolves dependencies, and produces epic-ready implementation plans. Use when user says "generate roadmap", "plan phases", "roadmap status", "extend roadmap".
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, TeamCreate, SendMessage
+disable-model-invocation: true
 model: opus
 argument-hint: "[full | refresh | extend | status]"
 ---
@@ -10,7 +11,7 @@ argument-hint: "[full | refresh | extend | status]"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Reference
-See `${CLAUDE_SKILL_DIR}/reference.md` for capability schema, document classification, domain templates, Phases 5-8 procedures, research cache schema, and epic template format.
+!`cat ${CLAUDE_SKILL_DIR}/reference.md`
 
 ---
 

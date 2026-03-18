@@ -1,7 +1,7 @@
 ---
 name: research
 description: Investigates libraries, APIs, cloud services, and architecture patterns. Produces structured research documents with findings, recommendations, and code examples. Use when user says "research X", "investigate", "compare options", "what's the best approach for".
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, TeamCreate, SendMessage
 model: opus
 ---
 
@@ -9,7 +9,7 @@ model: opus
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Reference
-See `${CLAUDE_SKILL_DIR}/reference.md` for the research document template, research types, and section guidelines.
+!`cat ${CLAUDE_SKILL_DIR}/reference.md`
 
 ---
 

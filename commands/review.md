@@ -1,4 +1,5 @@
 ---
+name: review
 description: "Sprint review and quality gate"
 argument-hint: "--sprint NNN | --auto-fix"
 disable-model-invocation: true

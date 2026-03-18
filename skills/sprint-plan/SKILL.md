@@ -1,7 +1,7 @@
 ---
 name: sprint-plan
 description: Plans sprints from roadmap epics with research-backed stories. Reads the dependency graph, selects next unblocked epics, spawns research agents, generates implementation stories, creates GitHub issues. Use when user says "plan sprint", "generate stories", "plan next sprint".
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, TeamCreate, SendMessage
 disable-model-invocation: true
 model: opus
 ---
@@ -10,7 +10,7 @@ model: opus
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Reference
-See `${CLAUDE_SKILL_DIR}/reference.md` for story file format, partition logic, sprint registry schema, and agent prompt templates.
+!`cat ${CLAUDE_SKILL_DIR}/reference.md`
 
 ---
 
