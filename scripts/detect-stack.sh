@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -uo pipefail
 # Detect project tech stack for adaptive skill behavior
 # Output is injected into skill context via !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 

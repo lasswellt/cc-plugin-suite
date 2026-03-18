@@ -10,7 +10,7 @@ argument-hint: "<file-path>"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Reference
-See `${CLAUDE_SKILL_DIR}/reference.md` for test pattern examples across frameworks (Vitest, Jest, Vue Test Utils, Firestore rules testing).
+!`cat ${CLAUDE_SKILL_DIR}/reference.md`
 
 ---
 
