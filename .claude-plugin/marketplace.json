@@ -1,5 +1,8 @@
 {
   "name": "cc-plugin-suite",
+  "metadata": {
+    "description": "Production-grade development skills for Vue.js, Nuxt, and GCP Firebase projects"
+  },
   "owner": { "name": "lasswellt" },
   "plugins": [
     {
