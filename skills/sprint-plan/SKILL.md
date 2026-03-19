@@ -11,12 +11,36 @@ model: opus
 
 ## Additional Resources
 - For story YAML schema, agent assignment rules, and partition logic, see [reference.md](reference.md)
+- For context window hygiene (research agents), see [context-management.md](/_shared/context-management.md)
+- For checkpoint awareness, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
+
+All generated stories must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder acceptance criteria.
 
 ---
 
 # Sprint Planning Skill
 
 Plan a sprint by selecting unblocked epics from the roadmap, conducting parallel research, generating implementation stories, and publishing to GitHub issues. Execute every phase in order. Do NOT skip phases.
+
+## Mode Routing
+
+Check for a `--gaps` flag. If present, run in **gap closure mode** instead of the normal epic-based flow:
+
+### Gap Closure Mode (`--gaps`)
+
+Instead of selecting epics, parse quality gaps from the most recent sprint:
+
+1. **Read sprint review report** — find findings with severity >= high.
+2. **Read completeness gate report** — find findings with severity >= medium.
+3. **Read STATE.md** — find blocked stories and their reasons.
+4. **Group gaps** by shared files and dependency order.
+5. **Generate focused fix stories** — each story addresses one gap, referencing the existing code and the specific finding. Tag with `type: gap-closure` in frontmatter.
+6. **Skip research phase** — gap closure stories don't need external research.
+7. **Skip to Phase 3** (GENERATE STORIES) with the gap-derived stories, then continue normally through Phase 4 (VALIDATE AND PUBLISH).
+
+### Normal Mode (default)
+
+Execute all phases below in order.
 
 ---
 
@@ -37,6 +61,7 @@ Plan a sprint by selecting unblocked epics from the roadmap, conducting parallel
    Read the root `package.json` (if it exists) and any workspace config (`pnpm-workspace.yaml`, `nx.json`, `turbo.json`) to understand project structure.
 5. **Load sprint history.** Read `sprint-registry.json` (or equivalent) to determine the last completed sprint number. If no registry exists, this is Sprint 1.
 6. **Check for incomplete stories.** Search for story files from previous sprints that have `status: incomplete` or `status: in-progress`. These carry forward.
+7. **Check for STATE.md.** If a previous sprint has a `STATE.md` checkpoint file, read it for context on completed/blocked stories. Note blocked stories and their reasons — they may carry forward or inform planning. See [checkpoint-protocol.md](/_shared/checkpoint-protocol.md).
 
 **Gate:** You must have at least one epic available and a basic understanding of project structure before proceeding.
 
@@ -176,6 +201,8 @@ Use the YAML frontmatter schema defined in `reference.md`. Every story MUST incl
 - `depends_on` (list of story IDs this blocks on)
 - `assigned_agent` (one of: `backend-dev`, `frontend-dev`, `test-writer`, `infra-dev`)
 - `files` (list of file paths this story will create or modify)
+- `verify` (list of shell commands that must pass for the story to be considered done)
+- `done` (human-readable sentence defining what "done" means for this story)
 
 The body must include:
 - **Description**: 2-4 sentences on what and why.

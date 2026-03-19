@@ -38,9 +38,30 @@ Match the user's request against this routing table:
 | "quality dashboard", "metrics"            | quality-metrics| → (context-dependent)            |
 | "completeness", "production ready"        | completeness-gate | → fix-issue (per finding)     |
 | "retrospective", "improve plugin"         | retrospective  | —                                |
+| "quick", "small change", "just do it", "trivial", "one-liner" | quick | —                     |
+| "next", "what now", "continue", "what's next" | next          | —                                |
+| "health", "status", "check plugin"        | health         | —                                |
+| "map codebase", "analyze project", "understand codebase", "brownfield" | codebase-map | → roadmap                |
+| "todo", "note", "remember to", "add todo" | todo           | —                                |
+| "check integration", "wiring check", "are modules connected" | integration-check | —                   |
+| "fix gaps", "close gaps", "gap closure"   | sprint (--gaps) | —                               |
 
 If the request does not clearly match any row, ask the user to clarify before
 proceeding.
+
+## Phase 1.5: Load Developer Profile (Optional)
+
+Check for a developer profile:
+```bash
+cat .cc-sessions/developer-profile.json 2>/dev/null
+```
+
+If it exists, note the user's preferences and adapt routing:
+- **autonomy=high**: If the request is unambiguous, skip Phase 2 (Clarify) and go directly to Phase 3 (Plan) or Phase 4 (Dispatch).
+- **common_skills**: If the request is ambiguous but matches one of the user's commonly used skills, prefer that skill.
+- **verbosity=concise**: Keep the plan presentation brief.
+
+The profile is advisory — explicit user instructions always override it.
 
 ## Phase 2: Clarify
 
@@ -48,6 +69,7 @@ Ask **1 to 3 focused questions** to fill in gaps. Use the following guidelines:
 
 - Only ask questions whose answers would change the plan.
 - If the request is already specific enough, skip this phase entirely.
+- If the developer profile indicates `autonomy=high`, skip this phase for clear requests.
 - Frame questions as multiple-choice when possible to reduce friction.
 
 Examples of good clarifying questions:

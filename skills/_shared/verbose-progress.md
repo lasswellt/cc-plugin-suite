@@ -225,9 +225,27 @@ When distributing stories to agents:
      └─ S3-012 "API key CRUD tests" (P3, 3pts, depends: S3-008)
 ```
 
+### Wave Progress Reporting
+
+When using wave-based execution (see sprint-dev Phase 1.4), report wave-level progress:
+
+```
+[sprint-dev] Wave Progress:
+  Wave 0: ████████████████████ COMPLETE (3/3 stories)
+  Wave 1: ██████████░░░░░░░░░░ 2/4 stories in progress
+  Wave 2: ░░░░░░░░░░░░░░░░░░░░ PENDING (waiting on Wave 1)
+  Wave 3: ░░░░░░░░░░░░░░░░░░░░ PENDING (waiting on Wave 2)
+  Critical path: on track (Wave 1 ETA: ~2 more stories)
+```
+
+Print wave progress at these moments:
+- When all stories in a wave complete (wave boundary)
+- During the regular progress dashboard update (every 3 story completions)
+- When a story blocks and may affect wave completion
+
 ### Sprint Progress Dashboard
 
-During implementation, print a progress dashboard at regular intervals:
+During implementation, print a progress dashboard at regular intervals (every 3 story completions or at wave boundaries):
 
 ```
 [sprint-dev] Progress Dashboard (updated):
@@ -236,6 +254,7 @@ During implementation, print a progress dashboard at regular intervals:
   │                                             │
   │ Stories:  ██████████░░░░░░░░░░  6/12 (50%)  │
   │ Points:   ████████░░░░░░░░░░░░ 19/41 (46%)  │
+  │ Wave:     2 of 4 (Wave 1 complete)          │
   │                                             │
   │ backend-dev:  ███████████░░░░░  3/5 stories  │
   │ frontend-dev: ████░░░░░░░░░░░░  1/4 stories  │

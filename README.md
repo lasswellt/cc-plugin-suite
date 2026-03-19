@@ -35,7 +35,7 @@ Skills auto-detect the project's tech stack at invocation time via `scripts/dete
 claude --plugin-dir ./cc-plugin-suite
 ```
 
-## Skills (25)
+## Skills (31)
 
 ### Core Development Skills
 
@@ -48,6 +48,9 @@ claude --plugin-dir ./cc-plugin-suite
 | **ui-build** | 5-phase UI workflow: Discover, Analyze, Design, Implement, Refine. | `/cc-plugin-suite:ui-build` |
 | **browse** | Automated browser testing via Playwright MCP. Captures console/network errors. | `/cc-plugin-suite:browse [full\|smoke\|page <path>\|fix]` |
 | **bootstrap** | Scaffolds new projects, features, or packages with proper conventions. | `/cc-plugin-suite:bootstrap <type> <name>` |
+| **quick** | Fast ad-hoc changes without full skill ceremony — small fixes, typos, config tweaks. | `/cc-plugin-suite:quick <request>` |
+| **codebase-map** | Analyzes existing codebase: Technology, Architecture, Quality, Concerns. Brownfield onboarding. | `/cc-plugin-suite:codebase-map` |
+| **todo** | Track development todos and follow-up items — add, list, check, resolve. | `/cc-plugin-suite:todo <add\|list\|check\|resolve>` |
 
 ### Sprint Lifecycle Skills
 
@@ -67,6 +70,7 @@ claude --plugin-dir ./cc-plugin-suite
 | **quality-metrics** | Collects, stores, and visualizes code quality metrics over time. | `/cc-plugin-suite:quality-metrics <mode>` |
 | **perf-profile** | Profiles bundle size, runtime performance, and Lighthouse scores. | `/cc-plugin-suite:perf-profile <mode>` |
 | **dep-health** | Audits dependencies for vulnerabilities, outdated packages, and license compliance. | `/cc-plugin-suite:dep-health <mode>` |
+| **integration-check** | Validates cross-module wiring: exports, routes, auth guards, store-to-component. | `/cc-plugin-suite:integration-check [scope]` |
 
 ### Documentation & Release Skills
 
@@ -85,7 +89,9 @@ claude --plugin-dir ./cc-plugin-suite
 | **implement** | Sprint implementation phase only. | `/cc-plugin-suite:implement [flags]` |
 | **review** | Sprint review and quality gate only. | `/cc-plugin-suite:review [flags]` |
 | **ship** | End-to-end shipping: review → completeness gate → quality metrics → release. | `/cc-plugin-suite:ship [version]` |
-| **retrospective** | Self-improvement loop: analyzes sessions and generates improvement proposals. | `/cc-plugin-suite:retrospective` |
+| **retrospective** | Self-improvement loop: analyzes sessions, generates improvement proposals, updates developer profile. | `/cc-plugin-suite:retrospective` |
+| **health** | Plugin health check — verifies hooks, sessions, registry, and structural integrity. | `/cc-plugin-suite:health` |
+| **next** | Determines the logical next action based on current project and sprint state. | `/cc-plugin-suite:next` |
 
 ## Agents (6)
 
@@ -98,7 +104,7 @@ claude --plugin-dir ./cc-plugin-suite
 | **test-writer** | Test generation (Vitest/Jest) with AAA pattern, coverage awareness, and regression tests | sonnet |
 | **doc-writer** | Documentation generation (API docs, component docs, ADRs, migration guides) | sonnet |
 
-## Hooks (6)
+## Hooks (9)
 
 | Hook | Trigger | Behavior |
 |------|---------|----------|
@@ -107,7 +113,20 @@ claude --plugin-dir ./cc-plugin-suite
 | **post-edit-format** | PostToolUse (Write\|Edit) | Auto-formats with Prettier or Biome (auto-detected) |
 | **post-edit-lint** | PostToolUse (Write\|Edit) | Auto-lints with ESLint or Biome (auto-detected) |
 | **post-edit-test** | PostToolUse (Write\|Edit) | Runs matching test file after source edits |
+| **analysis-paralysis-guard** | PostToolUse (Read\|Glob\|Grep + Write\|Edit) | Warns after 5+ consecutive read-only operations without edits |
+| **context-monitor** | PostToolUse (Read\|Glob\|Grep + Bash) | Tracks context window utilization, warns at ~60% and ~80% |
+| **workflow-guard** | PreToolUse (Bash) | Warns on out-of-order phase execution in phased skills |
 | **pre-commit-validate** | PreToolUse (Bash) | Validates staged files for banned patterns and secrets before git commit |
+
+## Model Profiles
+
+Three behavioral profiles control skill thoroughness. Set in `.claude-plugin/model-profiles.json`.
+
+| Profile | Research Agents | Verification | Optional Phases | Use Case |
+|---------|----------------|-------------|-----------------|----------|
+| **quality** | Max | 2 passes | All run | Critical features, production releases |
+| **balanced** | Standard | 1 pass | All run | Default — everyday development |
+| **budget** | Min | 1 pass | Skip browser/E2E | Quick iterations, prototyping |
 
 ## Architecture
 
@@ -120,7 +139,7 @@ cc-plugin-suite/
 │   ├── detect-stack.sh          # Dynamic stack detection
 │   ├── validate-skill-output.sh # Skill output validation (code, docs, config, stories, reports)
 │   └── validate-plugin-structure.sh # Plugin structure integrity checks
-├── skills/                      # 25 skills with SKILL.md + reference.md
+├── skills/                      # 31 skills with SKILL.md + reference.md
 │   ├── _shared/
 │   │   ├── definition-of-done.md
 │   │   └── session-protocol.md

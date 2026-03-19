@@ -8,8 +8,8 @@
     {
       "name": "cc-plugin-suite",
       "source": "./",
-      "description": "Production-grade development skills for Vue/Nuxt + Firebase with 25 skills, 6 agents, and 6 hooks",
-      "version": "0.2.0"
+      "description": "Production-grade development skills for Vue/Nuxt + Firebase with 31 skills, 6 agents, and 9 hooks",
+      "version": "0.3.0"
     }
   ]
 }

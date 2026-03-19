@@ -11,6 +11,10 @@ model: opus
 
 ## Additional Resources
 - For review report template, reviewer checklists, and auto-fix strategies, see [reference.md](reference.md)
+- For context window hygiene (reviewer agents), see [context-management.md](/_shared/context-management.md)
+- For checkpoint awareness, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
+
+All auto-fix code must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder implementations.
 
 ---
 
@@ -25,6 +29,8 @@ Review sprint quality through automated checks and parallel reviewer agents. Run
 0. **Register session.** Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
 
 1. **Find the sprint to review.** Read `sprint-registry.json` and find the sprint with `status: review` or `status: in-progress`. If the user specified a sprint number, use that. If no sprint is ready for review, inform the user and STOP.
+
+1b. **Check for STATE.md.** If the sprint has a `STATE.md` checkpoint file, read it for context on blocked stories and their reasons. Include blocked story details in the review report. See [checkpoint-protocol.md](/_shared/checkpoint-protocol.md).
 
 2. **Load incomplete stories.** Read all story files in `${SPRINT_DIR}/stories/`. Categorize:
    - `done` — Implemented, ready for review.

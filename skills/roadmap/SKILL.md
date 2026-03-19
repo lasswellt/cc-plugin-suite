@@ -13,6 +13,8 @@ argument-hint: "[full | refresh | extend | status]"
 ## Additional Resources
 - For capability schema, document classification, and Phases 5-8 procedures, see [reference.md](reference.md)
 
+All generated epics and roadmap artifacts must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder descriptions.
+
 ---
 
 # Roadmap Generation Skill

@@ -42,15 +42,29 @@ ${REUSABLE_ASSETS}
 
 SESSION TMP DIR: ${SESSION_TMP_DIR}
 
-WORKFLOW:
-1. Read the story file completely.
-2. Implement all files listed in the story's `files` field.
-3. Run type-check: ${TYPE_CHECK_CMD}
-4. If type-check passes, commit and report DONE.
-5. If type-check fails, fix errors and retry (max 3 attempts).
-6. If stuck, report BLOCKED with the specific error.
+DEVIATION HANDLING (follow /_shared/deviation-protocol.md):
+- Auto-fix: bugs in existing code blocking you, missing imports, clear type mismatches
+- Report via DEVIATION: utility functions you had to create, error handling you added
+- Escalate via ESCALATE: architectural changes, public API changes, >3 files outside scope
+- Never auto-fix: security rules, DB migrations, new package dependencies
 
-STORIES (in dependency order):
+CONTEXT MANAGEMENT (follow /_shared/context-management.md):
+- Self-contained DONE summaries: include files, exports, verify result — don't reference earlier stories
+- Reference files by path, not "the file I created earlier"
+- Compact verification output: "type-check PASS" not full log dump
+- Before starting each new story, focus on that story's spec — don't rely on memory of prior stories
+
+WORKFLOW:
+1. Read the story file completely. Note the `verify` and `done` fields.
+2. Implement all files listed in the story's `files` field.
+3. Run story verification: execute each command in the story's `verify` list.
+   If no `verify` field, fall back to: ${TYPE_CHECK_CMD}
+4. Check `done` criteria: confirm the stated condition is satisfied.
+5. If verification passes, commit and report DONE.
+6. If verification fails, fix errors and retry (max 3 attempts).
+7. If stuck, report BLOCKED with the specific error.
+
+STORIES (in dependency order, with verify/done criteria):
 ${STORY_LIST}
 
 Start with the first story. Report DONE: S${N}-XXX when complete, then wait for next instructions.
@@ -92,16 +106,30 @@ ${REUSABLE_ASSETS}
 
 SESSION TMP DIR: ${SESSION_TMP_DIR}
 
+DEVIATION HANDLING (follow /_shared/deviation-protocol.md):
+- Auto-fix: bugs in existing code blocking you, missing imports, clear type mismatches
+- Report via DEVIATION: utility functions you had to create, error handling you added
+- Escalate via ESCALATE: architectural changes, public API changes, >3 files outside scope
+- Never auto-fix: security rules, DB migrations, new package dependencies
+
+CONTEXT MANAGEMENT (follow /_shared/context-management.md):
+- Self-contained DONE summaries: include files, exports, verify result — don't reference earlier stories
+- Reference files by path, not "the file I created earlier"
+- Compact verification output: "type-check PASS" not full log dump
+- Before starting each new story, focus on that story's spec — don't rely on memory of prior stories
+
 WORKFLOW:
-1. Read the story file completely.
+1. Read the story file completely. Note the `verify` and `done` fields.
 2. Check for SYNC: messages about backend types/exports you depend on.
 3. Implement all files listed in the story's `files` field.
-4. Run type-check: ${TYPE_CHECK_CMD}
-5. If type-check passes, commit and report DONE.
-6. If type-check fails, fix errors and retry (max 3 attempts).
-7. If stuck (especially on missing types), report BLOCKED.
+4. Run story verification: execute each command in the story's `verify` list.
+   If no `verify` field, fall back to: ${TYPE_CHECK_CMD}
+5. Check `done` criteria: confirm the stated condition is satisfied.
+6. If verification passes, commit and report DONE.
+7. If verification fails, fix errors and retry (max 3 attempts).
+8. If stuck (especially on missing types), report BLOCKED.
 
-STORIES (in dependency order):
+STORIES (in dependency order, with verify/done criteria):
 ${STORY_LIST}
 
 Start with the first story. Report DONE: S${N}-XXX when complete, then wait for next instructions.
@@ -142,16 +170,30 @@ ${CONVENTIONS_GUIDE}
 
 SESSION TMP DIR: ${SESSION_TMP_DIR}
 
+DEVIATION HANDLING (follow /_shared/deviation-protocol.md):
+- Auto-fix: test utility issues, missing test helpers
+- Report via DEVIATION: test factories you had to create for missing fixtures
+- Escalate via ESCALATE: implementation bugs that need code changes beyond test scope
+- Never auto-fix: security rules, breaking changes to shared test utilities
+
+CONTEXT MANAGEMENT (follow /_shared/context-management.md):
+- Self-contained DONE summaries: include test file paths, test counts, verify result
+- Reference implementation files by path, not "the file that was created earlier"
+- Compact verification output: "12/12 tests passed" not full test runner output
+- Before starting each new story, focus on that story's spec and re-read the implementation files
+
 WORKFLOW:
-1. Read the story file completely.
+1. Read the story file completely. Note the `verify` and `done` fields.
 2. Read the implementation files (SYNC: messages will tell you what was created).
 3. Write tests covering all acceptance criteria.
-4. Run tests: ${TEST_CMD}
-5. If tests pass, commit and report DONE.
-6. If tests fail due to implementation bugs, report BLOCKED with details.
-7. If tests fail due to test errors, fix and retry.
+4. Run story verification: execute each command in the story's `verify` list.
+   If no `verify` field, fall back to: ${TEST_CMD}
+5. Check `done` criteria: confirm the stated condition is satisfied.
+6. If tests pass, commit and report DONE.
+7. If tests fail due to implementation bugs, report BLOCKED with details.
+8. If tests fail due to test errors, fix and retry.
 
-STORIES (in dependency order):
+STORIES (in dependency order, with verify/done criteria):
 ${STORY_LIST}
 
 Wait for SYNC: messages confirming implementations are done before writing tests.
@@ -175,8 +217,43 @@ CONVENTIONS:
 
 COMMIT FORMAT: feat(sprint-${N}/infra): S${N}-XXX <description>
 
-STORIES (in dependency order):
+ANTI-MOCK RULES (CRITICAL — NON-NEGOTIABLE):
+- Every config file MUST be complete and functional — no placeholder values
+- BANNED: TODO comments in config files, empty environment variable definitions
+- BANNED: commented-out security rules, stub deployment configs
+- SELF-CHECK: Could this config be deployed to production right now?
+
+PROJECT CONVENTIONS (from discovery):
+${CONVENTIONS_GUIDE}
+
+SESSION TMP DIR: ${SESSION_TMP_DIR}
+
+DEVIATION HANDLING (follow /_shared/deviation-protocol.md):
+- Auto-fix: missing config keys that have obvious defaults, broken CI syntax
+- Report via DEVIATION: new environment variables needed, security rule changes
+- Escalate via ESCALATE: changes to production deployment, IAM/permission changes, new cloud services
+- Never auto-fix: security rules, secrets management, production environment configs
+
+CONTEXT MANAGEMENT (follow /_shared/context-management.md):
+- Self-contained DONE summaries: include config file paths, what was configured, verify result
+- Reference files by path, not "the config I edited earlier"
+- Compact verification output: "deploy dry-run PASS" not full deployment logs
+- Before starting each new story, focus on that story's spec
+
+WORKFLOW:
+1. Read the story file completely. Note the `verify` and `done` fields.
+2. Implement all files listed in the story's `files` field.
+3. Run story verification: execute each command in the story's `verify` list.
+   If no `verify` field, fall back to syntax validation of config files.
+4. Check `done` criteria: confirm the stated condition is satisfied.
+5. If verification passes, commit and report DONE.
+6. If verification fails, fix errors and retry (max 3 attempts).
+7. If stuck, report BLOCKED with the specific error.
+
+STORIES (in dependency order, with verify/done criteria):
 ${STORY_LIST}
+
+Start with the first story. Report DONE: S${N}-XXX when complete, then wait for next instructions.
 ```
 
 ---

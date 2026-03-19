@@ -18,6 +18,9 @@ Parse the following flags from the user's arguments:
 - `--plan-only`: Run only the planning phase, then stop.
 - `--skip-review`: Run planning and implementation, but skip the review phase.
 - `--epics EP-001,EP-002`: Limit the sprint scope to the specified epic IDs.
+- `--resume`: Resume an interrupted sprint. Skips planning, goes directly to sprint-dev which will detect STATE.md and resume from the last checkpoint. See [checkpoint-protocol.md](/_shared/checkpoint-protocol.md).
+- `--gaps`: Gap closure mode. Chains: sprint-review → sprint-plan --gaps → sprint-dev. Finds quality gaps and generates fix stories automatically.
+- `--mode <autonomous|checkpoint|interactive>`: Execution mode passed through to sprint-dev. `autonomous` (default) runs everything; `checkpoint` pauses after each wave for user review; `interactive` confirms each story before starting.
 
 If no flags are provided, run all three phases in sequence.
 
@@ -34,6 +37,8 @@ All phases enforce the [Definition of Done](/_shared/definition-of-done.md). No 
 
 ## Phase 1: Sprint Planning
 
+If `--resume` was specified, skip this phase entirely and proceed to Phase 2.
+
 Invoke the **sprint-plan** skill.
 
 - If `--epics` was specified, pass the epic IDs as context.
@@ -41,11 +46,20 @@ Invoke the **sprint-plan** skill.
 - Present the plan to the user and ask for confirmation before proceeding.
 - If `--plan-only` was specified, stop here after presenting the plan.
 
+## Phase 1.5: Gap Closure (if --gaps)
+
+If `--gaps` was specified:
+1. First invoke **sprint-review** to identify quality issues in the current sprint.
+2. Then invoke **sprint-plan --gaps** to generate fix stories from the review findings.
+3. Present the gap-closure plan to the user and ask for confirmation.
+4. Proceed to Phase 2 with the gap-closure stories.
+
 ## Phase 2: Sprint Implementation
 
 Invoke the **sprint-dev** skill.
 
-- Pass the confirmed sprint backlog from Phase 1.
+- Pass the confirmed sprint backlog from Phase 1 (or gap-closure stories from Phase 1.5).
+- If `--mode` was specified, pass it through to sprint-dev.
 - The implementation skill will work through stories in priority order.
 - Each story should be implemented and verified before moving to the next.
 

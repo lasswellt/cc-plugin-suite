@@ -17,9 +17,10 @@ Parse the following flags from the user's arguments:
 
 - `--sprint NNN`: Implement all stories for the specified sprint number.
 - `--stories STORY-XXX-001,STORY-XXX-002`: Implement only the specified stories.
+- `--resume`: Resume an interrupted sprint from its last checkpoint (STATE.md). Equivalent to `--sprint NNN` where NNN is the in-progress sprint, but sprint-dev will skip to Phase 3 using STATE.md data. See [checkpoint-protocol.md](/_shared/checkpoint-protocol.md).
+- `--mode <autonomous|checkpoint|interactive>`: Execution mode passed through to sprint-dev. `autonomous` (default) runs everything; `checkpoint` pauses after each wave for user review; `interactive` confirms each story before starting.
 
-At least one flag must be provided. If neither is given, ask the user which
-stories or sprint to implement.
+At least one flag must be provided. If neither is given, check for an in-progress sprint with a STATE.md and offer to resume. Otherwise, ask the user which stories or sprint to implement.
 
 ## Pre-Flight Validation
 

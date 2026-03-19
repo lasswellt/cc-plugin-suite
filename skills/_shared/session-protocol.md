@@ -4,6 +4,10 @@ Shared reference for multi-session safety. All skills that write shared state mu
 
 **Companion protocols:**
 - [verbose-progress.md](verbose-progress.md) — Required verbose output and activity feed logging. All skills MUST follow both protocols.
+- [checkpoint-protocol.md](checkpoint-protocol.md) — STATE.md for session recovery (sprint-dev and multi-story skills).
+- [context-management.md](context-management.md) — Context window hygiene for orchestrators and agents.
+- [deviation-protocol.md](deviation-protocol.md) — Tiered deviation handling for agents.
+- [session-report-template.md](session-report-template.md) — Session report format.
 
 ---
 
@@ -41,9 +45,37 @@ Execute this preamble **before any other work** in the skill:
    print a summary of recent activity (last 30 minutes) per
    verbose-progress.md. This provides cross-instance awareness.
 
+6b. Read the model profile (.claude-plugin/model-profiles.json) if it exists.
+    Note the active profile and its behavioral adjustments:
+    - quality: extra verification passes, more research agents, don't skip optional phases
+    - balanced: default behavior
+    - budget: fewer research agents, skip optional phases (browser verification, E2E), higher thresholds
+
+6c. Read the developer profile (.cc-sessions/developer-profile.json) if it exists.
+    Note the user's preferences (verbosity, autonomy, commit style, etc.).
+    Adapt skill behavior accordingly:
+    - verbosity=concise: reduce progress output, skip optional status lines
+    - verbosity=detailed: add extra context at decision points
+    - autonomy=high: skip clarification for unambiguous requests
+    - autonomy=low: always confirm before major actions
+    The profile is advisory only — explicit user instructions always override it.
+
 7. Log skill_start to the activity feed per verbose-progress.md.
 
-8. Print session registration confirmation per verbose-progress.md:
+8. **(Optional) Write workflow tracking file.** Skills with `disable-model-invocation: true` and explicit phases SHOULD write:
+   ```json
+   .cc-sessions/${SESSION_ID}-workflow.json:
+   {
+     "session_id": "<SESSION_ID>",
+     "skill": "<skill-name>",
+     "current_phase": 0,
+     "last_completed_phase": -1,
+     "phases": ["CONTEXT", "DISCOVER", "LOAD", "CREATE_TEAM", "IMPLEMENT", "INTEGRATE"]
+   }
+   ```
+   Update `current_phase` and `last_completed_phase` at each phase transition. This enables the workflow-guard hook to detect out-of-order phase execution.
+
+9. Print session registration confirmation per verbose-progress.md:
    [<skill-name>] Session registered: <SESSION_ID>
    [<skill-name>]   ├─ Checking for conflicts...
    [<skill-name>]   ├─ <conflict status> ✓
@@ -176,4 +208,9 @@ Every skill's final phase must:
 3. Optionally remove the session temp directory if no artifacts need to be preserved
 4. Append `session_end` to the operation log
 5. Log `skill_complete` to the activity feed (`.cc-sessions/activity-feed.jsonl`) with status and summary per [verbose-progress.md](verbose-progress.md)
-6. Print skill completion message per verbose-progress.md
+6. **Generate session report** — Write a report to `.cc-sessions/reports/${SESSION_ID}.md` using the format from [session-report-template.md](session-report-template.md). Auto-populate from:
+   - Activity feed entries for this session (actions, decisions, issues)
+   - Git diff since session start (files changed)
+   - Last verification results (type-check, tests, build, completeness)
+   - Agent tracker state if applicable (stories completed, blocked, deviations)
+7. Print skill completion message per verbose-progress.md

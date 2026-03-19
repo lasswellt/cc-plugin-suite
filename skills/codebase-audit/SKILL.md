@@ -11,6 +11,7 @@ model: opus
 
 ## Additional Resources
 - For agent prompt templates, pillar checklists, severity schema, and report templates, see [reference.md](reference.md)
+- For context window hygiene (10 parallel agents), see [context-management.md](/_shared/context-management.md)
 
 ---
 

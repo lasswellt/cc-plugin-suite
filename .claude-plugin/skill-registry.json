@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0",
+  "version": "0.3.0",
   "updated": "2026-03-18T00:00:00Z",
   "description": "Registry of all skills in cc-plugin-suite with metadata for discovery, routing, and status tracking.",
   "skills": [
@@ -249,6 +249,66 @@
       "description": "Analyzes completed sessions to identify improvement patterns for plugin self-improvement",
       "model": "opus",
       "modifies_code": true,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "quick",
+      "category": "core-dev",
+      "description": "Fast ad-hoc changes without full skill ceremony — small fixes, typos, config tweaks",
+      "model": "sonnet",
+      "modifies_code": true,
+      "uses_agents": false,
+      "uses_sessions": false,
+      "dependencies": []
+    },
+    {
+      "name": "health",
+      "category": "meta",
+      "description": "Plugin health check — verifies hooks, sessions, registry, and structural integrity",
+      "model": "sonnet",
+      "modifies_code": false,
+      "uses_agents": false,
+      "uses_sessions": false,
+      "dependencies": []
+    },
+    {
+      "name": "next",
+      "category": "orchestrator",
+      "description": "Determines the logical next action based on current project and sprint state",
+      "model": "sonnet",
+      "modifies_code": false,
+      "uses_agents": false,
+      "uses_sessions": false,
+      "dependencies": []
+    },
+    {
+      "name": "codebase-map",
+      "category": "core-dev",
+      "description": "Analyzes existing codebase across Technology, Architecture, Quality, and Concerns dimensions",
+      "model": "sonnet",
+      "modifies_code": true,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": []
+    },
+    {
+      "name": "todo",
+      "category": "core-dev",
+      "description": "Track development todos and follow-up items — add, list, check, resolve",
+      "model": "sonnet",
+      "modifies_code": false,
+      "uses_agents": false,
+      "uses_sessions": false,
+      "dependencies": []
+    },
+    {
+      "name": "integration-check",
+      "category": "quality",
+      "description": "Validates cross-module wiring: export-to-import tracing, route coverage, auth guards, store wiring",
+      "model": "sonnet",
+      "modifies_code": false,
       "uses_agents": false,
       "uses_sessions": true,
       "dependencies": []

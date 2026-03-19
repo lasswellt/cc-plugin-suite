@@ -10,6 +10,9 @@ model: opus
 
 ## Additional Resources
 - For research document template, research types, and section guidelines, see [reference.md](reference.md)
+- For context window hygiene, see [context-management.md](/_shared/context-management.md)
+
+All research output must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder sections.
 
 ---
 

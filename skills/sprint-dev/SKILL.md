@@ -11,6 +11,9 @@ model: opus
 
 ## Additional Resources
 - For agent prompt templates, coordination patterns, and story distribution rules, see [reference.md](reference.md)
+- For checkpoint/resume behavior, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
+- For agent deviation handling, see [deviation-protocol.md](/_shared/deviation-protocol.md)
+- For context window hygiene, see [context-management.md](/_shared/context-management.md)
 
 ---
 
@@ -18,12 +21,36 @@ model: opus
 
 Implement a planned sprint by spawning coordinated agent teams in isolated worktrees, distributing stories as tasks with dependency ordering, and monitoring progress through completion. Execute every phase in order. Do NOT skip phases.
 
+## Execution Mode
+
+Check for a `--mode` flag. If not specified, default to `autonomous`.
+
+| Mode | Behavior |
+|---|---|
+| `autonomous` | Default. Orchestrator manages everything. No pauses except for errors. |
+| `checkpoint` | Pause after each wave completion. Present wave results to user, ask for confirmation before starting next wave. Allows user to review progress incrementally. |
+| `interactive` | Present each story to the user before assigning it to an agent. Ask for approach confirmation. Pair-programming style. |
+
 ---
 
 ## Phase 0: CONTEXT — Load Project State
 
 0. **Register session.** Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, agent spawn, story distribution, and progress dashboard per verbose-progress.md.
-1. **Check for incomplete sprints.** Search for `sprint-registry.json` and check for sprints with `status: in-progress`. If one exists, resume it (skip to Phase 1 with that sprint). Warn the user.
+1. **Check for checkpoint (STATE.md).** Before anything else, check if the target sprint has a `STATE.md` file:
+   ```bash
+   SPRINT_DIR="sprints/sprint-${SPRINT_NUMBER}"
+   cat "${SPRINT_DIR}/STATE.md" 2>/dev/null | head -5
+   ```
+   If STATE.md exists, follow the **resume flow** from [checkpoint-protocol.md](/_shared/checkpoint-protocol.md):
+   - Validate staleness (>24h = warn user, ask whether to resume or start fresh).
+   - Validate worktrees (`git worktree list`).
+   - Rebuild `agent_tracker` from STATE.md tables.
+   - Skip to Phase 3 with remaining stories.
+   - Log a `decision` event: "Resuming sprint ${N} from checkpoint".
+
+   If STATE.md does not exist, continue with normal flow.
+
+1b. **Check for incomplete sprints.** Search for `sprint-registry.json` and check for sprints with `status: in-progress`. If one exists, resume it (skip to Phase 1 with that sprint). Warn the user.
 2. **Build codebase inventory.** Run:
    ```bash
    find . -maxdepth 3 -name 'package.json' -not -path '*/node_modules/*' | head -30
@@ -101,12 +128,26 @@ Read `${SPRINT_DIR}/manifest.json` to get epic list and story count.
 Read every story file in `${SPRINT_DIR}/stories/`. For each story, extract:
 - `id`, `title`, `assigned_agent`, `depends_on`, `priority`, `points`, `files`
 
-### 1.4 Build Dependency Graph
+### 1.4 Build Dependency Graph and Compute Waves
 
-Construct a DAG from story `depends_on` fields. Identify:
-- **Ready stories**: No unmet dependencies (can start immediately).
-- **Blocked stories**: Have dependencies that are not yet complete.
-- **Critical path**: Longest dependency chain (determines minimum completion time).
+Construct a DAG from story `depends_on` fields. Then compute execution waves:
+
+1. **Wave 0**: All stories with no dependencies (can start immediately).
+2. **Wave N**: All stories whose dependencies are ALL in Waves 0..N-1.
+3. **Critical path**: Longest dependency chain (determines minimum wave count).
+
+Print the wave execution plan:
+```
+[sprint-dev] Wave Execution Plan:
+  Wave 0 (parallel): S${N}-001, S${N}-002, S${N}-008 (schemas + types)
+  Wave 1 (parallel): S${N}-003, S${N}-004 (backend logic, depends on Wave 0)
+  Wave 2 (parallel): S${N}-005, S${N}-007 (frontend + tests, depends on Wave 1)
+  Critical path: S${N}-001 → S${N}-004 → S${N}-005 (3 waves minimum)
+```
+
+Also identify:
+- **Ready stories**: Wave 0 stories (can start immediately).
+- **Blocked stories**: Stories in Wave 1+ (have dependencies that are not yet complete).
 
 ### 1.5 Load Carry-Forward Items
 
@@ -154,12 +195,15 @@ git worktree add -b sprint-${SPRINT_NUMBER}/<role> .worktrees/sprint-${SPRINT_NU
 For each agent, send spawn instructions via `SendMessage`. Include:
 1. Agent role and responsibilities (see reference.md for prompt templates).
 2. Working directory (worktree path).
-3. List of assigned stories in dependency order.
+3. List of assigned stories in dependency order, with their `verify` and `done` fields.
 4. Project conventions (detected stack, coding patterns, naming conventions).
 5. Commit message format: `feat(sprint-${N}/<role>): S${N}-XXX <description>`.
 6. Project conventions guide from Phase 0.5 (full text, not a file reference).
 7. Reusable assets list — composables, utilities, and shared components agents must use.
 8. Anti-mock rules — Every function must be fully implemented, no placeholders. See [Definition of Done](/_shared/definition-of-done.md).
+9. Deviation handling rules — Follow the [Deviation Handling Protocol](/_shared/deviation-protocol.md). Auto-fix small issues, report deviations, escalate architectural changes.
+10. Wave assignment — Tell each agent which wave their stories belong to, so they understand the execution order context.
+11. Context management rules — Follow the [Context Management Protocol](/_shared/context-management.md). Self-contained DONE summaries, reference files by path not memory, compact verification output, prune context between stories.
 
 ### 2.5 Create Tasks with Dependency Ordering
 
@@ -199,24 +243,29 @@ agent_tracker = {
 
 Each agent follows this loop for each assigned story:
 
-1. **Read story** — Parse frontmatter and body.
-2. **Implement** — Create/modify files as specified. Follow implementation notes and code snippets.
-3. **Type-check** — Run type-check in their worktree:
+1. **Read story** — Parse frontmatter and body. Note `verify` and `done` fields if present.
+2. **Implement** — Create/modify files as specified. Follow implementation notes and code snippets. Follow the [Deviation Handling Protocol](/_shared/deviation-protocol.md) for unexpected issues.
+3. **Verify** — Run the story's `verify` commands if defined. If no `verify` field, fall back to type-check:
    ```bash
+   # If story has verify commands, run each one:
+   cd <worktree> && <verify_command_1> && <verify_command_2> ...
+   # Otherwise fall back to generic type-check:
    cd <worktree> && npm run type-check 2>&1
    ```
-4. **Commit** — If type-check passes:
+4. **Check done criteria** — Verify the story's `done` field is satisfied (all stated conditions are met).
+5. **Commit** — If verification passes:
    ```bash
    git add -A && git commit -m "feat(sprint-${N}/<role>): S${N}-XXX <title>"
    ```
-5. **Complete** — Update task status to `completed` via `TaskUpdate`.
-6. **Next** — Request next story from orchestrator.
+6. **Complete** — Update task status to `completed` via `TaskUpdate`.
+7. **Next** — Request next story from orchestrator.
 
 ### 3.2 Orchestrator Monitoring Loop
 
 The orchestrator (you) must:
 
-1. **Poll progress** every 2-3 agent messages. Use `TaskList` to check status.
+1. **Poll progress** every 2-3 agent messages. Use `TaskList` to check status. Track wave-level completion — when all stories in a wave complete, print a wave progress report per [verbose-progress.md](/_shared/verbose-progress.md) and unblock all Wave N+1 stories.
+1b. **Update STATE.md** — After each story completion (or at wave boundaries), update `${SPRINT_DIR}/STATE.md` per [checkpoint-protocol.md](/_shared/checkpoint-protocol.md). This enables session recovery if interrupted. Include wave progress.
 2. **Unblock stories** — When a dependency completes, send newly-ready stories to the appropriate agent.
 3. **Coordinate via SendMessage** — When an agent completes a story that another agent depends on:
    ```
@@ -227,6 +276,11 @@ The orchestrator (you) must:
 4. **Handle stuck agents** — If an agent reports errors or makes no progress:
    - Send a `ASSIST:` message with hints from other agents' completed work.
    - If still stuck after 2 assists, invoke circuit breaker.
+5. **Context hygiene** — Follow the [Context Management Protocol](/_shared/context-management.md):
+   - Summarize agent completions (files + exports), don't relay full output.
+   - Print compact progress at wave boundaries (every wave completion).
+   - Offload progress to STATE.md rather than keeping it all in context.
+   - If context monitor warns at ~60%+, write checkpoint and summarize.
 
 ### 3.3 Cross-Agent Communication Protocol
 
@@ -236,6 +290,8 @@ Agents communicate through the orchestrator using prefixed messages:
 |---|---|---|
 | `DONE:` | Agent -> Orchestrator | Story completed, requesting next |
 | `BLOCKED:` | Agent -> Orchestrator | Cannot proceed, needs help |
+| `DEVIATION:` | Agent -> Orchestrator | Auto-added code outside story scope (see [deviation-protocol.md](/_shared/deviation-protocol.md)) |
+| `ESCALATE:` | Agent -> Orchestrator | Needs decision on architectural/scope change (see [deviation-protocol.md](/_shared/deviation-protocol.md)) |
 | `UNBLOCK:` | Orchestrator -> Agent | Dependency resolved, new story available |
 | `ASSIST:` | Orchestrator -> Agent | Help with current issue |
 | `SYNC:` | Orchestrator -> Agent | File paths or exports from another agent |
@@ -258,9 +314,18 @@ Within same priority, higher `priority` field stories go first, then lower `poin
 
 ---
 
-## Phase 3.5: UI/UX INTEGRATION (MANDATORY)
+## Phase 3.5: INTEGRATION CHECKS AND UI/UX PASS (MANDATORY)
 
 This phase is **mandatory** and must not be skipped, even if no explicit UI stories exist.
+
+### 3.5.0 Run Integration Check (Optional)
+
+Before the UI/UX pass, optionally run `/cc-plugin-suite:integration-check` to verify cross-module wiring:
+- Export-to-import tracing (are new exports consumed?)
+- Route coverage (do new pages have navigation?)
+- Store wiring (are new stores connected to components?)
+
+If integration-check finds high-severity issues, address them before the UI pass.
 
 ### 3.5.1 Spawn Integration Agent
 

@@ -17,6 +17,8 @@ Resolve a GitHub issue end-to-end: fetch context, identify root cause, implement
 
 ---
 
+All code produced must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder implementations.
+
 ## SAFETY RULES (NON-NEGOTIABLE)
 
 1. **NEVER introduce unrelated changes.** Fix only what the issue describes. No drive-by refactoring.

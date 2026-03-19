@@ -53,6 +53,62 @@ Categories of patterns to identify during retrospective analysis.
 
 ---
 
+## Developer Profile Schema
+
+The developer profile (`.cc-sessions/developer-profile.json`) is generated/updated by the retrospective skill's Phase 2.5. Other skills read it at session registration (step 6b) to adapt behavior.
+
+```json
+{
+  "updated": "<ISO-8601>",
+  "sessions_analyzed": 15,
+  "confidence": "high",
+  "preferences": {
+    "verbosity": "standard",
+    "autonomy": "high",
+    "commit_style": "atomic",
+    "pr_size": "medium",
+    "review_tolerance": "standard",
+    "framework_focus": "vue-nuxt",
+    "common_skills": ["fix-issue", "sprint-dev", "refactor"],
+    "peak_hours": "09:00-17:00"
+  },
+  "patterns": {
+    "avg_session_duration_minutes": 45,
+    "most_common_first_action": "fix-issue",
+    "typical_sprint_size": 12,
+    "auto_fix_acceptance_rate": 0.85
+  }
+}
+```
+
+### Derivation Rules
+
+| Dimension | Signal | Value |
+|---|---|---|
+| verbosity | User said "just do it" or skipped plans often | concise |
+| verbosity | Default (no strong signal) | standard |
+| verbosity | User asked "explain", "why", "show me" | detailed |
+| autonomy | <30% of sessions had user mid-session input | high |
+| autonomy | 30-70% had user input | medium |
+| autonomy | >70% had user input | low |
+| commit_style | Git log shows one commit per story | atomic |
+| commit_style | Git log shows grouped commits per phase | batched |
+| commit_style | User explicitly commits after skill completes | manual |
+| review_tolerance | User fixed all findings including low-severity | strict |
+| review_tolerance | User fixed critical+high, ignored low | standard |
+| review_tolerance | User dismissed most findings | lenient |
+
+### Profile Consumers
+
+| Skill | How It Uses the Profile |
+|---|---|
+| **ask** | Skips clarification for high-autonomy users; prefers common_skills for ambiguous requests |
+| **sprint-dev** | Adjusts commit granularity based on commit_style |
+| **sprint-review** | Adjusts finding threshold based on review_tolerance |
+| **All skills** | Adjusts output verbosity based on verbosity preference |
+
+---
+
 ## Proposal Template
 
 Full template for documenting a retrospective proposal.

@@ -22,6 +22,10 @@ assigned_agent: "backend-dev"          # backend-dev | frontend-dev | test-write
 files:                                 # Files this story creates or modifies
   - "src/models/user-profile.ts"
   - "src/schemas/user-profile.schema.ts"
+verify:                                # Shell commands that must pass for story completion
+  - "npx tsc --noEmit"
+  - "npx vitest run src/schemas/user-profile.test.ts"
+done: "UserProfile schema exists, validates correctly, and has passing tests"
 github_issue: null                     # Populated after issue creation
 carry_forward: false                   # true if from a previous sprint
 research_refs:                         # Research findings referenced
@@ -54,6 +58,49 @@ research_refs:                         # Research findings referenced
 ## Dependencies
 - Blocks on: S1-000 (reason)
 - Blocked by: nothing
+```
+
+### Gap-Closure Story Template
+
+Used when `--gaps` mode is active. Stories generated from sprint review findings, completeness gate reports, or blocked story analysis.
+
+```yaml
+---
+id: "S${N}-G001"                       # G prefix for gap-closure stories
+title: "Fix: <finding title>"          # Imperative, prefixed with "Fix:"
+epic: "gap-closure"                    # Always "gap-closure"
+status: "planned"
+priority: "high"                       # Derived from finding severity
+points: 2                              # Gap stories are typically small (1-3)
+type: "gap-closure"                    # Distinguishes from normal stories
+depends_on: []
+assigned_agent: "backend-dev"
+files:
+  - "src/path/to/affected-file.ts"
+verify:
+  - "npx tsc --noEmit"
+  - "<test command for the specific fix>"
+done: "<what the fix achieves>"
+source_finding:                        # Traceability to the original finding
+  report: "sprint-review"              # sprint-review | completeness-gate | STATE.md
+  severity: "high"
+  description: "Original finding text"
+---
+```
+
+Body sections for gap-closure stories:
+```markdown
+## Finding
+<Original finding from the review/gate report>
+
+## Root Cause
+<Why this gap exists — missing implementation, incomplete wiring, etc.>
+
+## Fix
+<Specific change to make, referencing existing code patterns>
+
+## Verification
+<How to confirm the fix addresses the finding>
 ```
 
 ---

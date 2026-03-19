@@ -19,6 +19,8 @@ argument-hint: "<mode: api|components|architecture|changelog|full>"
 
 Analyze source code and produce comprehensive, accurate documentation. In `full` mode, spawn parallel agents for each documentation type. Execute every phase in order. Do NOT skip phases.
 
+All generated documentation must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder sections, no TODO stubs.
+
 ---
 
 ## Phase 0: PARSE — Determine Mode
