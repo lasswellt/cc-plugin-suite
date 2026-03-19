@@ -1,6 +1,6 @@
 {
-  "version": "0.3.0",
-  "updated": "2026-03-18T00:00:00Z",
+  "version": "0.4.0",
+  "updated": "2026-03-19T00:00:00Z",
   "description": "Registry of all skills in cc-plugin-suite with metadata for discovery, routing, and status tracking.",
   "skills": [
     {
@@ -11,7 +11,8 @@
       "modifies_code": false,
       "uses_agents": false,
       "uses_sessions": false,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "sprint",
@@ -21,7 +22,8 @@
       "modifies_code": false,
       "uses_agents": false,
       "uses_sessions": false,
-      "dependencies": ["sprint-plan", "sprint-dev", "sprint-review"]
+      "dependencies": ["sprint-plan", "sprint-dev", "sprint-review"],
+      "maturity": "stable"
     },
     {
       "name": "implement",
@@ -31,7 +33,8 @@
       "modifies_code": false,
       "uses_agents": false,
       "uses_sessions": false,
-      "dependencies": ["sprint-dev"]
+      "dependencies": ["sprint-dev"],
+      "maturity": "stable"
     },
     {
       "name": "review",
@@ -41,7 +44,8 @@
       "modifies_code": false,
       "uses_agents": false,
       "uses_sessions": false,
-      "dependencies": ["sprint-review"]
+      "dependencies": ["sprint-review"],
+      "maturity": "stable"
     },
     {
       "name": "ship",
@@ -51,7 +55,8 @@
       "modifies_code": true,
       "uses_agents": false,
       "uses_sessions": true,
-      "dependencies": ["sprint-review", "completeness-gate", "quality-metrics", "release"]
+      "dependencies": ["sprint-review", "completeness-gate", "quality-metrics", "release"],
+      "maturity": "stable"
     },
     {
       "name": "sprint-plan",
@@ -61,7 +66,8 @@
       "modifies_code": true,
       "uses_agents": true,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "sprint-dev",
@@ -71,7 +77,8 @@
       "modifies_code": true,
       "uses_agents": true,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "sprint-review",
@@ -81,7 +88,8 @@
       "modifies_code": true,
       "uses_agents": true,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "roadmap",
@@ -91,7 +99,8 @@
       "modifies_code": true,
       "uses_agents": true,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "research",
@@ -101,7 +110,8 @@
       "modifies_code": true,
       "uses_agents": true,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "fix-issue",
@@ -111,7 +121,8 @@
       "modifies_code": true,
       "uses_agents": false,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "refactor",
@@ -121,7 +132,8 @@
       "modifies_code": true,
       "uses_agents": false,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "test-gen",
@@ -131,7 +143,8 @@
       "modifies_code": true,
       "uses_agents": false,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "beta"
     },
     {
       "name": "ui-build",
@@ -141,7 +154,8 @@
       "modifies_code": true,
       "uses_agents": false,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "beta"
     },
     {
       "name": "browse",
@@ -151,7 +165,8 @@
       "modifies_code": false,
       "uses_agents": false,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "bootstrap",
@@ -161,7 +176,8 @@
       "modifies_code": true,
       "uses_agents": false,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "beta"
     },
     {
       "name": "codebase-audit",
@@ -171,7 +187,8 @@
       "modifies_code": false,
       "uses_agents": true,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "completeness-gate",
@@ -181,7 +198,8 @@
       "modifies_code": false,
       "uses_agents": false,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "quality-metrics",
@@ -191,7 +209,8 @@
       "modifies_code": false,
       "uses_agents": false,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "dep-health",
@@ -201,7 +220,8 @@
       "modifies_code": true,
       "uses_agents": false,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "perf-profile",
@@ -211,7 +231,8 @@
       "modifies_code": false,
       "uses_agents": false,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "doc-gen",
@@ -221,7 +242,8 @@
       "modifies_code": true,
       "uses_agents": true,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "release",
@@ -231,7 +253,8 @@
       "modifies_code": true,
       "uses_agents": false,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "migrate",
@@ -241,7 +264,8 @@
       "modifies_code": true,
       "uses_agents": false,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "retrospective",
@@ -251,7 +275,8 @@
       "modifies_code": true,
       "uses_agents": false,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "quick",
@@ -261,7 +286,8 @@
       "modifies_code": true,
       "uses_agents": false,
       "uses_sessions": false,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "health",
@@ -271,7 +297,8 @@
       "modifies_code": false,
       "uses_agents": false,
       "uses_sessions": false,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "next",
@@ -281,7 +308,8 @@
       "modifies_code": false,
       "uses_agents": false,
       "uses_sessions": false,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "codebase-map",
@@ -291,7 +319,8 @@
       "modifies_code": true,
       "uses_agents": false,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "todo",
@@ -301,7 +330,8 @@
       "modifies_code": false,
       "uses_agents": false,
       "uses_sessions": false,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     },
     {
       "name": "integration-check",
@@ -311,7 +341,8 @@
       "modifies_code": false,
       "uses_agents": false,
       "uses_sessions": true,
-      "dependencies": []
+      "dependencies": [],
+      "maturity": "stable"
     }
   ],
   "categories": {

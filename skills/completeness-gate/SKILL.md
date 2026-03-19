@@ -192,6 +192,32 @@ Scan store files (files in `stores/` or files using `defineStore`) for actions t
 
 **Check ID**: `unwired-store-actions`
 
+### 2.12 Artifact Verification (Three-Level)
+
+When invoked with sprint context (sprint directory path or after sprint-dev), run three-level artifact verification on files listed in story frontmatter:
+
+**Level 1 — Existence:** Verify every file listed in story `files` fields actually exists.
+```bash
+# For each file in story frontmatter 'files' list
+[ -f "<file-path>" ] && echo "L1 PASS: <file>" || echo "L1 FAIL: <file> — missing"
+```
+
+**Level 2 — Substantive:** Verify files are not stubs. Each file must:
+- Be longer than 5 lines
+- Pass all existing completeness-gate checks (2.1–2.11)
+- Not consist solely of type re-exports or empty class declarations
+
+**Level 3 — Wired:** Verify files are imported/used by at least one other file. Exclude entry points (pages, route handlers, main files) from this requirement.
+```bash
+# For each non-entry-point file, check for at least one importer
+IMPORTERS=$(grep -rl "from.*<module-name>" --include="*.ts" --include="*.vue" . | grep -v node_modules | grep -v "<file-itself>")
+[ -n "$IMPORTERS" ] && echo "L3 PASS: <file>" || echo "L3 FAIL: <file> — no importers"
+```
+
+**Check ID**: `artifact-verification`
+
+Level 1 failures are **Critical**. Level 2 failures follow existing severity rules. Level 3 failures are **Medium** (orphaned files may be intentional for new features not yet integrated).
+
 ---
 
 ## Phase 3: ANALYZE — Classify and Score

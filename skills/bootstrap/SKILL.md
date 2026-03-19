@@ -214,6 +214,35 @@ All generated tests must pass.
 
 If any verification fails, fix the generated code. Maximum 3 fix iterations. If still failing after 3 attempts, report the issue to the user.
 
+### 4.5 Exit Criteria (Gate)
+
+All of the following must pass before proceeding to Phase 5:
+
+| Criterion | Check | Required |
+|-----------|-------|----------|
+| All planned files created | Verify each file from Phase 2 exists | Yes |
+| Type-check passes | `npm run type-check` exits 0 | Yes |
+| Lint passes | `npm run lint` on new files exits 0 | Yes |
+| Tests pass | Generated tests all pass | Yes |
+| No placeholders | Run completeness-gate on new files — no critical/high findings | Yes |
+| Routes accessible | If page was created, route is defined and reachable | Yes (if applicable) |
+
+**Maximum 3 fix attempts per failing criterion.** After 3 attempts, report partial success:
+
+```
+Bootstrap Partial Success: <type> "<name>"
+  Files created: N/M
+  Passing criteria: X/Y
+
+  Failed criteria:
+    - Type-check: 2 errors remaining (see details)
+    - Completeness: 1 high finding (empty handler in store)
+
+  Manual fixes needed:
+    1. <specific fix description>
+    2. <specific fix description>
+```
+
 ---
 
 ## Phase 5: REPORT

@@ -13,6 +13,7 @@ model: opus
 - For review report template, reviewer checklists, and auto-fix strategies, see [reference.md](reference.md)
 - For context window hygiene (reviewer agents), see [context-management.md](/_shared/context-management.md)
 - For checkpoint awareness, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
+- For handling reviewer agent escalations, see [deviation-protocol.md](/_shared/deviation-protocol.md)
 
 All auto-fix code must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder implementations.
 
@@ -160,6 +161,25 @@ Check for improper cross-layer imports:
 
 - Verify all files listed in done stories actually exist
 - Check for silently dropped circuit-breaker stories (stories that were blocked but not documented)
+
+### 1.6 Integration Check (Conditional)
+
+If the sprint introduced new modules, routes, stores, or API endpoints, run integration-check to validate cross-module wiring:
+
+```bash
+# Detect if sprint introduced new modules
+NEW_MODULES=$(git diff --name-only ${SPRINT_BASE}..HEAD | grep -E 'stores/|composables/|pages/|server/api/' | head -20)
+if [ -n "$NEW_MODULES" ]; then
+  echo "New modules detected — running integration check"
+fi
+```
+
+If new modules are detected, invoke `/cc-plugin-suite:integration-check all` and map findings to review severity levels:
+- Integration-check **high** → Review **Major**
+- Integration-check **medium** → Review **Minor**
+- Integration-check **low** → Review **Info**
+
+Include integration-check findings in the Phase 2 review context so reviewer agents are aware of wiring gaps.
 
 ---
 

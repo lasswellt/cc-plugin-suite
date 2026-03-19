@@ -17,7 +17,7 @@ argument-hint: "<mode: api|components|architecture|changelog|full>"
 
 # Documentation Generator
 
-Analyze source code and produce comprehensive, accurate documentation. In `full` mode, spawn parallel agents for each documentation type. Execute every phase in order. Do NOT skip phases.
+Analyze source code and produce comprehensive, accurate documentation. In `full` mode, spawn 4 parallel agents (api, components, architecture, changelog) for concurrent documentation generation. Execute every phase in order. Do NOT skip phases.
 
 All generated documentation must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder sections, no TODO stubs.
 

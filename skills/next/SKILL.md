@@ -17,6 +17,8 @@ Read the current project state and determine the most logical next action. Sugge
 
 **No session protocol required.** This skill is lightweight and read-only.
 
+**Verbose progress exemption:** This skill intentionally skips verbose output. Freeform activity-feed logging from CLAUDE.md still applies.
+
 ---
 
 ## Phase 0: READ STATE

@@ -12,6 +12,8 @@ Track development ideas, follow-up items, and technical debt discovered during w
 
 **No session protocol required.** This skill is lightweight.
 
+**Verbose progress exemption:** This skill intentionally skips verbose output. Freeform activity-feed logging from CLAUDE.md still applies.
+
 ---
 
 ## Mode Routing

@@ -181,6 +181,59 @@ Copy research files into `${SPRINT_DIR}/research/`.
 
 ---
 
+## Phase 2.5: GOAL-BACKWARD ANALYSIS — Derive Stories from Outcomes
+
+Before generating stories directly from epics, analyze what outcomes the sprint must achieve and work backward to required artifacts.
+
+### 2.5.1 Define Observable Outcomes
+
+For each selected epic, define 2-5 observable outcomes — concrete, testable statements of what a user or developer can do after the sprint:
+
+```
+Example outcomes for an "Authentication" epic:
+  1. User can log in with email/password and see their dashboard
+  2. Unauthenticated users are redirected to /login on protected routes
+  3. Auth token refreshes automatically before expiry
+  4. Admin users see the admin panel nav entry; regular users do not
+```
+
+### 2.5.2 Derive Required Artifacts
+
+For each outcome, trace backward through the stack layers to identify every artifact (file) required:
+
+```
+Outcome: "User can log in with email/password"
+  → Page: pages/login.vue (form UI)
+  → Store: stores/auth.ts (login action, user state)
+  → Schema: schemas/auth.ts (LoginRequest, LoginResponse)
+  → API: server/api/auth/login.ts (handler)
+  → Middleware: middleware/auth.ts (route guard)
+  → Test: tests/auth.test.ts (login flow)
+```
+
+### 2.5.3 Map Required Connections
+
+For each pair of adjacent artifacts, note the connection that must exist:
+- Page imports and calls store action
+- Store action calls API function
+- API handler validates against schema
+- Middleware reads auth state from store
+
+### 2.5.4 Build Coverage Matrix
+
+Create a matrix mapping outcomes × artifacts. Any empty cells represent gaps — artifacts needed but not yet planned. These gaps become additional stories.
+
+```markdown
+| Outcome | Schema | API | Store | Page | Middleware | Test |
+|---------|--------|-----|-------|------|------------|------|
+| Login   | ✓ S-003 | ✓ S-004 | ✓ S-005 | ✓ S-008 | ✓ S-006 | ✓ S-012 |
+| Redirect| — | — | ✓ S-005 | — | ✓ S-006 | ✗ GAP |
+```
+
+Gaps become stories in Phase 3. This ensures no outcome lacks full stack coverage.
+
+---
+
 ## Phase 3: GENERATE STORIES — Create Implementation Stories
 
 ### 3.1 Story Generation Rules
@@ -226,7 +279,7 @@ Stories are numbered globally across the sprint: `S${SPRINT_NUMBER}-001`, `S${SP
 
 ## Phase 4: VALIDATE AND PUBLISH
 
-### 4.1 Acceptance Criteria Coverage Check
+### 4.1 Acceptance Criteria Coverage Check (Hard Gate)
 
 For each epic, verify that every AC maps to at least one story. Write a coverage matrix:
 
@@ -241,7 +294,29 @@ Format:
 | E001 | AC1 | S1-003 | Yes |
 ```
 
-If any AC is uncovered, generate additional stories before proceeding.
+**This is a hard gate: 100% AC coverage is required before proceeding.**
+
+Print the coverage percentage: `AC Coverage: N/M (X%)`
+
+If any AC is uncovered:
+1. **Attempt 1:** Generate additional stories targeting uncovered ACs.
+2. **Attempt 2:** If gaps remain, re-analyze the epic for implicit ACs that may need explicit stories.
+3. **Attempt 3:** Final generation attempt with broader story scope.
+
+If after 3 attempts any AC remains uncovered, ask the user for an explicit waiver:
+```
+AC Coverage Gap: N acceptance criteria could not be mapped to stories.
+  Uncovered:
+    - E001/AC3: "User can export data as CSV"
+    - E002/AC5: "Admin dashboard shows real-time metrics"
+
+  Options:
+    1. Waive these ACs for this sprint (they will carry forward)
+    2. Let me try a different approach to covering them
+    3. Abort sprint planning
+```
+
+Do not proceed to Phase 4.2 without either 100% coverage or an explicit user waiver.
 
 ### 4.2 Partition Stories to Agent Roles
 

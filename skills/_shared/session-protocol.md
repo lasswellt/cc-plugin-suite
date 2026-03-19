@@ -60,6 +60,25 @@ Execute this preamble **before any other work** in the skill:
     - autonomy=low: always confirm before major actions
     The profile is advisory only — explicit user instructions always override it.
 
+### Autonomy Levels
+
+The developer profile's `autonomy` field maps to these suite-wide behavior levels:
+
+| Level | Value | Behavior |
+|-------|-------|----------|
+| **Low** | `autonomy: "low"` | Always confirm before: file edits, git operations, skill dispatches, agent spawns. Present plan before every action. |
+| **Medium** | `autonomy: "medium"` | Confirm before: destructive operations (delete, overwrite, force-push), new package installs, scope changes. Proceed without confirmation for: standard edits, test runs, non-destructive git. |
+| **High** | `autonomy: "high"` | Confirm before: push to remote, rollback/reset operations, scope changes exceeding 2x original estimate. Skip confirmation for: all local operations, standard git commits, agent spawns. |
+| **Full** | `autonomy: "full"` | Auto-approve all operations except: `git push` (always confirm), rollback to previous sprint state (always confirm), deleting user-created files outside sprint scope (always confirm). These safety overrides cannot be bypassed. |
+
+**Default:** If no developer profile exists or `autonomy` is not set, use **medium**.
+
+Skills should check the autonomy level at these decision points:
+- `ask`: Whether to skip Phase 2 (Clarify) — skip at high/full for unambiguous requests
+- `sprint-dev`: Whether to use `autonomous`, `checkpoint`, or `interactive` mode — map low→interactive, medium→checkpoint, high/full→autonomous
+- `quick`: Whether to commit automatically — auto-commit at high/full
+- All skills: Whether to present plan before execution — always at low, optional at medium, skip at high/full
+
 7. Log skill_start to the activity feed per verbose-progress.md.
 
 8. **(Optional) Write workflow tracking file.** Skills with `disable-model-invocation: true` and explicit phases SHOULD write:
@@ -207,6 +226,7 @@ Every skill's final phase must:
 2. Release any held locks (delete `<file>.lock` files)
 3. Optionally remove the session temp directory if no artifacts need to be preserved
 4. Append `session_end` to the operation log
+4b. **Write HANDOFF.json** (if applicable) — If the session was interrupted or has follow-up work, write `${SESSION_TMP_DIR}/HANDOFF.json` per [checkpoint-protocol.md](checkpoint-protocol.md). Skills listed in the HANDOFF.json support table should always write a handoff on non-clean exits.
 5. Log `skill_complete` to the activity feed (`.cc-sessions/activity-feed.jsonl`) with status and summary per [verbose-progress.md](verbose-progress.md)
 6. **Generate session report** — Write a report to `.cc-sessions/reports/${SESSION_ID}.md` using the format from [session-report-template.md](session-report-template.md). Auto-populate from:
    - Activity feed entries for this session (actions, decisions, issues)

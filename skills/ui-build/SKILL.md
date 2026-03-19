@@ -137,6 +137,27 @@ Document:
 6. **Router entry** — add route definition
 7. **Navigation entry** — add menu/nav item
 
+### Implementation Gate
+
+Before proceeding from implementation to Phase 5 (REFINE), verify:
+
+| Check | Threshold | Action on Failure |
+|-------|-----------|-------------------|
+| Type-check | 0 new errors | Fix before proceeding |
+| Lint | 0 errors (warnings OK) | Fix before proceeding |
+| Component size | No file > 300 lines | Extract sub-components |
+| Three-state coverage | All data views have loading, error, and empty states | Add missing states |
+| Hardcoded colors | None — design tokens only | Replace with tokens |
+
+Run these checks after completing all implementation steps:
+```bash
+npm run type-check 2>&1 | tail -20
+npx eslint <new-files> 2>&1 | tail -20
+wc -l <new-vue-files> | sort -n | tail -5
+```
+
+If any check fails, fix before entering Phase 5. Maximum 3 fix iterations.
+
 ### Implementation Rules
 
 #### Every data-displaying component MUST handle three states:

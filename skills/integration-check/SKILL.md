@@ -149,6 +149,51 @@ For each source file that exports functions, types, or components:
 
 ---
 
+## Phase 5.5: FORM-TO-HANDLER WIRING
+
+Verify that forms are connected to their submission handlers and that handlers reach API endpoints.
+
+1. **Find all forms:**
+   ```bash
+   grep -rn "<form\|<q-form\|<v-form\|@submit\|handleSubmit\|onSubmit" --include="*.vue" . | grep -v node_modules
+   ```
+
+2. **For each form, trace the submit handler:**
+   - Find the `@submit` or `@submit.prevent` binding
+   - Trace the handler function to verify it calls a store action or API function
+   - Verify the API function exists and is implemented (not a stub)
+
+3. **Flag disconnected forms:**
+   - Forms with no `@submit` handler → **High** severity
+   - Forms with a handler that doesn't call any API/store action → **Medium** severity
+   - Forms whose handler calls a stub or placeholder function → **High** severity
+
+**Output:** List of disconnected or partially-wired forms.
+
+---
+
+## Phase 5.7: STATE-TO-RENDER WIRING
+
+Verify that reactive state declarations are actually rendered in templates.
+
+1. **Find reactive state declarations:**
+   ```bash
+   grep -rn "ref<\|reactive<\|computed<\|defineStore" --include="*.ts" --include="*.vue" . | grep -v node_modules | grep -v test
+   ```
+
+2. **For each state variable in a component or composable:**
+   - Check if it appears in a `<template>` section (directly or via a computed property)
+   - Check if it is returned from a composable's return statement
+   - Check if it is used in a `watch` or `watchEffect`
+
+3. **Flag orphaned state:**
+   - State declared but never rendered, watched, or returned → **Medium** severity
+   - Store state with no consuming component (already covered in Phase 4, cross-reference here)
+
+**Output:** List of orphaned reactive state variables.
+
+---
+
 ## Phase 6: REPORT
 
 Print a structured findings report:

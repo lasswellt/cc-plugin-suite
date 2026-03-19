@@ -366,15 +366,31 @@ git merge sprint-${SPRINT_NUMBER}/tests --no-edit
 # Handle merge conflicts if any
 ```
 
-### 4.2 Full Build Verification
+### 4.2 Full Build Verification (Selective Re-Runs)
 
-Run complete verification suite:
+Run the initial full verification sweep:
 ```bash
 npm run type-check 2>&1
 npm run lint 2>&1
 npm run test 2>&1       # or test runner equivalent
 npm run build 2>&1
 ```
+
+**After the first full sweep, use selective re-verification to save time:**
+
+| Check | Re-run Strategy |
+|-------|----------------|
+| Type-check | Always re-run (full — type errors cascade) |
+| Build | Always re-run (full — build errors cascade) |
+| Tests | Re-run only tests in changed packages: `npm run test -- --filter <changed-packages>` |
+| Lint | Re-lint only modified files: `npx eslint <modified-files>` |
+
+Track time savings:
+```
+Verification: full sweep 45s → selective re-run 12s (73% faster)
+```
+
+The **final fix round** (last iteration of Phase 4.3) always gets one full sweep to catch any cross-package regressions.
 
 ### 4.2.5 Completeness Gate
 
@@ -385,6 +401,40 @@ CHANGED_FILES=$(git diff --name-only sprint-${SPRINT_NUMBER}/base..HEAD -- '*.ts
 ```
 Invoke: `/cc-plugin-suite:completeness-gate` with the sprint's source directories.
 If the score is below C (70), flag critical findings in the integration report but do not block — the sprint review will make the final call.
+
+### 4.2.1 Cross-Phase Regression Testing
+
+If `SPRINT_NUMBER > 1`, run regression tests from prior sprints to catch unintended breakage:
+
+1. **Identify pre-existing test files:**
+   ```bash
+   # Find test files that existed before this sprint started
+   git diff --name-only --diff-filter=A ${SPRINT_BASE}..HEAD -- '*.test.*' '*.spec.*' > ${SESSION_TMP_DIR}/new-tests.txt
+   git ls-files '*.test.*' '*.spec.*' | grep -v -F -f ${SESSION_TMP_DIR}/new-tests.txt > ${SESSION_TMP_DIR}/pre-existing-tests.txt
+   ```
+
+2. **Run pre-existing tests selectively:**
+   ```bash
+   # Run only pre-existing tests (not new sprint tests)
+   cat ${SESSION_TMP_DIR}/pre-existing-tests.txt | xargs npx vitest run --reporter=verbose 2>&1
+   ```
+
+3. **Flag regressions as Critical:**
+   Any pre-existing test that now fails is a **Critical** regression. These take priority over new test failures.
+
+4. **Attempt fix (max 2 rounds):**
+   - Round 1: Analyze the regression. If the new code changed behavior intentionally, the old test needs updating. If the change was unintentional, fix the new code.
+   - Round 2: If still failing, document the regression and flag for manual review.
+
+5. **Report:**
+   ```
+   Cross-Phase Regression:
+     Pre-existing tests: N
+     Still passing: M
+     Regressions found: K (Critical)
+     Fixed: J
+     Remaining: K-J (requires manual review)
+   ```
 
 ### 4.3 Fix Integration Issues
 

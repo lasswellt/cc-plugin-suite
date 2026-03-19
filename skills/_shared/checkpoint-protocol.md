@@ -114,3 +114,83 @@ The `sprint` and `implement` orchestrator skills support a `--resume` flag:
 2. **Updated** after each story completion, block, or unblock.
 3. **Finalized** at Phase 4 completion — update phase to `4 (INTEGRATE)`, mark all stories final.
 4. **Preserved** — STATE.md is NOT deleted after sprint completion. It serves as a historical record alongside the sprint manifest.
+
+---
+
+## HANDOFF.json — Cross-Session Continuity
+
+STATE.md covers sprint-dev specifically. For other skills that may be interrupted or complete with follow-up work needed, use HANDOFF.json.
+
+### When to Write HANDOFF.json
+
+Write `${SESSION_TMP_DIR}/HANDOFF.json` when:
+- The session is interrupted (user cancels, context limit reached, error forces stop)
+- The skill completes but has follow-up work that another session should pick up
+- A long-running skill reaches a natural checkpoint (e.g., migrate between steps)
+
+### HANDOFF.json Format
+
+```json
+{
+  "session_id": "<SESSION_ID>",
+  "skill": "<skill-name>",
+  "timestamp": "<ISO-8601>",
+  "status": "interrupted | completed_with_followups",
+  "progress": {
+    "current_phase": "<phase name>",
+    "completed_phases": ["phase1", "phase2"],
+    "remaining_phases": ["phase3", "phase4"],
+    "percentage": 60
+  },
+  "context": {
+    "target": "<what was being worked on>",
+    "key_decisions": [
+      "Chose approach X over Y because Z"
+    ],
+    "files_modified": ["path/to/file1.ts", "path/to/file2.vue"],
+    "commits_created": ["abc1234", "def5678"]
+  },
+  "resume_instructions": [
+    "Read the research output at ${SESSION_TMP_DIR}/research.md",
+    "Continue from Phase 3 — story generation",
+    "The codebase inventory is already complete"
+  ],
+  "blockers": [
+    {
+      "description": "API endpoint returns 403 — needs auth token refresh",
+      "severity": "high",
+      "workaround": "Re-run with valid credentials"
+    }
+  ],
+  "follow_ups": [
+    {
+      "skill": "test-gen",
+      "target": "src/stores/auth.ts",
+      "reason": "New store created but tests not yet generated"
+    }
+  ]
+}
+```
+
+### Skills That Should Support HANDOFF.json
+
+| Skill | When to Write |
+|-------|--------------|
+| `migrate` | Between migration steps (progress file also serves this role) |
+| `refactor` | If refactoring spans multiple files and is interrupted |
+| `doc-gen` (full mode) | If agent completion times out |
+| `codebase-audit` | If audit is interrupted before all pillars complete |
+| `sprint-plan` | If research phase completes but story generation is interrupted |
+
+### How to Resume from HANDOFF.json
+
+When a skill starts, check for existing handoff files:
+```bash
+find .cc-sessions/ -name "HANDOFF.json" -newer .cc-sessions/activity-feed.jsonl 2>/dev/null
+```
+
+If a relevant HANDOFF.json exists (same skill, matching target):
+1. Display the handoff summary to the user.
+2. Ask: "Resume from previous session or start fresh?"
+3. If resuming, load context and skip to the indicated phase.
+4. Log a `decision` event: "Resuming from HANDOFF.json (session: <old-session>)".

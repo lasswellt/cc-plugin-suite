@@ -318,6 +318,41 @@ Migration Progress: <current> → <target>
   [ ] Step 6: Clean up deprecations — PENDING
 ```
 
+### 4.2.1 Progress Persistence
+
+After each step completion (pass or fail), write progress to `${SESSION_TMP_DIR}/migrate-progress.json`:
+
+```json
+{
+  "target": "<migration-target>",
+  "started": "<ISO-8601>",
+  "rollback_branch": "<rollback-branch-name>",
+  "current_step": 4,
+  "total_steps": 8,
+  "steps": [
+    { "number": 1, "description": "Update package version", "status": "pass", "commit": "abc1234" },
+    { "number": 2, "description": "Update config files", "status": "pass", "commit": "def5678" },
+    { "number": 3, "description": "Run codemod", "status": "pass", "commit": "ghi9012" },
+    { "number": 4, "description": "Fix breaking API changes", "status": "in-progress", "attempt": 2 }
+  ],
+  "remaining": ["Update test imports", "Clean up deprecations"],
+  "last_updated": "<ISO-8601>"
+}
+```
+
+### 4.2.2 Resume from Progress File
+
+At Phase 0 (before starting the migration), check for an existing progress file:
+```bash
+cat ${SESSION_TMP_DIR}/migrate-progress.json 2>/dev/null
+```
+
+If found and the target matches the current migration:
+1. Display completed steps and their commits.
+2. Ask the user: "Resume from step N or start fresh?"
+3. If resuming, verify each completed commit still exists in git history.
+4. Skip to the first incomplete step.
+
 ### 4.3 Consecutive Failure Check
 
 Track consecutive failures across steps. If 3 steps in a row fail verification:

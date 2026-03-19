@@ -95,3 +95,27 @@ When the orchestrator receives a deviation or escalation:
 3. If the agent said `Blocked: yes`, check if other agents can take their ready stories.
 4. Present the escalation to the user with the agent's options.
 5. After user decision, send resolution via `ASSIST:` message to the agent.
+
+---
+
+## Auto-Fix Priority Order
+
+When multiple deviations or issues are discovered simultaneously, resolve them in this priority order:
+
+| Priority | Category | Examples | Rationale |
+|----------|----------|----------|-----------|
+| **P1** | Bugs blocking current story | Type errors, import failures, runtime crashes | Unblocks the agent immediately |
+| **P2** | Critical functionality gaps | Missing auth checks, broken API contracts | Prevents security/data issues |
+| **P3** | Blockers for dependent stories | Missing exports, incomplete types, missing barrel entries | Unblocks downstream agents |
+| **P4** | Architecture/convention issues | Wrong directory, inconsistent naming, missing error handling | Maintains codebase quality |
+
+Within the same priority level, resolve issues affecting more files first (wider impact = earlier fix).
+
+### Tier 2 Auto-Add Escalation Rule
+
+If a Tier 2 auto-add exceeds **30 lines of new code**, it must be promoted to **Tier 3 (Escalate)**. The threshold exists because large auto-adds risk:
+- Introducing scope creep that the orchestrator cannot track
+- Creating merge conflicts with other agents' work
+- Hiding significant design decisions in deviation reports
+
+When promoting, include the completed work so far in the ESCALATE message so the orchestrator can decide whether to accept it as-is or request changes.

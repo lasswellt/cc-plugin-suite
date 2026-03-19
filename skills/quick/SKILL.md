@@ -17,6 +17,8 @@ Make a small, targeted change without sprint planning, session registration, or 
 
 **No session protocol. No activity feed logging. No agents. Just do the work.**
 
+**Verbose progress exemption:** This skill intentionally skips verbose output. Freeform activity-feed logging from CLAUDE.md still applies.
+
 ---
 
 ## Phase 0: UNDERSTAND

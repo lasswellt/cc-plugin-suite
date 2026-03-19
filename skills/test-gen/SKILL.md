@@ -404,9 +404,17 @@ List anything that was NOT tested and why:
 
 ## Error Recovery
 
-- **Test runner not detected**: Check for `vitest.config.*`, `jest.config.*`, or test scripts in `package.json`. If truly absent, ask the user which runner to use and generate accordingly.
-- **No existing test patterns found**: Use sensible defaults (co-located `*.test.ts`, Vitest or Jest depending on detection, AAA pattern).
-- **Target has no exports**: Check for default export or side-effect-only modules. For side-effect modules, test the side effects. If truly nothing to test, inform the user.
-- **Mocking is too complex**: For deeply coupled code, suggest refactoring first to make the code more testable. Use `refactor` skill as a prerequisite.
-- **Coverage tool not configured**: Skip coverage reporting. Note the gap and suggest configuring coverage.
-- **Tests reveal source bugs**: This is a success, not a failure. Keep the tests, document the bugs, and suggest `fix-issue` for each.
+Specific recovery procedures for common test generation failures:
+
+| # | Scenario | Detection | Recovery |
+|---|----------|-----------|----------|
+| 1 | **No test runner detected** | No vitest/jest in package.json, no test config files | Ask user which runner to use. If uncertain, suggest Vitest. Generate config file if needed. |
+| 2 | **Target has no exports** | No `export` keywords found | Check for default export or side-effect modules. For side-effect modules, test observable effects. If truly nothing to test, inform user. |
+| 3 | **Mock setup fails** | `vi.mock()` or `jest.mock()` throws | Verify module path is correct (relative vs alias). Check if the module uses default vs named exports. Try manual mock in `__mocks__/` directory. |
+| 4 | **Vue mount crashes** | `mount()` or `shallowMount()` throws during test | Check for missing global plugins (Pinia, Router, Quasar, Vuetify). Add required plugins to `global.plugins`. Try `shallowMount` instead of `mount`. |
+| 5 | **Async test hangs** | Test times out without resolving | Add explicit `vi.useFakeTimers()` for timer-dependent code. Ensure all promises are awaited. Add `vi.runAllTimers()` after triggering async operations. Set explicit timeout: `it('...', async () => {...}, 10000)`. |
+| 6 | **Import resolution fails** | Module not found errors | Check for path aliases (`@/`, `~/`, `#imports`). Verify tsconfig paths are configured for the test runner. Add `resolve.alias` to vitest/jest config if needed. |
+| 7 | **Type errors in test file** | TypeScript compilation errors | Ensure test data satisfies the full interface (not partial). Use `as` casting only as last resort. Check if `@types/*` packages are installed for test utilities. |
+| 8 | **Snapshot mismatch** | Snapshot tests fail on first run | Do not use snapshot tests in generated code — prefer explicit assertions. If project uses snapshots extensively, generate with `--updateSnapshot` flag on first run only. |
+| 9 | **Environment mismatch** | `document`, `window`, or DOM APIs unavailable | Check vitest/jest environment config. Set `environment: 'jsdom'` or `environment: 'happy-dom'` in test config or per-file with `@vitest-environment jsdom` comment. |
+| 10 | **Max retry exceeded** | 5 fix iterations completed, tests still failing | Stop attempting fixes. Present the remaining failures to the user with: (a) which tests pass, (b) which tests fail and why, (c) suggested manual fixes. Do not delete failing tests — they may reveal real bugs. |

@@ -20,6 +20,7 @@ Grep patterns, severity classification rules, output schemas, and override confi
 | 10 | `console-log-leftovers` | `console\.log\(` | `*.ts, *.tsx, *.js, *.jsx, *.vue` | Exclude files matching `*logger*`, `*logging*`, `*debug*`. Exclude lines with `// keep` or `// debug` annotations. |
 | 11 | `three-state-ui` | Presence of `useAsyncData\|useFetch\|useLazyFetch\|\$fetch\|store\.\w+Action` in `<script>` WITHOUT corresponding `v-if=".*(?:loading\|pending\|isLoading)"` and `v-if=".*(?:error\|isError)"` in `<template>` | `*.vue` | Only flag if the component has a `<template>` section. Ignore components that delegate loading/error to a parent wrapper. |
 | 12 | `unwired-store-actions` | Store action function bodies that lack calls to `fetch\|\\$fetch\|axios\|httpsCallable\|api\.\|service\.\|useFetch` | `stores/*.ts, store/*.ts` | Ignore actions that are pure state mutations (e.g., `setLoading`, `resetState`). Check if the action dispatches to another action that makes the API call. |
+| 13 | `artifact-verification` | N/A — three-level check (existence, substance, wiring) | Story `files` fields | Only runs when sprint context is available. Level 3 excludes entry points (`pages/**`, `server/api/**`, `main.*`, `app.*`, `index.*`). |
 
 ---
 
@@ -151,7 +152,8 @@ Findings that are **informational** or represent minor improvements.
               "hardcoded-sample-data",
               "console-log-leftovers",
               "three-state-ui",
-              "unwired-store-actions"
+              "unwired-store-actions",
+              "artifact-verification"
             ]
           },
           "severity": {
@@ -257,7 +259,8 @@ The `.completeness-gate.json` file in the project root allows suppressing known 
               "hardcoded-sample-data",
               "console-log-leftovers",
               "three-state-ui",
-              "unwired-store-actions"
+              "unwired-store-actions",
+              "artifact-verification"
             ]
           },
           "description": "Check IDs to skip entirely"
