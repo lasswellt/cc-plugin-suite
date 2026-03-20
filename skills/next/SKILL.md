@@ -72,31 +72,31 @@ Use this decision tree:
 
 ```
 1. Is there an in-progress sprint with STATE.md?
-   → YES: "Resume sprint N" — /cc-plugin-suite:implement --resume
+   → YES: "Resume sprint N" — /blitz:implement --resume
 
 2. Is there an in-progress sprint WITHOUT STATE.md?
-   → YES: "Continue sprint N" — /cc-plugin-suite:implement --sprint N
+   → YES: "Continue sprint N" — /blitz:implement --sprint N
 
 3. Is there a sprint with status "review"?
-   → YES: "Review sprint N" — /cc-plugin-suite:review --sprint N
+   → YES: "Review sprint N" — /blitz:review --sprint N
 
 4. Is there a sprint with status "reviewed" and passing quality?
-   → YES: "Ship the sprint" — /cc-plugin-suite:ship
+   → YES: "Ship the sprint" — /blitz:ship
 
 5. Is there a sprint with status "planned" (not yet started)?
-   → YES: "Implement sprint N" — /cc-plugin-suite:implement --sprint N
+   → YES: "Implement sprint N" — /blitz:implement --sprint N
 
 6. Does a roadmap exist with unblocked epics?
-   → YES: "Plan the next sprint" — /cc-plugin-suite:sprint-plan
+   → YES: "Plan the next sprint" — /blitz:sprint-plan
 
 7. Does a roadmap exist but all epics are blocked or done?
-   → YES: "Extend the roadmap" — /cc-plugin-suite:roadmap extend
+   → YES: "Extend the roadmap" — /blitz:roadmap extend
 
 8. No roadmap exists?
-   → "Create a roadmap first" — /cc-plugin-suite:roadmap full
+   → "Create a roadmap first" — /blitz:roadmap full
 
 9. None of the above (no sprints, no roadmap)?
-   → "Start with research or bootstrap" — /cc-plugin-suite:ask <describe your goal>
+   → "Start with research or bootstrap" — /blitz:ask <describe your goal>
 ```
 
 ### Tie-Breaking
@@ -125,11 +125,11 @@ Recommendation:
   Resume sprint 3 implementation from checkpoint.
 
 Command:
-  /cc-plugin-suite:implement --resume
+  /blitz:implement --resume
 
 Alternative actions:
-  - /cc-plugin-suite:sprint-review --sprint 2  (sprint 2 awaiting review)
-  - /cc-plugin-suite:health                    (check plugin health)
+  - /blitz:sprint-review --sprint 2  (sprint 2 awaiting review)
+  - /blitz:health                    (check plugin health)
 ```
 
 If the git working tree has uncommitted changes, mention that first:

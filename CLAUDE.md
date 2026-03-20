@@ -45,7 +45,7 @@ If no activity feed exists or is empty, skip the summary silently.
 
 ## Skill System
 
-This repo contains 31 development skills in `skills/`. See `.claude-plugin/skill-registry.json` for the full registry. Skills are invoked via `/cc-plugin-suite:<skill-name>`.
+This repo contains 31 development skills in `skills/`. See `.claude-plugin/skill-registry.json` for the full registry. Skills are invoked via `/blitz:<skill-name>`.
 
 ## Shared Protocols
 

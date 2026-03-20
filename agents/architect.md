@@ -130,11 +130,11 @@ When analysis reveals issues that require action beyond your read-only scope:
 
 ### Cross-Skill Recommendations
 Based on findings, recommend follow-up skills:
-- Performance issues → `/cc-plugin-suite:perf-profile`
+- Performance issues → `/blitz:perf-profile`
 - Security concerns → reviewer agent with security focus
-- Incomplete implementations → `/cc-plugin-suite:completeness-gate`
-- Dependency issues → `/cc-plugin-suite:dep-health`
-- Documentation gaps → `/cc-plugin-suite:doc-gen`
+- Incomplete implementations → `/blitz:completeness-gate`
+- Dependency issues → `/blitz:dep-health`
+- Documentation gaps → `/blitz:doc-gen`
 
 ## Collaboration Hints
 

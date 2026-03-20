@@ -259,7 +259,7 @@ Bootstrap Complete: <type> "<name>"
   Next steps:
     - Implement business logic in store actions
     - Add UI content to component template
-    - Run /cc-plugin-suite:test-gen to add more tests
+    - Run /blitz:test-gen to add more tests
 ```
 
 ### 5.2 Session Cleanup

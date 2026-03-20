@@ -136,7 +136,7 @@ Write a comprehensive `CODEBASE-MAP.md` at the project root with all 4 sections.
 # Codebase Map — <project-name>
 
 Generated: <ISO-8601>
-Analyzed by: cc-plugin-suite codebase-map
+Analyzed by: blitz codebase-map
 
 ## Technology
 <from Phase 1>

@@ -1,12 +1,12 @@
 {
-  "name": "cc-plugin-suite",
+  "name": "blitz",
   "metadata": {
     "description": "Production-grade development skills for Vue.js, Nuxt, and GCP Firebase projects with quality gates, release management, and self-improvement"
   },
   "owner": { "name": "lasswellt" },
   "plugins": [
     {
-      "name": "cc-plugin-suite",
+      "name": "blitz",
       "source": "./",
       "description": "Production-grade development skills for Vue/Nuxt + Firebase with 31 skills, 6 agents, and 9 hooks",
       "version": "0.4.0"

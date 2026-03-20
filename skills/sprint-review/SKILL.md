@@ -174,7 +174,7 @@ if [ -n "$NEW_MODULES" ]; then
 fi
 ```
 
-If new modules are detected, invoke `/cc-plugin-suite:integration-check all` and map findings to review severity levels:
+If new modules are detected, invoke `/blitz:integration-check all` and map findings to review severity levels:
 - Integration-check **high** → Review **Major**
 - Integration-check **medium** → Review **Minor**
 - Integration-check **low** → Review **Info**
@@ -420,7 +420,7 @@ git commit -m "review(sprint-${N}): ${STATUS} — ${FINDINGS_CRITICAL}c/${FINDIN
 
 After the review commit, collect a quality metrics snapshot for trend tracking:
 ```
-Invoke: /cc-plugin-suite:quality-metrics collect
+Invoke: /blitz:quality-metrics collect
 ```
 This stores a timestamped JSON snapshot in `docs/metrics/` that can be used for trend analysis across sprints. The metrics are informational and do not gate the review.
 

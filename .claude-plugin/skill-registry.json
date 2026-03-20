@@ -1,7 +1,7 @@
 {
   "version": "0.4.0",
   "updated": "2026-03-19T00:00:00Z",
-  "description": "Registry of all skills in cc-plugin-suite with metadata for discovery, routing, and status tracking.",
+  "description": "Registry of all skills in blitz with metadata for discovery, routing, and status tracking.",
   "skills": [
     {
       "name": "ask",

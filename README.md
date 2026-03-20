@@ -1,39 +1,116 @@
-# cc-plugin-suite
+<div align="center">
 
-Production-grade development skills for Vue.js, Nuxt, and GCP Firebase projects. A Claude Code plugin that provides sprint workflows, code review, performance profiling, release management, dependency health, documentation generation, migration support, and self-improvement loops.
+```
+   ─── ⚡ ──────────────────────────────────
+
+   ██████╗ ██╗     ██╗████████╗███████╗
+   ██╔══██╗██║     ██║╚══██╔══╝╚══███╔╝
+   ██████╔╝██║     ██║   ██║     ███╔╝
+   ██╔══██╗██║     ██║   ██║    ███╔╝
+   ██████╔╝███████╗██║   ██║   ███████╗
+   ╚═════╝ ╚══════╝╚═╝   ╚═╝   ╚══════╝
+
+   ──────────────────────────────── ⚡ ───
+```
+
+**Production-grade Claude Code plugin for Vue/Nuxt + Firebase**
+
+**31 skills** · **6 agents** · **9 hooks**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Claude Code Plugin](https://img.shields.io/badge/Claude_Code-Plugin-blue)](https://docs.anthropic.com/en/docs/claude-code)
+[![Version](https://img.shields.io/badge/version-0.4.0-cyan)](https://github.com/lasswellt/blitz/releases)
+
+</div>
+
+---
+
+## Quick Start
+
+```bash
+npx blitz-cc@latest
+```
+
+That's it. The installer auto-detects your stack, registers the plugin, configures permissions, and sets up hooks.
+
+<details>
+<summary><b>More install options</b></summary>
+
+**Non-interactive:**
+
+```bash
+npx blitz-cc@latest --yes
+```
+
+**Bash fallback** (if Node.js is not available):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lasswellt/blitz/main/installer/install.sh | bash
+```
+
+**From the marketplace (manual):**
+
+```bash
+/plugin marketplace add lasswellt/blitz
+/plugin install blitz@blitz
+```
+
+**Local testing:**
+
+```bash
+claude --plugin-dir ./blitz
+```
+
+</details>
+
+### What the installer does
+
+```
+  Checking environment...
+    ├─ Claude CLI ✓ (v2.x)
+    ├─ Node.js ✓
+    ├─ python3 ✓
+    └─ Platform: linux (WSL)
+
+  Stack detection...
+    ├─ Framework: Nuxt 3
+    ├─ UI Framework: Quasar
+    ├─ Backend: Firebase/GCP
+    ├─ Package Manager: pnpm
+    └─ Testing: Vitest
+
+  Marketplace registration... ✓
+  Plugin installation...      ✓
+  Plugin enablement...        ✓
+  Permissions setup...        ✓ (29 allow, 2 deny)
+  Environment variables...    ✓
+  Activity feed setup...      ✓
+```
+
+Stack-aware permissions are generated automatically — Tailwind, Quasar, Firebase, VueFire domains and CLI tools are allowed based on what's in your `package.json`.
+
+---
 
 ## Supported Stacks
 
-- **Frameworks**: Vue 3 (Vite), Nuxt 3
-- **UI Frameworks**: Tailwind CSS, Quasar, Vuetify (auto-detected)
-- **Backend**: Firebase/GCP, Cloud Functions v2
-- **State**: Pinia, VueFire, XState
-- **Testing**: Vitest, Jest
-- **Build Systems**: pnpm workspaces, Nx, Turborepo
+| Layer | Supported |
+|-------|-----------|
+| **Frameworks** | Vue 3 (Vite), Nuxt 3 |
+| **UI Frameworks** | Tailwind CSS, Quasar, Vuetify *(auto-detected)* |
+| **Backend** | Firebase/GCP, Cloud Functions v2 |
+| **State** | Pinia, VueFire, XState |
+| **Testing** | Vitest, Jest |
+| **Build Systems** | pnpm workspaces, Nx, Turborepo |
 
-Skills auto-detect the project's tech stack at invocation time via `scripts/detect-stack.sh` — no manual configuration needed.
+Skills auto-detect the project's tech stack at invocation time — no manual configuration needed.
 
-## Prerequisites
+### Prerequisites
 
-- **bash** — required by all hooks and stack detection
-- **Node.js / npx** — required by format and lint hooks (Prettier, ESLint, Biome)
-- **python3** — required by hooks for JSON parsing
-- **grep** — required by stack detection (universally available)
+- **bash** — hooks and stack detection
+- **Node.js / npx** — format and lint hooks (Prettier, ESLint, Biome)
+- **python3** — hooks for JSON parsing
 
-## Installation
-
-### From the marketplace
-
-```bash
-/plugin marketplace add lasswellt/cc-plugin-suite
-/plugin install cc-plugin-suite@cc-plugin-suite
-```
-
-### Local testing
-
-```bash
-claude --plugin-dir ./cc-plugin-suite
-```
+---
 
 ## Skills (31)
 
@@ -41,57 +118,57 @@ claude --plugin-dir ./cc-plugin-suite
 
 | Skill | Description | Invocation |
 |-------|-------------|------------|
-| **research** | Investigates libraries, APIs, and architecture patterns. Spawns parallel research agents. | `/cc-plugin-suite:research <topic>` |
-| **refactor** | Safe, incremental refactoring with test verification after each step. | `/cc-plugin-suite:refactor <file> <goal>` |
-| **fix-issue** | Resolves GitHub issues end-to-end: fetch, research, implement, verify, update. | `/cc-plugin-suite:fix-issue <issue-number>` |
-| **test-gen** | Generates tests matching project conventions (Vitest/Jest auto-detect). | `/cc-plugin-suite:test-gen <file-path>` |
-| **ui-build** | 5-phase UI workflow: Discover, Analyze, Design, Implement, Refine. | `/cc-plugin-suite:ui-build` |
-| **browse** | Automated browser testing via Playwright MCP. Captures console/network errors. | `/cc-plugin-suite:browse [full\|smoke\|page <path>\|fix]` |
-| **bootstrap** | Scaffolds new projects, features, or packages with proper conventions. | `/cc-plugin-suite:bootstrap <type> <name>` |
-| **quick** | Fast ad-hoc changes without full skill ceremony — small fixes, typos, config tweaks. | `/cc-plugin-suite:quick <request>` |
-| **codebase-map** | Analyzes existing codebase: Technology, Architecture, Quality, Concerns. Brownfield onboarding. | `/cc-plugin-suite:codebase-map` |
-| **todo** | Track development todos and follow-up items — add, list, check, resolve. | `/cc-plugin-suite:todo <add\|list\|check\|resolve>` |
+| **research** | Investigates libraries, APIs, and architecture patterns. Spawns parallel research agents. | `/blitz:research <topic>` |
+| **refactor** | Safe, incremental refactoring with test verification after each step. | `/blitz:refactor <file> <goal>` |
+| **fix-issue** | Resolves GitHub issues end-to-end: fetch, research, implement, verify, update. | `/blitz:fix-issue <issue-number>` |
+| **test-gen** | Generates tests matching project conventions (Vitest/Jest auto-detect). | `/blitz:test-gen <file-path>` |
+| **ui-build** | 5-phase UI workflow: Discover, Analyze, Design, Implement, Refine. | `/blitz:ui-build` |
+| **browse** | Automated browser testing via Playwright MCP. Captures console/network errors. | `/blitz:browse [full\|smoke\|page <path>\|fix]` |
+| **bootstrap** | Scaffolds new projects, features, or packages with proper conventions. | `/blitz:bootstrap <type> <name>` |
+| **quick** | Fast ad-hoc changes without full skill ceremony — small fixes, typos, config tweaks. | `/blitz:quick <request>` |
+| **codebase-map** | Analyzes existing codebase: Technology, Architecture, Quality, Concerns. Brownfield onboarding. | `/blitz:codebase-map` |
+| **todo** | Track development todos and follow-up items — add, list, check, resolve. | `/blitz:todo <add\|list\|check\|resolve>` |
 
 ### Sprint Lifecycle Skills
 
 | Skill | Description | Invocation |
 |-------|-------------|------------|
-| **sprint-plan** | Plans sprints from roadmap epics with research-backed stories. | `/cc-plugin-suite:sprint-plan` |
-| **sprint-dev** | Implements sprints with coordinated agent teams in isolated worktrees. | `/cc-plugin-suite:sprint-dev` |
-| **sprint-review** | Reviews sprint quality with automated checks and parallel reviewer agents. | `/cc-plugin-suite:sprint-review` |
-| **roadmap** | Generates phased implementation roadmaps from research documents. | `/cc-plugin-suite:roadmap [full\|refresh\|extend\|status]` |
+| **sprint-plan** | Plans sprints from roadmap epics with research-backed stories. | `/blitz:sprint-plan` |
+| **sprint-dev** | Implements sprints with coordinated agent teams in isolated worktrees. | `/blitz:sprint-dev` |
+| **sprint-review** | Reviews sprint quality with automated checks and parallel reviewer agents. | `/blitz:sprint-review` |
+| **roadmap** | Generates phased implementation roadmaps from research documents. | `/blitz:roadmap [full\|refresh\|extend\|status]` |
 
 ### Quality & Metrics Skills
 
 | Skill | Description | Invocation |
 |-------|-------------|------------|
-| **codebase-audit** | 5-pillar quality audit (Architecture, Performance, Security, Maintainability, Robustness). | `/cc-plugin-suite:codebase-audit` |
-| **completeness-gate** | Scans code for placeholder patterns and production readiness issues. | `/cc-plugin-suite:completeness-gate [scope]` |
-| **quality-metrics** | Collects, stores, and visualizes code quality metrics over time. | `/cc-plugin-suite:quality-metrics <mode>` |
-| **perf-profile** | Profiles bundle size, runtime performance, and Lighthouse scores. | `/cc-plugin-suite:perf-profile <mode>` |
-| **dep-health** | Audits dependencies for vulnerabilities, outdated packages, and license compliance. | `/cc-plugin-suite:dep-health <mode>` |
-| **integration-check** | Validates cross-module wiring: exports, routes, auth guards, store-to-component. | `/cc-plugin-suite:integration-check [scope]` |
+| **codebase-audit** | 5-pillar quality audit (Architecture, Performance, Security, Maintainability, Robustness). | `/blitz:codebase-audit` |
+| **completeness-gate** | Scans code for placeholder patterns and production readiness issues. | `/blitz:completeness-gate [scope]` |
+| **quality-metrics** | Collects, stores, and visualizes code quality metrics over time. | `/blitz:quality-metrics <mode>` |
+| **perf-profile** | Profiles bundle size, runtime performance, and Lighthouse scores. | `/blitz:perf-profile <mode>` |
+| **dep-health** | Audits dependencies for vulnerabilities, outdated packages, and license compliance. | `/blitz:dep-health <mode>` |
+| **integration-check** | Validates cross-module wiring: exports, routes, auth guards, store-to-component. | `/blitz:integration-check [scope]` |
 
 ### Documentation & Release Skills
 
 | Skill | Description | Invocation |
 |-------|-------------|------------|
-| **doc-gen** | Generates API docs, component docs, architecture diagrams, and changelogs. | `/cc-plugin-suite:doc-gen <mode>` |
-| **release** | Manages semantic versioning, changelogs, and GitHub releases. | `/cc-plugin-suite:release <mode>` |
-| **migrate** | Handles framework and library migrations with incremental safety. | `/cc-plugin-suite:migrate <target>` |
+| **doc-gen** | Generates API docs, component docs, architecture diagrams, and changelogs. | `/blitz:doc-gen <mode>` |
+| **release** | Manages semantic versioning, changelogs, and GitHub releases. | `/blitz:release <mode>` |
+| **migrate** | Handles framework and library migrations with incremental safety. | `/blitz:migrate <target>` |
 
 ### Orchestrator Skills
 
 | Skill | Description | Invocation |
 |-------|-------------|------------|
-| **ask** | Task intake — classifies vague requests and dispatches to the right skill(s). | `/cc-plugin-suite:ask <request>` |
-| **sprint** | Full sprint cycle: plan → implement → review. | `/cc-plugin-suite:sprint [flags]` |
-| **implement** | Sprint implementation phase only. | `/cc-plugin-suite:implement [flags]` |
-| **review** | Sprint review and quality gate only. | `/cc-plugin-suite:review [flags]` |
-| **ship** | End-to-end shipping: review → completeness gate → quality metrics → release. | `/cc-plugin-suite:ship [version]` |
-| **retrospective** | Self-improvement loop: analyzes sessions, generates improvement proposals, updates developer profile. | `/cc-plugin-suite:retrospective` |
-| **health** | Plugin health check — verifies hooks, sessions, registry, and structural integrity. | `/cc-plugin-suite:health` |
-| **next** | Determines the logical next action based on current project and sprint state. | `/cc-plugin-suite:next` |
+| **ask** | Task intake — classifies vague requests and dispatches to the right skill(s). | `/blitz:ask <request>` |
+| **sprint** | Full sprint cycle: plan → implement → review. | `/blitz:sprint [flags]` |
+| **implement** | Sprint implementation phase only. | `/blitz:implement [flags]` |
+| **review** | Sprint review and quality gate only. | `/blitz:review [flags]` |
+| **ship** | End-to-end shipping: review → completeness gate → quality metrics → release. | `/blitz:ship [version]` |
+| **retrospective** | Self-improvement loop: analyzes sessions, generates improvement proposals, updates developer profile. | `/blitz:retrospective` |
+| **health** | Plugin health check — verifies hooks, sessions, registry, and structural integrity. | `/blitz:health` |
+| **next** | Determines the logical next action based on current project and sprint state. | `/blitz:next` |
 
 ## Agents (6)
 
@@ -131,59 +208,56 @@ Three behavioral profiles control skill thoroughness. Set in `.claude-plugin/mod
 ## Architecture
 
 ```
-cc-plugin-suite/
+blitz/
 ├── .claude-plugin/
-│   ├── plugin.json              # Plugin manifest (v0.2.0)
-│   └── marketplace.json         # Self-hosted marketplace catalog
+│   ├── plugin.json                # Plugin manifest
+│   ├── marketplace.json           # Marketplace catalog
+│   ├── skill-registry.json        # Skill metadata registry
+│   └── model-profiles.json        # Quality/balanced/budget profiles
+├── installer/                     # npx blitz-cc installer
+│   ├── bin/install.js             # Entry point
+│   ├── src/                       # Zero-dependency Node.js modules
+│   └── install.sh                 # Bash fallback (curl | bash)
 ├── scripts/
-│   ├── detect-stack.sh          # Dynamic stack detection
-│   ├── validate-skill-output.sh # Skill output validation (code, docs, config, stories, reports)
-│   └── validate-plugin-structure.sh # Plugin structure integrity checks
-├── skills/                      # 31 skills with SKILL.md + reference.md
-│   ├── _shared/
-│   │   ├── definition-of-done.md
-│   │   └── session-protocol.md
-│   ├── ask/                     # Orchestrator: task intake router
-│   ├── bootstrap/               # Project/feature/package scaffolding
-│   ├── browse/                  # Browser testing via Playwright
-│   ├── codebase-audit/          # 5-pillar quality audit
-│   ├── completeness-gate/       # Production readiness scanner
-│   ├── dep-health/              # Dependency health audit
-│   ├── doc-gen/                 # Documentation generation
-│   ├── fix-issue/               # GitHub issue resolution
-│   ├── implement/               # Sprint implementation orchestrator
-│   ├── migrate/                 # Framework/library migration
-│   ├── perf-profile/            # Performance profiling
-│   ├── quality-metrics/         # Quality metrics tracking
-│   ├── refactor/                # Safe incremental refactoring
-│   ├── release/                 # Release management
-│   ├── research/                # Topic investigation
-│   ├── retrospective/           # Self-improvement analysis
-│   ├── review/                  # Sprint review orchestrator
-│   ├── roadmap/                 # Implementation roadmap
-│   ├── ship/                    # End-to-end shipping orchestrator
-│   ├── sprint/                  # Full sprint cycle orchestrator
-│   ├── sprint-dev/              # Sprint implementation with agents
-│   ├── sprint-plan/             # Sprint planning
-│   ├── sprint-review/           # Sprint quality review
-│   ├── test-gen/                # Test generation
-│   └── ui-build/                # UI workflow
-├── agents/                      # 6 specialized agents
-│   ├── architect.md
-│   ├── backend-dev.md
-│   ├── doc-writer.md
-│   ├── frontend-dev.md
-│   ├── reviewer.md
-│   └── test-writer.md
-└── hooks/                       # 6 pre/post hooks
+│   ├── detect-stack.sh            # Dynamic stack detection
+│   ├── validate-skill-output.sh   # Skill output validation
+│   └── validate-plugin-structure.sh
+├── skills/                        # 31 skills (SKILL.md + reference.md)
+│   ├── _shared/                   # 7 shared protocols
+│   │   ├── session-protocol.md    # Multi-session safety
+│   │   ├── verbose-progress.md    # Output format + activity feed
+│   │   ├── definition-of-done.md  # 9 banned anti-patterns
+│   │   ├── checkpoint-protocol.md # Sprint checkpoint/resume
+│   │   ├── deviation-protocol.md  # 4-tier escalation rules
+│   │   ├── context-management.md  # Lean context window rules
+│   │   └── session-report-template.md
+│   ├── ask/                       # Task intake router
+│   ├── sprint/                    # Full sprint cycle orchestrator
+│   ├── sprint-plan/               # Sprint planning
+│   ├── sprint-dev/                # Agent team implementation
+│   ├── sprint-review/             # Quality review
+│   ├── ... (26 more)
+│   └── ui-build/                  # UI workflow
+├── agents/                        # 6 specialized agents
+│   ├── architect.md               # Architecture analysis (read-only)
+│   ├── backend-dev.md             # Cloud Functions / Zod / Firestore
+│   ├── frontend-dev.md            # Vue 3 / Pinia / UI frameworks
+│   ├── reviewer.md                # 10-category code review
+│   ├── test-writer.md             # Vitest/Jest test generation
+│   └── doc-writer.md              # API docs, ADRs, changelogs
+└── hooks/                         # 9 pre/post hooks
     ├── hooks.json
     └── scripts/
-        ├── pre-edit-guard.sh
-        ├── pre-edit-backup.sh
-        ├── post-edit-format.sh
-        ├── post-edit-lint.sh
-        ├── post-edit-test.sh
-        └── pre-commit-validate.sh
+        ├── pre-edit-guard.sh      # Block edits to protected files
+        ├── pre-edit-backup.sh     # Timestamped backups
+        ├── post-edit-format.sh    # Auto-format (Prettier/Biome)
+        ├── post-edit-lint.sh      # Auto-lint (ESLint/Biome)
+        ├── post-edit-test.sh      # Run matching tests
+        ├── post-edit-activity-log.sh
+        ├── pre-commit-validate.sh # Scan for banned patterns
+        ├── workflow-guard.sh      # Phase order enforcement
+        ├── context-monitor.sh     # Context window utilization
+        └── analysis-paralysis-guard.sh
 ```
 
 ## Quality Philosophy
@@ -223,19 +297,46 @@ SKILL.md files stay under 500 lines. Detailed reference material lives in `refer
 
 ## Agent Permission Mode
 
-Plugin agents do not support the `permissionMode` frontmatter field — it is silently ignored by Claude Code. All plugin agents run with default permission prompts regardless of what is specified.
-
-To get `acceptEdits` behavior for an agent, copy it from the plugin cache into your project's `.claude/agents/` directory where it becomes a project-level agent with full frontmatter support:
+Plugin agents run with default permission prompts. To enable `acceptEdits` (no prompts when agents edit files), the installer can copy agents to your project:
 
 ```bash
-cp ~/.claude/plugins/cache/cc-plugin-suite/agents/backend-dev.md .claude/agents/backend-dev.md
+npx blitz-cc@latest   # select "Copy agents with acceptEdits mode" when prompted
 ```
 
-Then add `permissionMode: acceptEdits` to the project-level copy.
+Or manually:
+
+```bash
+cp ~/.claude/plugins/cache/blitz/*/agents/backend-dev.md .claude/agents/backend-dev.md
+# Then add `permissionMode: acceptEdits` to the frontmatter
+```
 
 ## Skill Permissions
 
 The `allowed-tools` field in skill frontmatter grants auto-permission — tools listed are automatically approved without prompting while the skill is active. It does not restrict which tools the skill can use; unlisted tools can still be used with user approval.
+
+## Installer CLI
+
+The `blitz-cc` installer is a zero-dependency Node.js package that handles the full setup.
+
+```
+Usage:
+  npx blitz-cc@latest              Interactive install
+  npx blitz-cc@latest --yes        Non-interactive with defaults
+  npx blitz-cc@latest --uninstall  Remove Blitz from project
+
+Options:
+  --project <path>     Target project directory (default: cwd)
+  --yes, -y            Accept all defaults
+  --dry-run            Preview changes without writing
+  --skip-agents        Skip agent copy step
+  --skip-permissions   Skip permissions setup
+  --uninstall          Remove Blitz from the project
+  --verbose            Show detailed output
+```
+
+The installer is idempotent — safe to run multiple times. It merges settings without overwriting your existing configuration.
+
+---
 
 ## Contributing
 

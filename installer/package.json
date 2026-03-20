@@ -1,0 +1,36 @@
+{
+  "name": "blitz-cc",
+  "version": "0.4.0",
+  "description": "Installer for the Blitz Claude Code plugin — 31 skills for Vue/Nuxt + Firebase development",
+  "bin": {
+    "blitz-cc": "./bin/install.js"
+  },
+  "keywords": [
+    "claude-code",
+    "claude",
+    "plugin",
+    "vue",
+    "nuxt",
+    "firebase",
+    "development",
+    "ai",
+    "installer"
+  ],
+  "author": "lasswellt",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lasswellt/blitz.git",
+    "directory": "installer"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "install.sh",
+    "README.md",
+    "LICENSE"
+  ]
+}

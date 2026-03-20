@@ -13,7 +13,7 @@ disable-model-invocation: true
 
 # Plugin Health Check
 
-Verify the structural integrity and operational health of the cc-plugin-suite plugin. Reports issues that could affect skill execution, session management, or hook automation.
+Verify the structural integrity and operational health of the blitz plugin. Reports issues that could affect skill execution, session management, or hook automation.
 
 **No session protocol required.** This skill is lightweight and read-only.
 

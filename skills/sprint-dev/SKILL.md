@@ -320,7 +320,7 @@ This phase is **mandatory** and must not be skipped, even if no explicit UI stor
 
 ### 3.5.0 Run Integration Check (Optional)
 
-Before the UI/UX pass, optionally run `/cc-plugin-suite:integration-check` to verify cross-module wiring:
+Before the UI/UX pass, optionally run `/blitz:integration-check` to verify cross-module wiring:
 - Export-to-import tracing (are new exports consumed?)
 - Route coverage (do new pages have navigation?)
 - Store wiring (are new stores connected to components?)
@@ -399,7 +399,7 @@ Run the completeness gate on all files changed during the sprint:
 # Collect all files modified in this sprint
 CHANGED_FILES=$(git diff --name-only sprint-${SPRINT_NUMBER}/base..HEAD -- '*.ts' '*.tsx' '*.vue')
 ```
-Invoke: `/cc-plugin-suite:completeness-gate` with the sprint's source directories.
+Invoke: `/blitz:completeness-gate` with the sprint's source directories.
 If the score is below C (70), flag critical findings in the integration report but do not block — the sprint review will make the final call.
 
 ### 4.2.1 Cross-Phase Regression Testing

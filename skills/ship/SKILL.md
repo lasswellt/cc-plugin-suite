@@ -79,7 +79,7 @@ Check for an active sprint:
 
 If a sprint registry exists with an in-progress sprint, dispatch to sprint-review:
 ```
-Invoke: /cc-plugin-suite:sprint-review
+Invoke: /blitz:sprint-review
 ```
 
 Wait for completion.
@@ -91,7 +91,7 @@ Wait for completion.
 
 Dispatch to completeness-gate:
 ```
-Invoke: /cc-plugin-suite:completeness-gate all
+Invoke: /blitz:completeness-gate all
 ```
 
 Wait for completion. Read the output:
@@ -102,7 +102,7 @@ Wait for completion. Read the output:
 
 Dispatch to quality-metrics:
 ```
-Invoke: /cc-plugin-suite:quality-metrics collect
+Invoke: /blitz:quality-metrics collect
 ```
 
 Wait for completion. This stores a snapshot for trend analysis.
@@ -165,7 +165,7 @@ Add a new section following Keep a Changelog format:
 ### 3.1 Dispatch to Release Skill
 
 ```
-Invoke: /cc-plugin-suite:release prepare [version]
+Invoke: /blitz:release prepare [version]
 ```
 
 This handles:
@@ -177,7 +177,7 @@ This handles:
 ### 3.2 Verify Release
 
 ```
-Invoke: /cc-plugin-suite:release verify
+Invoke: /blitz:release verify
 ```
 
 Runs all quality gates on the release branch:
@@ -210,7 +210,7 @@ Wait for explicit user confirmation. If declined, preserve the release branch fo
 ### 3.4 Publish (if confirmed)
 
 ```
-Invoke: /cc-plugin-suite:release publish
+Invoke: /blitz:release publish
 ```
 
 This handles:
