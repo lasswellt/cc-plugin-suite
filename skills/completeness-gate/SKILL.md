@@ -3,6 +3,7 @@ name: completeness-gate
 description: "Scans code for placeholder patterns, incomplete implementations, and production readiness issues. Returns structured findings with file:line references."
 allowed-tools: Read, Bash, Glob, Grep
 model: sonnet
+compatibility: ">=2.1.50"
 argument-hint: "<scope: path or 'all'>"
 ---
 

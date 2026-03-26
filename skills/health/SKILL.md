@@ -3,6 +3,7 @@ name: health
 description: "Plugin health check — verifies hooks, sessions, registry, and structural integrity"
 argument-hint: "(no arguments — runs all checks)"
 model: sonnet
+compatibility: ">=2.1.50"
 disable-model-invocation: true
 ---
 

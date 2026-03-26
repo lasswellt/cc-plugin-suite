@@ -4,6 +4,7 @@ description: Generates phased implementation roadmaps from research documents. E
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, TeamCreate, SendMessage
 disable-model-invocation: true
 model: opus
+compatibility: ">=2.1.71"
 argument-hint: "[full | refresh | extend | status]"
 ---
 

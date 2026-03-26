@@ -3,6 +3,7 @@ name: perf-profile
 description: "Profiles bundle size, runtime performance, and Lighthouse scores. Identifies optimization opportunities for Vue/Nuxt apps."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, ToolSearch
 model: opus
+compatibility: ">=2.1.50"
 argument-hint: "<mode: bundle|runtime|lighthouse|full>"
 ---
 

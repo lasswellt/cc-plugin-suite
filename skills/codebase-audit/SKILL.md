@@ -4,6 +4,7 @@ description: Comprehensive 5-pillar code quality audit spanning Architecture, Pe
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch, TeamCreate, SendMessage
 disable-model-invocation: true
 model: opus
+compatibility: ">=2.1.71"
 ---
 
 ## Project Context

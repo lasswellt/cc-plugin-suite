@@ -54,13 +54,13 @@ function verify(projectDir) {
     warn('No permissions configured');
   }
 
-  // 5. Agent teams env
+  // 5. Agent teams (GA since v2.1.71 — no experimental flag needed)
   const env = projectSettings?.env;
   if (env && env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS === '1') {
-    success('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
-    passed++;
+    warn('Legacy CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS flag still set — run installer to clean up');
   } else {
-    warn('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS not set');
+    success('Agent teams: GA (no experimental flag)');
+    passed++;
   }
 
   // 6. Hook dependencies

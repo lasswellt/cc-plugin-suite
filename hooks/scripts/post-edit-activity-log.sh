@@ -30,14 +30,30 @@ done
 SESSIONS_DIR="$ROOT/.cc-sessions"
 mkdir -p "$SESSIONS_DIR"
 
-# Generate a stable session ID from PID hierarchy (reused across the conversation)
-SESSION_ID="cli-$(echo "$$-$PPID" | md5sum 2>/dev/null | cut -c1-8 || echo "unknown")"
+# Generate a session ID from hook input if available, otherwise from agent_id or fallback
+HOOK_SESSION=$(echo "$INPUT" | grep -o '"session_id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"session_id"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
+HOOK_AGENT=$(echo "$INPUT" | grep -o '"agent_id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"agent_id"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
+if [ -n "$HOOK_SESSION" ]; then
+  SESSION_ID="$HOOK_SESSION"
+elif [ -n "$HOOK_AGENT" ]; then
+  SESSION_ID="$HOOK_AGENT"
+else
+  # Fallback: use a hash of the current timestamp minute for rough grouping
+  SESSION_ID="cli-$(date +%Y%m%d%H%M | md5sum 2>/dev/null | cut -c1-8 || echo "unknown")"
+fi
 
 # Make file path relative to project root
 REL_PATH="${FILE_PATH#$ROOT/}"
 
-# Append to activity feed
+# Extract agent_type for attribution (if present in hook input)
+HOOK_AGENT_TYPE=$(echo "$INPUT" | grep -o '"agent_type"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"agent_type"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
+
+# Append to activity feed with agent attribution
 TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date +%Y-%m-%dT%H:%M:%SZ)
-echo "{\"ts\":\"$TS\",\"session\":\"$SESSION_ID\",\"skill\":\"freeform\",\"event\":\"file_change\",\"message\":\"Edited $REL_PATH\",\"detail\":{\"files\":[\"$REL_PATH\"]}}" >> "$SESSIONS_DIR/activity-feed.jsonl"
+if [ -n "$HOOK_AGENT_TYPE" ]; then
+  echo "{\"ts\":\"$TS\",\"session\":\"$SESSION_ID\",\"skill\":\"freeform\",\"event\":\"file_change\",\"message\":\"Edited $REL_PATH\",\"detail\":{\"files\":[\"$REL_PATH\"],\"agent_type\":\"$HOOK_AGENT_TYPE\"}}" >> "$SESSIONS_DIR/activity-feed.jsonl"
+else
+  echo "{\"ts\":\"$TS\",\"session\":\"$SESSION_ID\",\"skill\":\"freeform\",\"event\":\"file_change\",\"message\":\"Edited $REL_PATH\",\"detail\":{\"files\":[\"$REL_PATH\"]}}" >> "$SESSIONS_DIR/activity-feed.jsonl"
+fi
 
 exit 0

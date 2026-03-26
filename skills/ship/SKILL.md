@@ -3,6 +3,7 @@ name: ship
 description: "End-to-end shipping workflow: review, completeness gate, quality metrics, release. Chains multiple skills with quality gates between each."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: opus
+compatibility: ">=2.1.71"
 argument-hint: "[version]"
 disable-model-invocation: true
 ---

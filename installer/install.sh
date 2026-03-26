@@ -63,6 +63,20 @@ if ! command -v claude &>/dev/null; then
   exit 1
 fi
 
+# Check minimum Claude Code version (>=2.1.71 for GA agent teams)
+CLAUDE_VER=$(claude --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+if [ -n "$CLAUDE_VER" ]; then
+  IFS='.' read -r CV_MAJOR CV_MINOR CV_PATCH <<< "$CLAUDE_VER"
+  if [ "${CV_MAJOR:-0}" -lt 2 ] || \
+     { [ "${CV_MAJOR:-0}" -eq 2 ] && [ "${CV_MINOR:-0}" -lt 1 ]; } || \
+     { [ "${CV_MAJOR:-0}" -eq 2 ] && [ "${CV_MINOR:-0}" -eq 1 ] && [ "${CV_PATCH:-0}" -lt 71 ]; }; then
+    warn "Claude Code v${CLAUDE_VER} — blitz requires >=2.1.71 for full functionality"
+    warn "Multi-agent skills may not work. Update: npm install -g @anthropic-ai/claude-code@latest"
+  else
+    info "Claude Code v${CLAUDE_VER}"
+  fi
+fi
+
 if ! command -v python3 &>/dev/null; then
   fail "python3 not found (required for settings merge)"
   exit 1
@@ -140,9 +154,12 @@ if 'enabledPlugins' not in settings:
 
 settings['enabledPlugins']['${PLUGIN_NAME}@${MARKETPLACE_NAME}'] = True
 
-if 'env' not in settings:
-    settings['env'] = {}
-settings['env']['CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS'] = '1'
+# Agent teams are GA as of Claude Code v2.1.71 (March 2026) — no experimental flag needed.
+# Clean up legacy flag if present from previous install.
+if 'env' in settings and 'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS' in settings.get('env', {}):
+    del settings['env']['CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS']
+    if not settings['env']:
+        del settings['env']
 
 with open(path, 'w') as f:
     json.dump(settings, f, indent=2)
@@ -150,7 +167,7 @@ with open(path, 'w') as f:
 "
 
 info "Plugin enabled"
-info "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1"
+info "Agent teams: GA (no experimental flag needed)"
 
 # ── Create .cc-sessions ───────────────────────────────────────
 mkdir -p "$PROJECT_DIR/.cc-sessions"

@@ -3,6 +3,7 @@ name: doc-gen
 description: "Generates API docs, component docs, architecture diagrams, and changelogs from source code. Supports api, components, architecture, changelog, and full modes."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch, TeamCreate, SendMessage
 model: opus
+compatibility: ">=2.1.71"
 argument-hint: "<mode: api|components|architecture|changelog|full>"
 ---
 

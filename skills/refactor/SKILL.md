@@ -3,6 +3,7 @@ name: refactor
 description: Performs safe, incremental refactoring with test verification after each step. Snapshots test results, refactors incrementally, verifies no regressions. Use when user says "refactor", "extract", "simplify", "decompose", "clean up".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: opus
+compatibility: ">=2.1.50"
 argument-hint: "<target-file-or-module> <refactoring-goal>"
 ---
 

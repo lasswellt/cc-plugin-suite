@@ -4,6 +4,7 @@ description: Implements planned sprints with coordinated agent teams. Spawns bac
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, TeamCreate, SendMessage, TaskCreate, TaskUpdate, TaskList
 disable-model-invocation: true
 model: opus
+compatibility: ">=2.1.71"
 ---
 
 ## Project Context
@@ -23,7 +24,7 @@ Implement a planned sprint by spawning coordinated agent teams in isolated workt
 
 ## Execution Mode
 
-Check for a `--mode` flag. If not specified, default to `autonomous`.
+Check for a `--mode` flag. If not specified, default to `autonomous`. **If autonomy is `high` or `full` (e.g., loop mode with bypass permissions), always override to `autonomous` regardless of the `--mode` flag.**
 
 | Mode | Behavior |
 |---|---|
@@ -42,7 +43,7 @@ Check for a `--mode` flag. If not specified, default to `autonomous`.
    cat "${SPRINT_DIR}/STATE.md" 2>/dev/null | head -5
    ```
    If STATE.md exists, follow the **resume flow** from [checkpoint-protocol.md](/_shared/checkpoint-protocol.md):
-   - Validate staleness (>24h = warn user, ask whether to resume or start fresh).
+   - Validate staleness (>24h = warn user, ask whether to resume or start fresh). **If autonomy is `high` or `full` (e.g., loop mode), skip the staleness prompt and auto-resume regardless of age.** Log a `decision` event noting the auto-resume.
    - Validate worktrees (`git worktree list`).
    - Rebuild `agent_tracker` from STATE.md tables.
    - Skip to Phase 3 with remaining stories.
@@ -50,7 +51,7 @@ Check for a `--mode` flag. If not specified, default to `autonomous`.
 
    If STATE.md does not exist, continue with normal flow.
 
-1b. **Check for incomplete sprints.** Search for `sprint-registry.json` and check for sprints with `status: in-progress`. If one exists, resume it (skip to Phase 1 with that sprint). Warn the user.
+1b. **Check for incomplete sprints.** Search for `sprint-registry.json` and check for sprints with `status: in-progress`. If one exists, resume it (skip to Phase 1 with that sprint). Warn the user. *(If autonomy is `high` or `full`, log the warning and auto-resume without prompting.)*
 2. **Build codebase inventory.** Run:
    ```bash
    find . -maxdepth 3 -name 'package.json' -not -path '*/node_modules/*' | head -30
@@ -183,19 +184,25 @@ Based on story assignments, spawn only the agents that have stories:
 | `test-writer` | Unit tests, integration tests, e2e tests | `sprint-${N}/tests` |
 | `infra-dev` | Infrastructure, CI/CD, deployment (if stories exist) | `sprint-${N}/infra` |
 
-### 2.3 Create Worktrees
+### 2.3 Spawn Agents with Worktree Isolation
 
-For each agent, create an isolated git worktree:
-```bash
-git worktree add -b sprint-${SPRINT_NUMBER}/<role> .worktrees/sprint-${SPRINT_NUMBER}/<role> HEAD
+Spawn each agent using the `Agent` tool with `isolation: "worktree"`. This gives each agent an isolated git worktree that is automatically cleaned up if no changes are made.
+
+```
+Agent(
+  name: "<role>",
+  subagent_type: "blitz:<role>",
+  team_name: "sprint-${SPRINT_NUMBER}-dev",
+  isolation: "worktree",
+  prompt: "<agent instructions — see below>"
+)
 ```
 
-### 2.4 Spawn Agents
+**Note:** The `isolation: "worktree"` parameter replaces manual `git worktree add` commands. Each agent gets its own branch and working directory automatically. Worktrees with no changes are auto-cleaned on agent completion; worktrees with changes are preserved for merging.
 
-For each agent, send spawn instructions via `SendMessage`. Include:
+Include in the agent prompt:
 1. Agent role and responsibilities (see reference.md for prompt templates).
-2. Working directory (worktree path).
-3. List of assigned stories in dependency order, with their `verify` and `done` fields.
+2. List of assigned stories in dependency order, with their `verify` and `done` fields.
 4. Project conventions (detected stack, coding patterns, naming conventions).
 5. Commit message format: `feat(sprint-${N}/<role>): S${N}-XXX <description>`.
 6. Project conventions guide from Phase 0.5 (full text, not a file reference).
@@ -227,11 +234,12 @@ agent_tracker = {
     "status": "active",      // active | stuck | completed
     "current_story": "S1-003",
     "completed": ["S1-001"],
-    "failed_attempts": 0,    // circuit breaker counter
-    "worktree": ".worktrees/<role>"
+    "failed_attempts": 0     // circuit breaker counter
   }
 }
 ```
+
+Worktree paths are managed by the Agent tool's `isolation: "worktree"` parameter and do not need manual tracking.
 
 **Circuit breaker:** If an agent fails the same story 3 times, mark the story as `blocked`, notify the orchestrator, and move the agent to the next available story.
 
@@ -449,12 +457,20 @@ If verification fails:
 
 ### 4.4 Clean Up Worktrees
 
-```bash
-git worktree remove .worktrees/sprint-${SPRINT_NUMBER}/backend 2>/dev/null
-git worktree remove .worktrees/sprint-${SPRINT_NUMBER}/frontend 2>/dev/null
-git worktree remove .worktrees/sprint-${SPRINT_NUMBER}/tests 2>/dev/null
-git worktree remove .worktrees/sprint-${SPRINT_NUMBER}/infra 2>/dev/null
-```
+If agents were spawned with `isolation: "worktree"`, worktrees with no changes are automatically cleaned up when agents complete. For worktrees that persist (because they have changes):
+
+1. List remaining worktrees: `git worktree list`
+2. After successful merge (Phase 4.1), remove merged worktrees:
+   ```bash
+   for ROLE in backend frontend tests infra; do
+     WT=".worktrees/sprint-${SPRINT_NUMBER}/${ROLE}"
+     if [ -d "$WT" ]; then
+       git worktree remove "$WT" --force 2>&1 || \
+         echo "WARNING: Could not remove worktree $WT — check for uncommitted changes"
+     fi
+   done
+   ```
+3. Log any removal failures to the activity feed as `warning` events.
 
 ### 4.5 E2E Verification (Best-Effort)
 
@@ -544,6 +560,6 @@ Sprint ${SPRINT_NUMBER} implementation complete.
 
 - **Worktree creation fails**: Fall back to branch-only isolation (agents work on branches, merge sequentially).
 - **Agent unresponsive**: After 3 message attempts with no response, mark agent as failed. Reassign stories to another agent or handle directly.
-- **Merge conflicts**: Attempt auto-resolution for trivial conflicts (added-added in different sections). For complex conflicts, present to user with context from both sides.
-- **Build fails after merge**: Systematically fix by category. If unfixable in 5 rounds, create a detailed issue list and ask user for guidance.
-- **All agents stuck**: Likely a fundamental design issue. Report the common blocker and ask user to intervene.
+- **Merge conflicts**: Attempt auto-resolution for trivial conflicts (added-added in different sections). For complex conflicts, present to user with context from both sides. *(If autonomy is `high` or `full`, attempt auto-resolution for all conflicts. If auto-resolution fails, mark the conflicting stories as `blocked`, log the conflict details to the activity feed and STATE.md, and continue with remaining stories.)*
+- **Build fails after merge**: Systematically fix by category. If unfixable in 5 rounds, create a detailed issue list and ask user for guidance. *(If autonomy is `high` or `full`, log the issue list to STATE.md and the activity feed, mark the sprint as `review` with integration issues noted, and exit. The next `/loop` tick or manual review will handle it.)*
+- **All agents stuck**: Likely a fundamental design issue. Report the common blocker and ask user to intervene. *(If autonomy is `high` or `full`, mark all remaining stories as `blocked` with reason "all agents stuck", write STATE.md checkpoint, update sprint status to `review` with blocked stories noted, log to activity feed, and exit cleanly.)*

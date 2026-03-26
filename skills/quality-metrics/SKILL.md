@@ -3,6 +3,7 @@ name: quality-metrics
 description: "Collects, stores, and visualizes code quality metrics over time. Supports collect, dashboard, trend, and compare modes."
 allowed-tools: Read, Write, Bash, Glob, Grep
 model: sonnet
+compatibility: ">=2.1.50"
 argument-hint: "<mode: collect|dashboard|trend|compare <date1> <date2>>"
 ---
 

@@ -3,6 +3,7 @@ name: codebase-map
 description: "Analyzes an existing codebase across 4 dimensions: Technology, Architecture, Quality, and Concerns. Produces a CODEBASE-MAP.md for brownfield project onboarding."
 allowed-tools: Read, Bash, Glob, Grep
 model: sonnet
+compatibility: ">=2.1.50"
 argument-hint: "(no arguments — analyzes the current project)"
 ---
 

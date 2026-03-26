@@ -3,6 +3,7 @@ name: retrospective
 description: "Analyzes completed sessions to identify improvement patterns. Generates proposals for plugin self-improvement with safety classification."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: opus
+compatibility: ">=2.1.50"
 argument-hint: "(no arguments — runs analysis automatically)"
 ---
 

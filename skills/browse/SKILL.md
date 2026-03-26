@@ -4,6 +4,7 @@ description: Automated browser testing via Playwright MCP. Navigates pages, clic
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, ToolSearch
 disable-model-invocation: true
 model: opus
+compatibility: ">=2.1.50"
 argument-hint: "[mode] [target] -- modes: full | smoke | page <path> | fix"
 ---
 

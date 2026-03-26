@@ -2,7 +2,28 @@
 set -uo pipefail
 # Detect project tech stack for adaptive skill behavior
 # Output is injected into skill context via !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
+# Results are cached for 1 hour in .cc-sessions/stack-profile.cache
 
+CACHE_FILE=".cc-sessions/stack-profile.cache"
+CACHE_TTL=3600  # 1 hour in seconds
+
+# Check cache: use if exists and not expired
+if [ -f "$CACHE_FILE" ]; then
+  if [ "$(uname)" = "Darwin" ]; then
+    CACHE_MTIME=$(stat -f %m "$CACHE_FILE" 2>/dev/null || echo "0")
+  else
+    CACHE_MTIME=$(stat -c %Y "$CACHE_FILE" 2>/dev/null || echo "0")
+  fi
+  NOW=$(date +%s)
+  AGE=$(( NOW - CACHE_MTIME ))
+  if [ "$AGE" -lt "$CACHE_TTL" ]; then
+    cat "$CACHE_FILE"
+    exit 0
+  fi
+fi
+
+# Generate fresh detection
+{
 echo "## Detected Stack Profile"
 
 # Framework
@@ -66,5 +87,6 @@ fi
 if [ -f "package.json" ]; then
   grep -q '"@openfga"' package.json 2>/dev/null && echo "- **Authorization**: OpenFGA"
 fi
+} | tee "$CACHE_FILE" 2>/dev/null || true
 
 exit 0

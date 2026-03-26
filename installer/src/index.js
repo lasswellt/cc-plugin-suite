@@ -137,6 +137,22 @@ async function run(argv) {
     ui.info('Then re-run: npx blitz-cc@latest');
     process.exit(1);
   }
+
+  // Check minimum Claude Code version (>=2.1.71 for GA agent teams)
+  if (env.claude && env.claude.version) {
+    const parts = env.claude.version.split('.').map(Number);
+    const [major, minor, patch] = parts;
+    const MIN_MAJOR = 2, MIN_MINOR = 1, MIN_PATCH = 71;
+    const meetsMinimum = major > MIN_MAJOR ||
+      (major === MIN_MAJOR && minor > MIN_MINOR) ||
+      (major === MIN_MAJOR && minor === MIN_MINOR && (patch || 0) >= MIN_PATCH);
+    if (!meetsMinimum) {
+      console.log('');
+      ui.warn(`Claude Code v${env.claude.version} detected — blitz requires >=2.1.71 for full functionality`);
+      ui.info('Multi-agent skills (sprint-dev, research, etc.) may not work correctly.');
+      ui.info('Update: npm install -g @anthropic-ai/claude-code@latest');
+    }
+  }
   if (!env.node.path) {
     console.log('');
     ui.fail('Node.js not found (required for hooks)');
@@ -245,17 +261,22 @@ async function run(argv) {
     envSettings.$schema = 'https://json.schemastore.org/claude-code-settings.json';
   }
 
+  // Agent teams are GA as of Claude Code v2.1.71 (March 2026).
+  // Clean up the experimental flag if it was set by a previous install.
   const currentVal = getNestedValue(envSettings, 'env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS');
   if (currentVal === '1') {
-    ui.success('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 (already set)');
-  } else {
-    setNestedValue(envSettings, 'env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS', '1');
     if (opts.dryRun) {
-      ui.info('Would set CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
+      ui.info('Would remove legacy CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS flag (agent teams are now GA)');
     } else {
+      delete envSettings.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS;
+      if (envSettings.env && Object.keys(envSettings.env).length === 0) {
+        delete envSettings.env;
+      }
       write(settingsPath, envSettings);
-      ui.success('Set CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1');
+      ui.success('Removed legacy CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS flag (agent teams are now GA)');
     }
+  } else {
+    ui.success('Agent teams: GA (no experimental flag needed)');
   }
 
   // ── Phase 8: Agent Setup ───────────────────────────────────────

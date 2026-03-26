@@ -3,6 +3,7 @@ name: test-gen
 description: Generates tests for target files matching project conventions. Analyzes untested functions, edge cases, and error paths. Runs tests to verify they pass. Use when user says "add tests", "test coverage", "generate tests for".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+compatibility: ">=2.1.50"
 argument-hint: "<file-path>"
 ---
 

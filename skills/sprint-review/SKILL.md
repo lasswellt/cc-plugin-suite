@@ -4,6 +4,7 @@ description: Reviews sprint quality with automated checks and parallel reviewer 
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch, TeamCreate, SendMessage
 disable-model-invocation: true
 model: opus
+compatibility: ">=2.1.71"
 ---
 
 ## Project Context
@@ -466,5 +467,5 @@ Where `RECOMMENDED_ACTION` is:
 - **Quality gate command not found**: Try alternative commands (e.g., `npx tsc --noEmit` if `npm run type-check` fails). Skip gracefully if no equivalent exists and note in report.
 - **Reviewer agent failure**: Retry once. If still failing, proceed with available reviews and note the gap.
 - **Auto-fix makes things worse**: Revert immediately using `git checkout -- <file>`. Move to next issue.
-- **Git diff base not found**: Fall back to `HEAD~20` or ask user for the base commit.
+- **Git diff base not found**: Fall back to `HEAD~20` or ask user for the base commit. *(If autonomy is `high` or `full`, use `HEAD~20` without prompting.)*
 - **No test runner found**: Skip test gate, mark as "SKIPPED" (not "FAIL") in report.

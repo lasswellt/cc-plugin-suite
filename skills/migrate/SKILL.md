@@ -3,6 +3,7 @@ name: migrate
 description: "Handles framework, library, and tooling migrations with incremental safety. Researches breaking changes, plans atomic steps, and verifies after each."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, SendMessage
 model: opus
+compatibility: ">=2.1.50"
 argument-hint: "<target: e.g. 'vue 3.5', 'vitest', 'eslint 9', 'pinia 3'>"
 ---
 

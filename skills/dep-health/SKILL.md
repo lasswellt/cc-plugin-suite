@@ -3,6 +3,7 @@ name: dep-health
 description: "Audits npm dependencies for vulnerabilities, outdated packages, and license compliance. Supports audit, upgrade, and report modes."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch
 model: sonnet
+compatibility: ">=2.1.50"
 argument-hint: "<mode: audit|upgrade|report>"
 ---
 

@@ -65,5 +65,22 @@ if [[ "$FILE_PATH" == *"/node_modules/"* || "$FILE_PATH" == "node_modules/"* ]];
   exit 2
 fi
 
+# Agent role boundary check — warn if agent edits outside its domain
+AGENT_TYPE=$(echo "$INPUT" | jq -r '.agent_type // empty' 2>/dev/null || true)
+if [[ -n "$AGENT_TYPE" ]]; then
+  case "$AGENT_TYPE" in
+    *frontend*)
+      if [[ "$FILE_PATH" == *"/functions/"* || "$FILE_PATH" == *"/backend/"* ]]; then
+        echo "WARNING: frontend agent editing backend file: $FILE_PATH" >&2
+      fi
+      ;;
+    *backend*)
+      if [[ "$FILE_PATH" == *"/components/"* || "$FILE_PATH" == *"/pages/"* || "$FILE_PATH" == *"/layouts/"* ]]; then
+        echo "WARNING: backend agent editing frontend file: $FILE_PATH" >&2
+      fi
+      ;;
+  esac
+fi
+
 # All checks passed — allow the edit
 exit 0

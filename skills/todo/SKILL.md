@@ -3,6 +3,7 @@ name: todo
 description: "Track development todos and follow-up items. Modes: add, list, check, resolve. Stores in .cc-sessions/todos.jsonl."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+compatibility: ">=2.1.50"
 argument-hint: "<add <description> | list | check | resolve <id>>"
 ---
 

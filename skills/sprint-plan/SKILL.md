@@ -4,6 +4,7 @@ description: Plans sprints from roadmap epics with research-backed stories. Read
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, TeamCreate, SendMessage
 disable-model-invocation: true
 model: opus
+compatibility: ">=2.1.71"
 ---
 
 ## Project Context
@@ -316,7 +317,7 @@ AC Coverage Gap: N acceptance criteria could not be mapped to stories.
     3. Abort sprint planning
 ```
 
-Do not proceed to Phase 4.2 without either 100% coverage or an explicit user waiver.
+Do not proceed to Phase 4.2 without either 100% coverage or an explicit user waiver. *(If autonomy is `high` or `full`, auto-waive uncovered ACs — add them to `carry_forward` in the manifest, log the waiver as a `decision` event to the activity feed, and proceed.)*
 
 ### 4.2 Partition Stories to Agent Roles
 
@@ -405,7 +406,7 @@ Sprint ${SPRINT_NUMBER} planned successfully.
 
 ## Error Recovery
 
-- **No epics available**: All epics are blocked or done. Inform user and suggest updating the roadmap.
+- **No epics available**: All epics are blocked or done. Inform user and suggest updating the roadmap. *(If autonomy is `high` or `full`, log to activity feed and exit cleanly — the `/loop` reconciler will detect this state.)*
 - **Research agent failure**: Retry once. If still failing, proceed with partial research and flag gaps in summary.
-- **Circular dependencies detected**: Report the cycle and ask user to resolve before continuing.
+- **Circular dependencies detected**: Report the cycle and ask user to resolve before continuing. *(If autonomy is `high` or `full`, break the cycle by removing the weakest dependency edge — the one with the lowest story priority — log the decision to the activity feed, and proceed.)*
 - **GitHub CLI unavailable**: Skip issue creation, note in summary. Stories are still valid without issues.

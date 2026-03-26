@@ -3,6 +3,7 @@ name: bootstrap
 description: "Scaffolds new projects, features, or packages with proper conventions. Detects greenfield vs existing projects and adapts accordingly."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch
 model: opus
+compatibility: ">=2.1.50"
 argument-hint: "<type: project|feature|package> <name>"
 ---
 

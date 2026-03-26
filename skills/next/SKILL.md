@@ -3,6 +3,7 @@ name: next
 description: "Determines the logical next action based on current project and sprint state"
 argument-hint: "(no arguments — reads state automatically)"
 model: sonnet
+compatibility: ">=2.1.50"
 disable-model-invocation: true
 ---
 

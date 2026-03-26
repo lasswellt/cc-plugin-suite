@@ -3,6 +3,7 @@ name: release
 description: "Manages semantic versioning, changelogs, and releases. Supports prepare, verify, publish, and rollback modes."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: opus
+compatibility: ">=2.1.50"
 argument-hint: "<mode: prepare|verify|publish|rollback> [version]"
 ---
 

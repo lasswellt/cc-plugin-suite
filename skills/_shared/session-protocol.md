@@ -27,18 +27,39 @@ Execute this preamble **before any other work** in the skill:
      "session_id": "<SESSION_ID>",
      "skill": "<skill-name>",
      "started": "<ISO-8601>",
-     "pid": "$$",
+     "last_activity": "<ISO-8601>",
      "status": "active",
      "working_on": "<brief description>",
      "locks_held": [],
      "tmp_dir": ".cc-sessions/${SESSION_ID}/tmp/"
    }
 
+   **Update `last_activity`** whenever logging to the activity feed or completing a substantive action. This replaces PID-based tracking (which was unreliable since each bash invocation gets a new PID).
+
 4. Create session temp directory:
    mkdir -p .cc-sessions/${SESSION_ID}/tmp/
 
 5. Read ALL .cc-sessions/*.json files.
-   Check for conflicting sessions using the conflict matrix below.
+
+   **5a. Stale Session Cleanup.** Before checking conflicts, clean up stale sessions.
+   For each session file with `status: active`:
+   1. Read the session's `last_activity` timestamp (or `started` if `last_activity` is absent).
+   2. A session is **stale** if ANY of:
+      - `started` is older than 4 hours, OR
+      - `last_activity` is older than 30 minutes AND no activity feed entry from this session ID exists in the last 50 lines of `activity-feed.jsonl`
+   3. If the session is stale:
+      - Update the session file: set `status` to `"failed"`, add `"failed_reason": "stale_session_cleanup"`.
+      - Release any locks listed in `locks_held` (delete the corresponding `<file>.lock` files).
+      - Log cleanup to the activity feed:
+        ```jsonl
+        {"ts":"<ISO-8601>","session":"<CURRENT_SESSION_ID>","skill":"<skill-name>","event":"warning","message":"Cleaned up stale session <STALE_SID> (inactive >30min or started >4h ago)","detail":{"stale_session":"<STALE_SID>","reason":"inactive|timeout"}}
+        ```
+      - Log to the operation log:
+        ```jsonl
+        {"ts":"<ISO-8601>","session":"<CURRENT_SESSION_ID>","op":"stale_cleanup","detail":{"stale_session":"<STALE_SID>","locks_released":["<file1>"]}}
+        ```
+
+   **5b. Conflict Check.** Check for conflicting sessions using the conflict matrix below.
    If a conflict is found, ABORT with a conflict report.
 
 6. Read the activity feed (.cc-sessions/activity-feed.jsonl) —
@@ -149,7 +170,8 @@ For files that are written by multiple skills (registries, story statuses, manif
 
 A lock is **stale** if:
 - The session JSON referenced in the lock has `status: completed` or `status: failed`, OR
-- The session is older than 4 hours AND the PID is not running
+- The lock's `acquired` timestamp is older than 4 hours, OR
+- The session JSON referenced in the lock has `last_activity` older than 30 minutes (or no `last_activity` field and `started` older than 30 minutes)
 
 If a lock is stale, delete it and acquire a fresh lock.
 

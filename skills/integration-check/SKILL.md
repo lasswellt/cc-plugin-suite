@@ -3,6 +3,7 @@ name: integration-check
 description: "Validates cross-module wiring: export-to-import tracing, route coverage, auth guard coverage, store-to-component wiring. Read-only analysis."
 allowed-tools: Read, Bash, Glob, Grep
 model: sonnet
+compatibility: ">=2.1.50"
 argument-hint: "[scope: all | routes | exports | auth | stores]"
 ---
 

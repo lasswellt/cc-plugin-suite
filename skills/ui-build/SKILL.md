@@ -3,6 +3,7 @@ name: ui-build
 description: Researches codebase design patterns then generates production-grade Vue 3 UI that feels native to the project. Runs a 5-phase workflow (Discover, Analyze, Design, Implement, Refine). Use when user says "build a page", "create UI", "add a form", "design component", "build UI for".
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, ToolSearch
 model: opus
+compatibility: ">=2.1.50"
 ---
 
 ## Project Context

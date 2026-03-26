@@ -3,6 +3,7 @@ name: quick
 description: "Fast ad-hoc changes without full skill ceremony. For small fixes, typos, one-file changes, and quick tweaks."
 argument-hint: "<describe what you want to change>"
 model: sonnet
+compatibility: ">=2.1.50"
 disable-model-invocation: true
 ---
 
