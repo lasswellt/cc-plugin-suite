@@ -2,7 +2,7 @@
 name: sprint
 description: "Full sprint cycle: plan, implement, review. Supports --loop for use with /loop."
 argument-hint: "--epics EP-001,EP-002 | --plan-only | --skip-review | --loop"
-disable-model-invocation: true
+disable-model-invocation: false
 compatibility: ">=2.1.71"
 ---
 
