@@ -1,5 +1,5 @@
 {
-  "version": "0.5.1",
+  "version": "0.5.2",
   "updated": "2026-03-19T00:00:00Z",
   "description": "Registry of all skills in blitz with metadata for discovery, routing, and status tracking.",
   "skills": [
