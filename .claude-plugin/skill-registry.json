@@ -191,6 +191,17 @@
       "maturity": "stable"
     },
     {
+      "name": "code-sweep",
+      "category": "quality",
+      "description": "Iterative code improvement with loop support. 30 checks across 7 categories (cleanup, correctness, optimization, convention, security, reduction, robustness). 11 auto-fixable patterns.",
+      "model": "sonnet",
+      "modifies_code": true,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": [],
+      "maturity": "beta"
+    },
+    {
       "name": "completeness-gate",
       "category": "quality",
       "description": "Scans code for placeholder patterns and production readiness issues",

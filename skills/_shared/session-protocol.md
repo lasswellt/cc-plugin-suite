@@ -149,6 +149,7 @@ SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"
 | migrate | — | `${SESSION_TMP_DIR}/migrate-progress.json` |
 | release | — | `${SESSION_TMP_DIR}/release-state.json` |
 | retrospective | — | `${SESSION_TMP_DIR}/retrospective/` |
+| code-sweep | — | `${SESSION_TMP_DIR}/code-sweep/` |
 
 ---
 
@@ -237,6 +238,11 @@ Logged operations: `session_start`, `session_end`, `lock_acquired`, `lock_releas
 | doc-gen | doc-gen | OK — writes to timestamped files |
 | bootstrap | bootstrap | OK — creates new files only |
 | ship | ship | **BLOCK** — one shipping workflow at a time |
+| code-sweep (scan) | code-sweep (scan) | OK — read-only, session-scoped |
+| code-sweep (fix) | code-sweep (fix) | **BLOCK** — concurrent edits |
+| code-sweep (fix) | sprint-dev | WARN — both modify source files |
+| code-sweep (fix) | refactor | **BLOCK** — both modify source files |
+| code-sweep (scan) | sprint-dev | OK — read-only scan during implementation |
 
 ---
 

@@ -12,6 +12,7 @@ Runs a skill at a fixed interval within the current session. Tasks expire when t
 /loop 2h /blitz:dep-health audit
 /loop 1d /blitz:quality-metrics collect
 /loop 30m /blitz:sprint --loop
+/loop 10m /blitz:code-sweep --loop
 ```
 
 ### /schedule (Remote Triggers)
@@ -32,6 +33,7 @@ Creates persistent scheduled tasks that survive session closure. Uses CronCreate
 | `completeness-gate` | After each sprint | default | Catch placeholders before they age |
 | `retrospective` | After each sprint | default | Auto-analyze completed sessions |
 | `sprint` | 15-30m | `--loop` | Continuous sprint execution |
+| `code-sweep` | 10m | `--loop` | Iterative code cleanup with auto-fix |
 | `health` | Daily | default | Plugin integrity check |
 
 ## Loop-Compatible Skills
@@ -45,6 +47,8 @@ Skills that support `/loop` must be **idempotent** — safe to call repeatedly w
 | `quality-metrics collect` | Yes | Writes to date-stamped files, no conflicts |
 | `health` | Yes | Read-only check |
 | `completeness-gate` | Yes | Read-only scan |
+| `code-sweep --scan-only` | Yes | Read-only scan with state tracking |
+| `code-sweep --loop` | Yes | One fix per tick, verify-before-commit, ratchet enforcement |
 | `next` | Yes | Read-only advisor |
 
-Skills that modify code (sprint-dev, refactor, fix-issue, etc.) should NOT be used with `/loop` directly — use `/blitz:sprint --loop` to orchestrate them safely.
+Skills that modify code (sprint-dev, refactor, fix-issue, etc.) should NOT be used with `/loop` directly — use `/blitz:sprint --loop` or `/blitz:code-sweep --loop` to orchestrate them safely.
