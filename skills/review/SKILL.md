@@ -2,7 +2,7 @@
 name: review
 description: "Sprint review and quality gate"
 argument-hint: "--sprint NNN | --auto-fix"
-disable-model-invocation: true
+disable-model-invocation: false
 compatibility: ">=2.1.71"
 ---
 

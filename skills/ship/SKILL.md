@@ -5,7 +5,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: opus
 compatibility: ">=2.1.71"
 argument-hint: "[version]"
-disable-model-invocation: true
+disable-model-invocation: false
 ---
 
 # Ship Workflow

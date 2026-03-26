@@ -2,7 +2,7 @@
 name: sprint-dev
 description: Implements planned sprints with coordinated agent teams. Spawns backend-dev, frontend-dev, and test-writer agents in isolated worktrees. Distributes stories as tasks with dependency ordering and monitors progress. Use when user says "implement sprint", "develop stories", "start coding".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, TeamCreate, SendMessage, TaskCreate, TaskUpdate, TaskList
-disable-model-invocation: true
+disable-model-invocation: false
 model: opus
 compatibility: ">=2.1.71"
 ---

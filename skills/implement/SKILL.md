@@ -2,7 +2,7 @@
 name: implement
 description: "Sprint implementation phase only"
 argument-hint: "--sprint NNN | --stories STORY-XXX-001,STORY-XXX-002"
-disable-model-invocation: true
+disable-model-invocation: false
 compatibility: ">=2.1.71"
 ---
 

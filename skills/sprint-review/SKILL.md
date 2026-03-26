@@ -2,7 +2,7 @@
 name: sprint-review
 description: Reviews sprint quality with automated checks and parallel reviewer agents. Runs type-check, lint, tests, build verification. Spawns security, backend, frontend, and pattern reviewers. Auto-fixes common failures. Use when user says "review sprint", "check quality", "run review".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch, TeamCreate, SendMessage
-disable-model-invocation: true
+disable-model-invocation: false
 model: opus
 compatibility: ">=2.1.71"
 ---

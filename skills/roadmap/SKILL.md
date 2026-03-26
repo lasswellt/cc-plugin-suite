@@ -2,7 +2,7 @@
 name: roadmap
 description: Generates phased implementation roadmaps from research documents. Extracts capabilities, assesses codebase state, clusters features into domains, resolves dependencies, and produces epic-ready implementation plans. Use when user says "generate roadmap", "plan phases", "roadmap status", "extend roadmap".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, TeamCreate, SendMessage
-disable-model-invocation: true
+disable-model-invocation: false
 model: opus
 compatibility: ">=2.1.71"
 argument-hint: "[full | refresh | extend | status]"

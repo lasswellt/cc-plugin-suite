@@ -2,7 +2,7 @@
 name: sprint-plan
 description: Plans sprints from roadmap epics with research-backed stories. Reads the dependency graph, selects next unblocked epics, spawns research agents, generates implementation stories, creates GitHub issues. Use when user says "plan sprint", "generate stories", "plan next sprint".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, TeamCreate, SendMessage
-disable-model-invocation: true
+disable-model-invocation: false
 model: opus
 compatibility: ">=2.1.71"
 ---
