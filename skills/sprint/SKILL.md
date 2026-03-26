@@ -79,7 +79,14 @@ Apply this priority-ordered decision tree (same logic as `/next`):
 1. Set autonomy to `full` — suppress all user confirmation prompts across all sub-skills. This ensures fully autonomous operation with bypass permissions. The only safety overrides that remain are: `git push` (always logged), rollback to previous sprint state (always logged), deleting user files outside sprint scope (always logged). All other decisions are auto-approved.
 2. Pass `--mode autonomous` to sprint-dev (if dispatching to implementation). Never use `checkpoint` or `interactive` mode in loop.
 3. Dispatch to the identified sub-skill. All sub-skills inherit autonomy `full`.
-4. When the sub-skill completes, **exit immediately**. Do NOT continue to the next phase. The next `/loop` tick will re-invoke `/sprint --loop`, which will re-evaluate state and dispatch the next phase.
+4. **Commit and push** — After the sub-skill completes, ensure all changes are committed and pushed to the remote. This is critical in loop mode because each invocation runs in a fresh context — uncommitted/unpushed work would be invisible to the next tick.
+   ```bash
+   git add -A
+   git status --porcelain | head -5  # Check if there's anything to commit
+   git commit -m "feat(sprint-${N}): loop checkpoint — <phase completed>" || true
+   git push origin HEAD || true
+   ```
+5. When the commit/push completes, **exit immediately**. Do NOT continue to the next phase. The next `/loop` tick will re-invoke `/sprint --loop`, which will re-evaluate state and dispatch the next phase.
 
 ### Step 4: Report — Log and Exit
 

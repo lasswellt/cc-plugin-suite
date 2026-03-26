@@ -274,6 +274,13 @@ The orchestrator (you) must:
 
 1. **Poll progress** every 2-3 agent messages. Use `TaskList` to check status. Track wave-level completion — when all stories in a wave complete, print a wave progress report per [verbose-progress.md](/_shared/verbose-progress.md) and unblock all Wave N+1 stories.
 1b. **Update STATE.md** — After each story completion (or at wave boundaries), update `${SPRINT_DIR}/STATE.md` per [checkpoint-protocol.md](/_shared/checkpoint-protocol.md). This enables session recovery if interrupted. Include wave progress.
+1c. **Commit and push at wave boundaries** — When a wave completes, commit all changes and push to the remote. This ensures progress is persisted and visible to other sessions (especially in `/loop` mode where the next tick runs in a fresh context):
+   ```bash
+   git add -A
+   git commit -m "feat(sprint-${N}): wave ${WAVE} complete — ${COMPLETED}/${TOTAL} stories"
+   git push origin HEAD
+   ```
+   Also push after each integration fix round (Phase 4.3) and at sprint completion (Phase 4.9).
 2. **Unblock stories** — When a dependency completes, send newly-ready stories to the appropriate agent.
 3. **Coordinate via SendMessage** — When an agent completes a story that another agent depends on:
    ```
@@ -532,11 +539,12 @@ For every story marked `blocked`:
 
 **Never silently drop blocked stories.** They must be visible in the sprint report and carry forward to the next sprint.
 
-### 4.9 Final Commit
+### 4.9 Final Commit and Push
 
 ```bash
 git add -A
 git commit -m "feat(sprint-${N}): complete sprint implementation — ${COMPLETED}/${TOTAL} stories"
+git push origin HEAD
 ```
 
 ### 4.10 Final Output
