@@ -243,6 +243,11 @@ Logged operations: `session_start`, `session_end`, `lock_acquired`, `lock_releas
 | code-sweep (fix) | sprint-dev | WARN — both modify source files |
 | code-sweep (fix) | refactor | **BLOCK** — both modify source files |
 | code-sweep (scan) | sprint-dev | OK — read-only scan during implementation |
+| browse (loop) | browse (loop) | **BLOCK** — concurrent crawls |
+| browse (loop) | browse (full/smoke/page) | **BLOCK** — concurrent browsing |
+| browse (loop) | sprint-dev | WARN — browse may fix files sprint-dev is editing |
+| browse (loop) | code-sweep (fix) | WARN — both may fix same files |
+| browse (full/smoke/page) | browse (full/smoke/page) | OK — read-only, session-scoped |
 
 ---
 

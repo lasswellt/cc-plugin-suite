@@ -160,9 +160,9 @@
     {
       "name": "browse",
       "category": "core-dev",
-      "description": "Automated browser testing via Playwright MCP — captures console errors and network failures",
+      "description": "Automated browser testing, site crawling, and visual design analysis via Playwright MCP — captures console errors, builds navigational hierarchy, detects design inconsistencies, auto-fixes issues in loop mode",
       "model": "opus",
-      "modifies_code": false,
+      "modifies_code": true,
       "uses_agents": false,
       "uses_sessions": true,
       "dependencies": [],

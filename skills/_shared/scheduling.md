@@ -49,6 +49,7 @@ Skills that support `/loop` must be **idempotent** — safe to call repeatedly w
 | `completeness-gate` | Yes | Read-only scan |
 | `code-sweep --scan-only` | Yes | Read-only scan with state tracking |
 | `code-sweep --loop` | Yes | One fix per tick, verify-before-commit, ratchet enforcement |
+| `browse --loop` | Yes | One page per tick, discovers links from DOM, builds site hierarchy, auto-fixes up to 2 issues. Requires running dev server + auth. Circuit breaker on 3 fix failures. Max 500 pages / depth 8 |
 | `next` | Yes | Read-only advisor |
 
 Skills that modify code (sprint-dev, refactor, fix-issue, etc.) should NOT be used with `/loop` directly — use `/blitz:sprint --loop` or `/blitz:code-sweep --loop` to orchestrate them safely.
