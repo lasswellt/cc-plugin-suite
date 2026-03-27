@@ -10,11 +10,10 @@ argument-hint: "<scope> | --fix | --scan-only | --fix-all | --deep | --loop | --
 ## Project Context
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
-## Additional Resources
-- For grep patterns, state schemas, auto-fix strategies, and severity rules, see [reference.md](reference.md)
-- For context window hygiene, see [context-management.md](/_shared/context-management.md)
-
-All output must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder sections.
+## Additional Resources (lazy-load — do NOT pre-read, read on-demand when needed)
+- For grep patterns, state schemas, auto-fix strategies, and severity rules: read `reference.md` (in this skill's directory) only when running a specific check or fix
+- For context window hygiene: read `/_shared/context-management.md` only if context is growing large
+- For definition of done: read `/_shared/definition-of-done.md` only at final output phase
 
 ---
 
@@ -49,7 +48,7 @@ Execute every phase in order. Do NOT skip phases.
 
 ### 0.0 Register Session
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
+Follow the session protocol (read `/_shared/session-protocol.md` for details) **and** the verbose-progress protocol (read `/_shared/verbose-progress.md` for details). Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep.
 
 ### 0.1 Parse Arguments
 
