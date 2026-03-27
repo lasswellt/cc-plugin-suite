@@ -596,3 +596,243 @@ sweep(<check_id>): auto-fix N instances
 Files: <file1>, <file2>, ...
 Auto-fixed by /blitz:code-sweep
 ```
+
+---
+
+## Convention Discovery
+
+### Dimensions and Detection
+
+| Dimension | Patterns | Extraction Method |
+|-----------|----------|-------------------|
+| `file-naming` | kebab-case, camelCase, PascalCase, snake_case | Regex on filename: `^[a-z]+(-[a-z]+)*$` (kebab), `^[a-z]+([A-Z][a-z]+)*$` (camel), `^[A-Z][a-z]+([A-Z][a-z]+)*$` (Pascal), `^[a-z]+(_[a-z]+)*$` (snake) |
+| `import-ordering` | external-first, internal-first, ungrouped | Parse import blocks; check if relative imports (`./`, `../`) appear before or after bare specifiers |
+| `error-handling` | throw, return-error, console-error, silent | Grep function bodies for `throw new`, `return.*error`, `console.error` |
+| `async-pattern` | async-await, then-chains, mixed | Count `await` vs `.then(` per file |
+| `component-style` | script-setup, options-api | Check for `<script setup>` vs `export default {` in Vue files |
+| `export-style` | named, default, barrel | Per-directory: count `export default` vs `export const/function` |
+| `indentation` | tabs, spaces-2, spaces-4 | Read first 50 lines, detect leading whitespace pattern |
+| `quote-style` | single, double | Count `'` vs `"` in import statements |
+
+### Stratified Sampling
+
+For codebases >200 files, sample 200 files using stratified selection:
+- 40% from recently modified (`git log --since=90days --name-only`)
+- 30% from most-imported (highest in-degree in import graph)
+- 20% random from remaining files
+- 10% from hotspots (files with most existing findings)
+
+For codebases <=200 files, scan all files.
+
+### Decision Thresholds
+
+| Adoption Rate | Action | Standard Status |
+|--------------|--------|-----------------|
+| >= 70% | Auto-enforce | `enforced` |
+| 30-70% | Flag for human review | `needs-review` |
+| < 30% | Skip — the codebase has a different convention | `no-consensus` |
+
+---
+
+## Standards Schema (`.code-sweep-standards.json`)
+
+```json
+{
+  "version": 1,
+  "discovered_at": "<ISO-8601>",
+  "last_discovery_run": 0,
+  "standards": [
+    {
+      "id": "<dimension>-<pattern>",
+      "dimension": "<dimension-name>",
+      "rule": "<human-readable description>",
+      "pattern": "<pattern-name>",
+      "scope": "project",
+      "scope_dirs": ["<directories>"],
+      "source": "discovered|defined",
+      "confidence": 0.0,
+      "evidence_count": 0,
+      "violations_at_discovery": 0,
+      "adoption_pct": 0.0,
+      "status": "proposed|enforced|needs-review|no-consensus|aligned|complete|deprecated",
+      "discovered_at": "<ISO-8601>",
+      "enforced_at": "<ISO-8601>|null",
+      "deprecated_at": "<ISO-8601>|null",
+      "history": [
+        { "date": "YYYY-MM-DD", "adoption_pct": 0.0, "run": 0 }
+      ]
+    }
+  ],
+  "pending_review": [
+    {
+      "id": "<id>",
+      "dimension": "<dimension>",
+      "pattern": "<pattern>",
+      "confidence": 0.0,
+      "note": "<explanation>",
+      "status": "needs-review"
+    }
+  ]
+}
+```
+
+### Standard Lifecycle States
+
+```
+PROPOSED ──┬──> ENFORCED ──> ALIGNED (100%) ──> COMPLETE
+           ├──> NEEDS-REVIEW ──> ENFORCED (approved) or DEPRECATED (rejected)
+           └──> NO-CONSENSUS (skip, re-check on re-discovery)
+```
+
+---
+
+## File Queue Schema (`docs/sweeps/file-queue.json`)
+
+```json
+{
+  "version": 1,
+  "created_at": "<ISO-8601>",
+  "updated_at": "<ISO-8601>",
+  "config": {
+    "files_per_tick": 30,
+    "priority_weights": {
+      "recently_modified": 4,
+      "most_imported": 3,
+      "hotspot": 2,
+      "alphabetical": 1
+    }
+  },
+  "stats": {
+    "total_files": 0,
+    "scanned": 0,
+    "remaining": 0,
+    "compliant": 0,
+    "needs_fix": 0
+  },
+  "queue": [
+    {
+      "path": "<relative-path>",
+      "priority_score": 0.0,
+      "last_scanned": "<ISO-8601>|null",
+      "last_scanned_run": 0,
+      "compliance_score": 0.0,
+      "findings_count": 0,
+      "status": "pending|scanned|compliant",
+      "in_degree": 0,
+      "last_modified": "<ISO-8601>"
+    }
+  ],
+  "completed": [
+    {
+      "path": "<relative-path>",
+      "completed_at": "<ISO-8601>",
+      "completed_run": 0,
+      "compliance_score": 1.0
+    }
+  ],
+  "checkpoint": {
+    "last_tick_run": 0,
+    "last_tick_processed": 0,
+    "next_start_index": 0,
+    "interrupted": false
+  }
+}
+```
+
+### Priority Scoring Algorithm
+
+```
+score = 0
++ 4.0 * recency_factor    (1.0 if modified in 7d, 0.75 in 30d, 0.5 in 90d, 0.125 else)
++ 3.0 * (in_degree / max_in_degree)
++ 2.0 * (findings_count / max_findings)
++ 1.0 * (1 - alphabetical_rank / total_files)
+```
+
+---
+
+## Ratchet Schema (`docs/sweeps/ratchet.json`)
+
+```json
+{
+  "version": 1,
+  "updated_at": "<ISO-8601>",
+  "entries": [
+    {
+      "standard_id": "<standard-id>",
+      "initial_violations": 0,
+      "current_violations": 0,
+      "budget": 0,
+      "last_decreased": "<ISO-8601>",
+      "history": [
+        { "run": 0, "violations": 0, "date": "YYYY-MM-DD" }
+      ]
+    }
+  ]
+}
+```
+
+### Ratchet Rules
+
+1. **Budget can only decrease.** When a fix reduces violations, `budget` is lowered to match `current_violations`.
+2. **Regression detection.** If `current_violations > budget`, flag as regression alert.
+3. **History tracking.** Each run appends to history for trend analysis.
+4. **Initial budget.** Set to `violations_at_discovery` when a standard is first enforced.
+
+---
+
+## Standards Compliance in Snapshot
+
+The snapshot schema's `summary` section gains a `standards_compliance` field:
+
+```json
+{
+  "standards_compliance": {
+    "total_standards": 0,
+    "enforced": 0,
+    "aligned": 0,
+    "avg_compliance_pct": 0.0,
+    "files_remaining": 0,
+    "estimated_ticks_to_full": 0,
+    "by_standard": [
+      {
+        "id": "<standard-id>",
+        "pct_compliant": 0.0,
+        "trend": "improving|stable|regressing",
+        "violations": 0,
+        "budget": 0,
+        "eta_ticks": 0
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Config Extensions for Standards
+
+The `.code-sweep.json` config gains a `standards` section:
+
+```json
+{
+  "standards": {
+    "min_adoption_threshold": 0.70,
+    "review_threshold": 0.30,
+    "revalidate_every_n_runs": 10,
+    "files_per_tick": 30,
+    "dimensions": {
+      "file-naming": { "enabled": true },
+      "import-ordering": { "enabled": true },
+      "error-handling": { "enabled": true },
+      "async-pattern": { "enabled": true },
+      "component-style": { "enabled": true },
+      "export-style": { "enabled": true },
+      "indentation": { "enabled": false },
+      "quote-style": { "enabled": false }
+    }
+  }
+}
+```
+
+Note: `indentation` and `quote-style` default to disabled since formatters (Prettier, Biome) handle these better.

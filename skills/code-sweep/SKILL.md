@@ -1,10 +1,10 @@
 ---
 name: code-sweep
-description: "Iterative code improvement with loop support. Scans 30 checks across 7 categories: cleanup, correctness, optimization, convention, security, reduction, robustness. Auto-fixes what it can, reports the rest. Each /loop tick makes incremental progress. Use when user says 'sweep', 'cleanup', 'improve code', 'code quality', 'find TODOs', 'dead code', 'optimize'."
+description: "Iterative code improvement with loop support. Discovers conventions from the codebase, defines standards, and progressively aligns code. 30 checks across 7 categories plus dynamic standards. Ratchet mechanism ensures quality only improves. Use when user says 'sweep', 'cleanup', 'improve code', 'code quality', 'find TODOs', 'dead code', 'optimize', 'enforce standards'."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
 compatibility: ">=2.1.71"
-argument-hint: "<scope> | --fix | --scan-only | --fix-all | --deep | --loop | --category <list> | --checks <list>"
+argument-hint: "<scope> | --fix | --scan-only | --fix-all | --deep | --loop | --discover | --standards-report | --category <list>"
 ---
 
 ## Project Context
@@ -20,9 +20,11 @@ All output must satisfy the [Definition of Done](/_shared/definition-of-done.md)
 
 # Code Sweep Skill
 
-Iterative code improvement following the **Observe-Diff-Act-Report** reconciliation pattern. Scans 30 checks across 7 categories (cleanup, correctness, optimization, convention, security, reduction, robustness) with 11 auto-fixable patterns. Designed for `/loop` compatibility — each invocation scans for issues, optionally fixes the highest-priority auto-fixable finding, and exits cleanly for the next tick.
+Iterative code improvement following the **Observe-Diff-Act-Report** reconciliation pattern. Scans 30 static checks plus dynamically discovered standards across 7 categories. Features **convention discovery** (search the codebase first, propose standards at 70% adoption), **file queue batching** (30 files/tick for large codebases), and a **ratchet mechanism** (violation budgets can only decrease). Designed for `/loop` compatibility.
 
 **Categories**: Cleanup | Correctness | Optimization | Convention | Security | Reduction | Robustness
+
+**Loop lifecycle**: DISCOVER (first run) → SCAN (batch) → FIX → SCAN → FIX → ... RE-DISCOVER (every 10th run)
 
 Execute every phase in order. Do NOT skip phases.
 
@@ -60,6 +62,10 @@ Extract from `$ARGUMENTS`:
 | `--fix-all` | Batch fix all auto-fixable by category | No (use manually) |
 | `--deep` | Include Tier 3 analysis (knip if available, full orphan scan) | Yes (slow, cached) |
 | `--loop` | Alias for `--fix` with full autonomy — no prompts, auto-commit | Yes |
+| `--discover` | Force convention discovery (re-scan codebase for patterns, update standards) | Yes |
+| `--approve-standard <id>` | Approve a `needs-review` standard for enforcement | N/A |
+| `--reject-standard <id>` | Reject/deprecate a standard | N/A |
+| `--standards-report` | Print compliance dashboard and exit | Yes |
 | `--category <list>` | Comma-separated category filter: cleanup, correctness, optimization, convention, security, reduction, robustness (default: all) | Yes |
 | `--checks <list>` | Comma-separated list of check IDs to run (default: all enabled) | Yes |
 | `<scope>` | Directory or file path to scan (default: project source directories) | Yes |
@@ -69,6 +75,11 @@ When `--loop` is specified:
 - Implicitly enable `--fix`
 - Auto-commit and push after successful fixes
 - Exit immediately after one fix cycle
+- **Tick type decision tree** (determines what this tick does):
+  1. If first run (no standards file exists) or `--discover`: → **DISCOVERY tick**
+  2. If `run_number % 10 == 0`: → **RE-DISCOVERY tick** (conventions may shift)
+  3. If last tick was SCAN and fixable findings exist: → **FIX tick**
+  4. Else: → **SCAN tick** (process next batch from file queue)
 
 ### 0.2 Load Configuration
 
@@ -81,6 +92,10 @@ If `.code-sweep.json` does not exist, use defaults:
 - **verify_command**: auto-detect (see Phase 4)
 - **max_fixes_per_tick**: 1
 - **todo_age_threshold_days**: 180
+- **standards.min_adoption_threshold**: 0.70 (auto-enforce above this)
+- **standards.review_threshold**: 0.30 (flag for review between 0.30-0.70)
+- **standards.revalidate_every_n_runs**: 10
+- **standards.files_per_tick**: 30 (batch size for file queue)
 
 ### 0.3 Validate Scope
 
@@ -112,7 +127,17 @@ If no snapshot exists, this is the **first run** — skip delta comparison in Ph
 
 Read `docs/sweeps/sweep-ledger.jsonl` if it exists. Parse into a map keyed by finding ID (`{category}-{file}-{line}-{symbol}`).
 
-### 1.3 Detect Changed Files (Incremental Mode)
+### 1.3 Load Standards, File Queue, and Ratchet
+
+Read these additional state files (if they exist):
+- **`.code-sweep-standards.json`** — discovered and defined conventions
+- **`docs/sweeps/file-queue.json`** — persistent file processing queue with batching
+- **`docs/sweeps/ratchet.json`** — per-standard violation budgets
+
+If `.code-sweep-standards.json` does not exist, set `needs_discovery = true`.
+If `file-queue.json` does not exist, set `needs_queue_init = true`.
+
+### 1.4 Detect Changed Files (Incremental Mode)
 
 If a previous snapshot exists, find files changed since the last sweep:
 ```bash
@@ -120,9 +145,9 @@ LAST_DATE=$(cat docs/sweeps/latest.json 2>/dev/null | grep -o '"date":"[^"]*"' |
 git log --since="${LAST_DATE}" --name-only --pretty=format: | sort -u | grep -E '\.(ts|tsx|js|jsx|vue)$'
 ```
 
-If `--deep` is specified or this is the first run, scan ALL files in scope (not just changed).
+Changed files **always** get scanned regardless of their queue position. If `--deep` is specified or this is the first run, scan ALL files in scope.
 
-### 1.4 Build File List
+### 1.5 Build File List
 
 Use Glob to collect target files in scope:
 ```
@@ -135,7 +160,110 @@ Separate into:
 
 Apply exclusion patterns from config.
 
-Print: `[code-sweep] Scanning N source files + M test files in <scope>`
+**Batch mode** (when file queue exists and not first run):
+- **Changed files**: All checks including standards (always scanned)
+- **Queued batch**: Pop next `files_per_tick` files from queue — standards checks only
+- **New files**: Auto-added to queue with highest priority
+
+Print: `[code-sweep] Scanning N changed + M queued (batch N/total) + K test files`
+
+---
+
+## Phase 1.5: DISCOVER — Detect Project Conventions
+
+**When to run**: First run, when `--discover` is specified, or every `revalidate_every_n_runs` runs. Skip if standards exist and are fresh.
+
+**Time budget**: ~60 seconds.
+
+### 1.5.1 Sample Files
+
+Use stratified sampling for codebases >200 files (all files if smaller):
+
+| Stratum | Percentage | Source |
+|---------|-----------|--------|
+| Recently modified | 40% | `git log --since=90days --name-only` |
+| Most imported (high in-degree) | 30% | Count import references to each file |
+| Random | 20% | Random selection from remaining |
+| Hotspots | 10% | Files with most existing findings in ledger |
+
+Deduplicate and cap at 200 files.
+
+### 1.5.2 Extract Patterns (8 Dimensions)
+
+For each sampled file, extract the pattern used for each convention dimension:
+
+| Dimension | Patterns | Extraction Method |
+|-----------|----------|-------------------|
+| `file-naming` | kebab-case, camelCase, PascalCase, snake_case | Regex on filename (strip extension) |
+| `import-ordering` | external-first, internal-first, ungrouped | Parse import blocks, check grouping |
+| `error-handling` | throw, return-error, console-error, silent | Grep function bodies for error patterns |
+| `async-pattern` | async-await, then-chains, mixed | Count `await` vs `.then(` per file |
+| `component-style` | script-setup, options-api | Check `<script setup>` vs `export default {` (Vue only) |
+| `export-style` | named, default, barrel | Per-directory: count `export default` vs `export const/function` |
+| `indentation` | tabs, spaces-2, spaces-4 | Read first 50 lines, detect leading whitespace |
+| `quote-style` | single, double | Count `'` vs `"` in import statements |
+
+### 1.5.3 Count Frequencies and Decide
+
+For each dimension, count pattern frequencies across sampled files:
+
+```
+if dominant_pattern >= 70%:  → status: "enforced" (auto-adopt)
+if dominant_pattern 30-70%:  → status: "needs-review" (human decides)
+if dominant_pattern < 30%:   → status: "no-consensus" (skip)
+```
+
+The 70% threshold ensures the tool **never fights the codebase**. If <30% of files match a proposed pattern, the codebase has a *different* convention — learn that instead.
+
+### 1.5.4 Write Standards File
+
+Write discovered conventions to `.code-sweep-standards.json` (schema in reference.md). Each standard includes:
+- `id`, `dimension`, `pattern`, `rule` (human-readable)
+- `source`: "discovered" or "defined" (user-specified)
+- `confidence`: adoption percentage at discovery
+- `status`: proposed / enforced / needs-review / no-consensus / aligned / complete
+- `violations_at_discovery`: count of non-compliant files
+
+Print discovery summary:
+```
+[code-sweep] Convention Discovery:
+  ├─ file-naming: kebab-case (87% adoption) → ENFORCED
+  ├─ import-ordering: external-first (72% adoption) → ENFORCED
+  ├─ error-handling: throw (55% adoption) → NEEDS REVIEW
+  ├─ async-pattern: async-await (91% adoption) → ENFORCED
+  ├─ component-style: script-setup (78% adoption) → ENFORCED
+  ├─ export-style: named (45% adoption) → NEEDS REVIEW
+  ├─ indentation: spaces-2 (95% adoption) → ENFORCED
+  └─ quote-style: single (88% adoption) → ENFORCED
+  Standards: 5 enforced, 2 needs-review, 0 no-consensus
+```
+
+### 1.5.5 Initialize File Queue
+
+If this is the first run or `needs_queue_init`, build the file queue:
+
+1. Glob all source files in scope
+2. For each file, compute a priority score using 4 weighted factors:
+   - Recently modified (weight 4): days since last git commit
+   - Most imported (weight 3): in-degree in import graph
+   - Hotspot (weight 2): findings count from ledger
+   - Alphabetical (weight 1): deterministic tiebreaker
+3. Sort by priority score descending
+4. Write to `docs/sweeps/file-queue.json` (schema in reference.md)
+
+### 1.5.6 Initialize Ratchet
+
+For each enforced standard, create a ratchet entry in `docs/sweeps/ratchet.json`:
+```json
+{
+  "standard_id": "<id>",
+  "initial_violations": <count>,
+  "current_violations": <count>,
+  "budget": <count>
+}
+```
+
+**Ratchet rule**: `budget` can only decrease. When fixes reduce violations, budget is lowered. If violations exceed budget (regression), the tick flags it as an alert.
 
 ---
 
@@ -144,6 +272,14 @@ Print: `[code-sweep] Scanning N source files + M test files in <scope>`
 Run enabled checks in tier order. For each finding, record a finding object using the schema from reference.md.
 
 **Tier order matters**: Tier 1 runs every tick. Tier 2 runs if budget permits or on first run. Tier 3 runs only with `--deep`.
+
+**Batch-aware scanning**: When a file queue exists, Phase 2 processes two file sets per tick:
+1. **Changed files** (from Phase 1.4): ALL checks including standards — always scanned
+2. **Queued batch** (next `files_per_tick` from queue): Standards checks only — for progressive alignment
+
+This ensures changed files get full coverage while the queue makes steady progress across the whole codebase.
+
+**Standards checks**: For each enforced standard in `.code-sweep-standards.json`, check whether each file in the current batch complies with the convention. Non-compliant files get a finding with `cat: "std-<standard-id>"` and `category: "convention"`.
 
 ### Tier 1: High Confidence, Fast (run every tick, ~8 seconds total)
 
@@ -660,6 +796,29 @@ Calculate:
 - `regressed_count`: previously fixed findings that reappeared
 - `total_delta`: current total - previous total
 
+### 3.5 Ratchet Check
+
+For each enforced standard in the ratchet file:
+1. Count current violations for this standard from the scan results
+2. Compare against the ratchet `budget`
+3. If `current_violations <= budget`: update budget to match (ratchet tightens)
+4. If `current_violations > budget`: **regression alert** — new violations were introduced
+
+```
+[code-sweep] Ratchet: file-naming-kebab 12→10 violations (budget tightened)
+[code-sweep] Ratchet ALERT: import-ordering-external 5→7 violations (budget was 5, now 7 — regression!)
+```
+
+Regressions are flagged with elevated severity and appear first in the priority queue.
+
+### 3.6 Update File Queue
+
+After scanning the batch:
+- Move fully compliant files from queue to `completed` list
+- Update `compliance_score` and `findings_count` for scanned files
+- Add any new files (not in queue) with auto-computed priority
+- Update checkpoint for resume safety
+
 ---
 
 ## Phase 4: ACT — Apply Fixes (if enabled)
@@ -803,10 +962,10 @@ Assign grade: A (90-100), B (80-89), C (70-79), D (60-69), F (<60).
 ### 5.4 Print Summary
 
 ```
-Code Sweep: <GRADE> (<score>/100)
-======================================
-Mode: <scan-only|fix|fix-all|loop>  |  Scope: <scope>
-Files scanned: N source + M test
+Code Sweep: <GRADE> (<score>/100)  |  Standards: <compliance_pct>% aligned
+======================================================================
+Mode: <scan-only|fix|fix-all|loop|discover>  |  Scope: <scope>
+Files scanned: N changed + M queued (batch N/total) + K test
 Run: #<run_number>  |  Previous score: <prev_score>/100
 
 Findings: <total> (Critical: N, High: N, Medium: N, Low: N)
@@ -817,23 +976,28 @@ By category:
   Cleanup: N  |  Correctness: N  |  Optimization: N
   Convention: N  |  Security: N  |  Reduction: N  |  Robustness: N
 
+<if standards are enforced>
+Standards Compliance:
+  ├─ file-naming (kebab-case): 94% (142/151 files) ↑ improving
+  ├─ import-ordering (external-first): 88% (112/127) ↑ improving
+  ├─ async-pattern (async-await): 96% (142/148) = stable
+  └─ Overall: 89% aligned | 72 files remaining | ETA: ~24 ticks
+
+<if ratchet alerts>
+Ratchet Alerts:
+  ⚠ import-ordering: 5→7 violations (budget exceeded!)
+
 <if --fix mode and a fix was applied>
 Fixed this tick:
-  [<severity>] <file>:<line> — <message> (<check_id>)
-
-<if fixes remain>
-Next auto-fixable:
   [<severity>] <file>:<line> — <message> (<check_id>)
 
 Top issues:
   1. [<severity>] <file>:<line> — <message>
   2. [<severity>] <file>:<line> — <message>
   3. [<severity>] <file>:<line> — <message>
-  4. [<severity>] <file>:<line> — <message>
-  5. [<severity>] <file>:<line> — <message>
 
 Snapshot: docs/sweeps/YYYY-MM-DD.json
-Ledger: docs/sweeps/sweep-ledger.jsonl
+Queue: docs/sweeps/file-queue.json (N remaining)
 ```
 
 Show up to 10 top issues, ordered by severity then file path.
@@ -844,12 +1008,14 @@ Code Sweep: A (100/100)
   No issues found. Codebase is clean.
 ```
 
-### 5.5 Ratchet Check
+### 5.5 Ratchet Update
 
-If a previous snapshot exists, compare scores:
+**Score ratchet** — if a previous snapshot exists, compare scores:
 - If score improved: `[code-sweep] Ratchet: score improved +N (was <prev>, now <current>)`
 - If score declined: `[code-sweep] Ratchet warning: score declined -N (was <prev>, now <current>). <new_count> new issues introduced.`
 - If stable: `[code-sweep] Ratchet: stable at <score>/100`
+
+**Standards ratchet** — update `docs/sweeps/ratchet.json` with current violation counts for each standard. Write the updated ratchet file. If any standard's violations exceed its budget, include a ratchet alert in the summary.
 
 ### 5.6 Follow-Up Suggestions
 
@@ -865,6 +1031,10 @@ If a previous snapshot exists, compare scores:
 | Security findings detected | `Review hardcoded secrets and XSS patterns immediately` |
 | Convention findings high | `Run /blitz:code-sweep --category convention --fix-all for convention alignment pass` |
 | Reduction opportunities | `Run /blitz:code-sweep --category reduction --fix-all for code simplification` |
+| Standards need review | `Run /blitz:code-sweep --approve-standard <id> to enforce pending conventions` |
+| Standards fully aligned | `All enforced standards at 100% — codebase conventions are consistent` |
+| No standards discovered yet | `Run /blitz:code-sweep --discover to detect codebase conventions` |
+| Ratchet regression detected | `Investigate new violations — someone introduced code that doesn't match the standard` |
 
 ### 5.7 Session Cleanup
 
@@ -886,6 +1056,11 @@ If a previous snapshot exists, compare scores:
 - **Git blame fails**: Skip TODO aging for affected files. Note in snapshot.
 - **Fix breaks verification**: Revert, mark `needs-human`, continue to next finding.
 - **All fixes fail**: Switch to `--scan-only`, warn user. Log to activity feed.
+- **Standards file corrupted**: Rename to `.bak`, set `needs_discovery = true`, re-run discovery next tick.
+- **File queue exhausted**: Re-prioritize and restart from the beginning. Re-scan all files for standards.
+- **Discovery finds no dominant patterns**: Set all dimensions to `no-consensus`. Suggest user define standards manually in `.code-sweep-standards.json`.
+- **Ratchet regression on many standards**: Likely a large merge or refactor. Warn user and offer `--discover` to re-baseline.
+- **File queue too large (>1000 files)**: Increase `files_per_tick` or use `--category convention` to focus on standards only.
 - **Concurrent code-sweep (fix mode)**: Conflict matrix blocks. Scan mode is always OK.
 - **Ledger file corrupted**: Rename to `.bak`, start fresh ledger, warn user.
 - **Snapshot already exists for today**: Append counter suffix (`YYYY-MM-DD-2.json`).
