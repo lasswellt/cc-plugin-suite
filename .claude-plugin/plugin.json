@@ -1,6 +1,6 @@
 {
   "name": "blitz",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Production-grade development skills for Vue.js, Nuxt, and GCP Firebase projects. Includes sprint workflows, code review, performance profiling, release management, dependency health, documentation generation, migration support, and self-improvement loops.",
   "author": {
     "name": "lasswellt"
