@@ -14,6 +14,7 @@ compatibility: ">=2.1.71"
 - For story YAML schema, agent assignment rules, and partition logic, see [reference.md](reference.md)
 - For context window hygiene (research agents), see [context-management.md](/_shared/context-management.md)
 - For checkpoint awareness, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
+- For the carry-forward registry (read in Phase 0, written in Phase 4.1), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
 
 All generated stories must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder acceptance criteria.
 
@@ -63,8 +64,20 @@ Execute all phases below in order.
 5. **Load sprint history.** Read `sprint-registry.json` (or equivalent) to determine the last completed sprint number. If no registry exists, this is Sprint 1.
 6. **Check for incomplete stories.** Search for story files from previous sprints that have `status: incomplete` or `status: in-progress`. These carry forward.
 7. **Check for STATE.md.** If a previous sprint has a `STATE.md` checkpoint file, read it for context on completed/blocked stories. Note blocked stories and their reasons — they may carry forward or inform planning. See [checkpoint-protocol.md](/_shared/checkpoint-protocol.md).
+8. **Read the carry-forward registry** (`.cc-sessions/carry-forward.jsonl`). Reduce to latest-wins by `id`:
+   ```bash
+   jq -s 'group_by(.id) | map(max_by(.ts)) | map(select(.status == "active" or .status == "partial"))' \
+     .cc-sessions/carry-forward.jsonl 2>/dev/null || echo '[]'
+   ```
+   Every entry returned is a **mandatory planning input** — this sprint MUST either include work against it OR the operator must explicitly transition it to `deferred` with a `notes` reason before planning continues.
 
-**Gate:** You must have at least one epic available and a basic understanding of project structure before proceeding.
+   Also read `sprints/sprint-${SPRINT_NUMBER}-planning-inputs.json` if it exists — the previous sprint's review may have auto-injected entries into this sprint via Invariant 4. If present, every entry in that file MUST be addressed in the story set generated below.
+
+   **Why this matters:** carry-forward state lives in the registry, not in `epic-registry.json`'s `status` field. A parent epic can read `status: done` while its child registry entries are still `active` or `partial`. This step is what catches the silent drop described in `docs/_research/2026-04-08_sprint-carryforward-registry.md`. See [carry-forward-registry.md](/_shared/carry-forward-registry.md) for the reader protocol.
+
+   **Rollover escalation:** any registry entry with `rollover_count >= 3` must NOT be auto-injected. It escalates to mandatory human review — log a blocker to the activity feed and prompt the operator (or, in `autonomy=full`, log the escalation and exit cleanly so `/loop` does not bounce indefinitely). See Error Recovery below for the full escalation path.
+
+**Gate:** You must have at least one epic available **or at least one `status ∈ {active, partial}` registry entry** AND a basic understanding of project structure before proceeding. An idle roadmap with a non-empty registry is NOT "nothing to do."
 
 ---
 
@@ -246,6 +259,31 @@ For **each selected epic**, generate **5-15 stories** following these rules:
 3. **Completeness**: Every acceptance criterion in the epic must map to at least one story.
 4. **Research integration**: Each story must reference relevant research findings where applicable.
 
+### 3.1.1 Bulk-Story Guard (SPIDR Check)
+
+After drafting each story but **before** accepting it into the sprint, run the bulk-story guard. This catches the "migrate 130 files via glob" anti-pattern that collapsed S197-004 in the incident traced by `docs/_research/2026-04-08_sprint-carryforward-registry.md`.
+
+**Reject or split** any story that matches **either** of these criteria:
+
+1. **File-count heuristic:** `story.files.length > 8` AND the story is not tagged `type: spike`. Eight files is the upper bound of what one agent can reason about coherently in a single session.
+
+2. **Horizontal-scope language:** the story's title or description matches any of these regexes (case-insensitive):
+   - `/all \w+ (files|components|modals|routes|tests|pages)/`
+   - `/(via|using) (pattern|glob|regex)/`
+   - `/across the codebase/`
+   - `/every (file|component|store|route|test)/`
+   - `/bulk (migrate|refactor|update|rename)/`
+
+**Handling a match:**
+
+- **Autonomy = low|medium:** pause and require operator input. Offer two paths: (a) split along the SPIDR **Data** axis — by route, feature folder, file path prefix, or author (see `docs/_research/2026-04-08_sprint-carryforward-registry.md` for the Mountain Goat Software SPIDR reference); or (b) downgrade the story to `type: spike` whose deliverable is *a split plan*, not working code.
+
+- **Autonomy = high|full:** **auto-split** the story along the SPIDR Data axis. Default heuristic: group `story.files` by their nearest parent directory (`apps/web/src/routes/admin/*` → one story, `apps/web/src/routes/public/*` → another). If grouping yields batches still > 8 files, recursively split. Log a `decision` event to the activity feed documenting the split. If the story's language is horizontal but it has no concrete file list, downgrade to `type: spike` and generate a single spike story whose deliverable is "write a split plan for <original scope>" — this is Mike Cohn's "spike, not story" guidance.
+
+- **Never auto-accept a bulk story in any autonomy mode.** A 5-point story touching 130 files is a rollover timebomb and is the exact pattern that dropped CAP-133.
+
+The guard is advisory warnings in `low`/`medium`, mandatory splits in `high`/`full`. Record every split or downgrade decision in the sprint manifest under a `spidr_splits` array so sprint-review can verify that no story slipped past the guard.
+
 ### 3.2 Story File Format
 
 Write each story to `${SPRINT_DIR}/stories/S${SPRINT_NUMBER}-XXX-<slug>.md` where XXX is a zero-padded sequence number.
@@ -317,7 +355,42 @@ AC Coverage Gap: N acceptance criteria could not be mapped to stories.
     3. Abort sprint planning
 ```
 
-Do not proceed to Phase 4.2 without either 100% coverage or an explicit user waiver. *(If autonomy is `high` or `full`, auto-waive uncovered ACs — add them to `carry_forward` in the manifest, log the waiver as a `decision` event to the activity feed, and proceed.)*
+Do not proceed to Phase 4.2 without either 100% coverage or an explicit user waiver.
+
+*(If autonomy is `high` or `full`, auto-waive uncovered ACs as follows — this is the fix for the silent-drop pattern traced in `docs/_research/2026-04-08_sprint-carryforward-registry.md`.)*
+
+**Auto-waiver procedure (autonomy ∈ {high, full}):**
+
+1. **Add uncovered story IDs** to `carry_forward` in the sprint manifest (`sprints/sprint-${SPRINT_NUMBER}/manifest.json`). This preserves existing behavior for sprint-dev and STATE.md consumers.
+
+2. **Update the manifest waiver fields** (see `reference.md` Sprint Manifest JSON Schema):
+   ```json
+   "waived_ac_count": <N>,
+   "reason_waivers": "autonomy=<mode>"
+   ```
+
+3. **Append an `auto_waived` line** to `.cc-sessions/carry-forward.jsonl` for **each** parent registry entry whose scope has uncovered ACs. The line must include:
+   ```jsonl
+   {"id":"<parent-registry-id>","ts":"<ISO-8601>","event":"auto_waived","waived_count":<N>,"reason":"autonomy=<mode> auto-waiver at sprint-plan Phase 4.1","last_touched":{"sprint":"sprint-${SPRINT_NUMBER}","date":"<ISO-8601>"}}
+   ```
+   If the entry's current `status` is `active`, **also append a `progress` line** transitioning it to `partial`:
+   ```jsonl
+   {"id":"<parent-registry-id>","ts":"<ISO-8601>","event":"progress","delivered":{"unit":"<unit>","actual":<new-actual>,"last_sprint":"sprint-${SPRINT_NUMBER}"},"coverage":<computed>,"status":"partial","last_touched":{"sprint":"sprint-${SPRINT_NUMBER}","date":"<ISO-8601>"}}
+   ```
+   Precompute `coverage = delivered.actual / scope.target` on write — do not let readers derive it. See [carry-forward-registry.md](/_shared/carry-forward-registry.md) for the full schema.
+
+4. **Record the touched ids** in the manifest's `registry_entries_touched` field. Sprint-review Phase 3.5 Invariant 2 will cross-check this list against the registry.
+
+5. **Log a `decision` event** to `.cc-sessions/activity-feed.jsonl`:
+   ```jsonl
+   {"ts":"<ISO-8601>","session":"<SESSION_ID>","skill":"sprint-plan","event":"decision","message":"Auto-waivers: <N> ACs deferred, <M> registry entries transitioned to partial","detail":{"waived_ac_count":<N>,"registry_entries":["cf-..."],"reason":"autonomy=<mode>"}}
+   ```
+
+6. **Proceed to Phase 4.2.**
+
+**Why all four writes are required:** the manifest carry_forward alone is what caused the CAP-133 drop — sprint-198's planner never read it. Writing to the registry (step 3) ensures the next sprint's Phase 0 step 8 sees the entry as a mandatory planning input. Writing to `registry_entries_touched` (step 4) enables sprint-review Invariant 2 to catch the case where an entry was waived but never re-injected. Logging the decision (step 5) preserves the human-readable audit trail.
+
+**Do NOT** write only to the manifest and skip the registry — that is the pre-fix behavior and reintroduces the silent-drop bug.
 
 ### 4.2 Partition Stories to Agent Roles
 
