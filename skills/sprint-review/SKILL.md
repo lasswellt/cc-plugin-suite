@@ -15,6 +15,7 @@ compatibility: ">=2.1.71"
 - For context window hygiene (reviewer agents), see [context-management.md](/_shared/context-management.md)
 - For checkpoint awareness, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
 - For handling reviewer agent escalations, see [deviation-protocol.md](/_shared/deviation-protocol.md)
+- For the carry-forward registry enforced by Phase 3.5 (hard gate), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
 
 All auto-fix code must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder implementations.
 
@@ -348,6 +349,110 @@ After auto-fix:  type-errors=0,  lint-errors=1,  test-failures=2
 
 ---
 
+## Phase 3.6: REGISTRY INVARIANTS — Carry-Forward Hard Gate
+
+This phase is a **hard gate**: failing any invariant fails the sprint close. Its purpose is to make silent scope drops impossible by auditing the carry-forward registry against the current sprint's state. See [carry-forward-registry.md](/_shared/carry-forward-registry.md) for the full protocol and `docs/_research/2026-04-08_sprint-carryforward-registry.md` for the incident that motivated it.
+
+### 3.6.1 Load the Registry
+
+Reduce `.cc-sessions/carry-forward.jsonl` to latest-wins state:
+
+```bash
+REGISTRY=$(jq -s 'group_by(.id) | map(max_by(.ts))' .cc-sessions/carry-forward.jsonl 2>/dev/null || echo '[]')
+```
+
+Load the current sprint's manifest (`sprints/sprint-${SPRINT_NUMBER}/manifest.json`) and `sprint-registry.json`. Load `docs/roadmap/epic-registry.json` if it exists. Identify every research doc referenced (directly or transitively) by any story, epic, or capability in this sprint — call this `SPRINT_RESEARCH_DOCS`.
+
+### 3.6.2 Invariant 1 — Quantified Scope Has a Registry Entry
+
+For every doc in `SPRINT_RESEARCH_DOCS`:
+
+1. Scan the doc's Summary, Findings, and Recommendation sections for quantified language — regex `\d+\s+(files|components|modals|routes|tests|endpoints|pages|views|tables|migrations|fields|records)`.
+
+2. If a match is found:
+   - **Acceptable case A:** the doc has a `scope:` YAML frontmatter block covering the match, AND the block's `id` exists in the registry → pass.
+   - **Acceptable case B:** the match is inside an HTML comment `<!-- no-registry: <reason> -->` → pass.
+   - **Failure case:** neither — **FAIL** this invariant. Print the offending file and line range. Require the author to either (a) add a `scope:` block and re-run `/blitz:roadmap extend` before sprint close or (b) annotate the line with a `no-registry` comment and a reason.
+
+Record matching results as `invariant_1: {pass|fail, violations: [...]}` in the report.
+
+### 3.6.3 Invariant 2 — Active Entries Are Touched or Explicitly Deferred
+
+For every registry entry with `status ∈ {active, partial}`:
+
+- **Touched:** `last_touched.sprint == sprint-${SPRINT_NUMBER}` → pass.
+- **Explicitly deferred:** the latest line for the entry has `event: "deferred"` with a non-empty `notes` AND was written during this sprint → pass.
+- **Waivered this sprint:** the entry id appears in the current manifest's `registry_entries_touched`, AND the registry has a matching `event: "auto_waived"` line dated within this sprint → pass. This catches sprint-plan Phase 4.1 auto-waivers.
+- **Otherwise:** **FAIL** this invariant. Increment `rollover_count` in a new registry line:
+  ```jsonl
+  {"id":"<entry-id>","ts":"<ISO-8601>","event":"correction","rollover_count":<prev+1>,"notes":"sprint-review Invariant 2: entry not touched in sprint-${SPRINT_NUMBER}"}
+  ```
+  Require the operator to (a) link a story in this sprint that advanced the entry, (b) write a `deferred` event with a reason, or (c) write a `dropped` event with `drop_reason` + `revival_candidate`.
+
+**Waiver accounting sub-check:** cross-reference manifest `waived_ac_count > 0` against the registry. For every sprint with waivers, there MUST be at least one `event: "auto_waived"` line written during the sprint for an entry whose `parent.epic` appears in the sprint manifest's `epics` array. Missing mirror → Invariant 2 failure.
+
+**Rollover escalation:** if any entry crosses `rollover_count >= 3` as a result of this invariant, print a loud escalation banner to stdout AND record the entry as `blocker: rollover-escalation` in the report. These entries are no longer eligible for auto-inject in Invariant 4 — they require mandatory human review before the next sprint can plan around them. This prevents infinite `/loop` bouncing on stuck work.
+
+### 3.6.4 Invariant 3 — Roadmap Completion Claims Match Registry Coverage
+
+Read `docs/roadmap/roadmap-registry.json` and `docs/roadmap/tracker.md` (if they exist) and extract any completion claims — typically "N/N epics complete" in the registry JSON or a completion column in the tracker.
+
+For every epic marked `status: done|complete` that has a non-empty `registry_entries` field in the epic registry:
+
+- Every referenced registry id MUST have `status == complete` in the latest-wins registry.
+- Any mismatch → **FAIL** this invariant with a precise delta:
+  ```
+  MISMATCH: Epic EPIC-105 claims status=done, but registry entry
+    cf-2026-04-02-modal-consistency is status=partial at coverage=0.646
+    (delivered 84/130 files). Registry is authoritative — either close
+    the gap or revert the epic to status=in-progress.
+  ```
+
+Fix path: roll the epic's status back to `in-progress` OR write a `dropped`/`deferred` event on the offending entry with a reason. Do NOT silently change the registry entry to `complete` — that is the drop this whole mechanism exists to prevent.
+
+### 3.6.5 Invariant 4 — Auto-Inject Uncompleted Active Entries Into Next Sprint
+
+For every registry entry with `status == active` AND `coverage < 1.0` AND `rollover_count < 3` (entries at 3+ are escalated, see 3.6.3):
+
+Write the entry's id to `sprints/sprint-$((SPRINT_NUMBER + 1))-planning-inputs.json`:
+
+```json
+{
+  "source_sprint": "sprint-${SPRINT_NUMBER}",
+  "auto_injected": "<ISO-8601>",
+  "reason": "Invariant 4 auto-inject from sprint-review",
+  "mandatory_entries": [
+    {
+      "id": "cf-...",
+      "parent": { "capability": "CAP-...", "epic": "EPIC-..." },
+      "remaining_scope": { "unit": "files", "target": 130, "actual": 84 },
+      "rollover_count": 1
+    }
+  ]
+}
+```
+
+The next invocation of `sprint-plan` will read this file in Phase 0 step 8 and must either (a) generate stories against each `mandatory_entries` item or (b) the operator must explicitly `defer`/`drop` the entry before planning runs. This is **Linear cycle semantics**: nothing silently falls out of view. See [carry-forward-registry.md](/_shared/carry-forward-registry.md).
+
+Partial entries (`status == partial`) are not auto-injected here — they carry their own state forward via the normal reader path (sprint-plan Phase 0 step 8 reads both active and partial entries). Only `active` with `coverage < 1.0` needs the explicit file marker for visibility.
+
+### 3.6.6 Invariants Report
+
+Write invariants results to the sprint review report under a `## Registry Invariants` section. Include:
+
+- Per-invariant pass/fail status
+- Violations with file/entry references
+- `rollover_count` updates
+- Entries auto-injected into the next sprint
+- Any escalations at `rollover_count >= 3`
+
+**Hard gate decision:**
+
+- **All four invariants pass** → Phase 3.6 passes, proceed to Phase 4 (Report) with `review_status` unchanged by this phase.
+- **Any invariant fails** → Phase 3.6 fails. The sprint close transitions to `CONDITIONAL` at best (see Phase 4.2 overall status table), and the failing invariants are listed under `Critical` findings in the report. The sprint CANNOT be marked `PASS` while registry invariants are failing. In `autonomy=full`, the failures are logged to the activity feed and the sprint is marked `CONDITIONAL` — the next `/loop` tick must address the failures before proceeding.
+
+---
+
 ## Phase 4: REPORT — Write Review Report and Update Registry
 
 ### 4.1 Write Review Report
@@ -365,9 +470,9 @@ Write `${SPRINT_DIR}/review-report.md` using the template from reference.md. Inc
 
 | Status | Criteria |
 |---|---|
-| **PASS** | All quality gates pass. No critical or major findings. |
-| **CONDITIONAL** | Quality gates pass but major findings exist. Or: minor gate failures with no critical findings. |
-| **FAIL** | Any quality gate fails after auto-fix. Or: critical findings exist. |
+| **PASS** | All quality gates pass. No critical or major findings. **All four Phase 3.6 registry invariants pass.** |
+| **CONDITIONAL** | Quality gates pass but major findings exist. Or: minor gate failures with no critical findings. Or: **any Phase 3.6 registry invariant fails** — the sprint cannot reach PASS while carry-forward state is inconsistent. |
+| **FAIL** | Any quality gate fails after auto-fix. Or: critical findings exist. Or: **a Phase 3.6 invariant failure escalates to `rollover_count >= 3`** on any entry and the operator has not resolved it. |
 
 ### 4.3 Update Sprint Registry
 
