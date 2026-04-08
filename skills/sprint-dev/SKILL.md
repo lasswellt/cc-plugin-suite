@@ -15,6 +15,7 @@ compatibility: ">=2.1.71"
 - For checkpoint/resume behavior, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
 - For agent deviation handling, see [deviation-protocol.md](/_shared/deviation-protocol.md)
 - For context window hygiene, see [context-management.md](/_shared/context-management.md)
+- For the carry-forward registry (written on story completion in Phase 3.2), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
 
 ---
 
@@ -273,6 +274,28 @@ Each agent follows this loop for each assigned story:
 The orchestrator (you) must:
 
 1. **Poll progress** every 2-3 agent messages. Use `TaskList` to check status. Track wave-level completion — when all stories in a wave complete, print a wave progress report per [verbose-progress.md](/_shared/verbose-progress.md) and unblock all Wave N+1 stories.
+1a. **Write carry-forward registry progress on story `DONE:`.** When an agent signals `DONE:` for a story, before updating STATE.md, check the completed story's frontmatter for a `registry_entries` field (see `skills/sprint-plan/reference.md` Story File Format). For each referenced entry:
+
+    a. **Validate the id.** Reduce the registry with `jq -s 'group_by(.id) | map(max_by(.ts))' .cc-sessions/carry-forward.jsonl` and confirm the id exists and is `status ∈ {active, partial}`. If the id is unknown → hard-fail with a loud error (the story's `registry_entries` references a non-existent entry — the author must fix the story). If the status is already `complete|dropped|deferred` → log a warning, skip the write, and continue (the story is working against a closed entry, which may indicate stale planning).
+
+    b. **Compute the new `delivered.actual`.** Read the current latest-wins line for the entry. Add the story's `delta` (or `len(story.files)` if `delta` is omitted). Clamp at `scope.target` so coverage cannot exceed 1.0.
+
+    c. **Determine the new `status`.** If `new_actual >= scope.target` → `status: complete`. Else → `status: partial`. Precompute `coverage = new_actual / scope.target`.
+
+    d. **Append a `progress` line** to `.cc-sessions/carry-forward.jsonl`:
+       ```jsonl
+       {"id":"<registry-id>","ts":"<ISO-8601>","event":"progress","delivered":{"unit":"<unit>","actual":<new_actual>,"last_sprint":"sprint-${SPRINT_NUMBER}"},"coverage":<computed>,"status":"<partial|complete>","last_touched":{"sprint":"sprint-${SPRINT_NUMBER}","date":"<ISO-8601>"},"children":["<story-id>"],"notes":"Advanced by <story-id> (delta: <delta>)"}
+       ```
+
+    e. **Log the activity-feed mirror:**
+       ```jsonl
+       {"ts":"<ISO-8601>","session":"${SESSION_ID}","skill":"sprint-dev","event":"registry_progress","message":"Story <story-id> advanced <registry-id> by <delta> (coverage <old> → <new>)","detail":{"story_id":"<story-id>","registry_id":"<registry-id>","delta":<delta>,"coverage":<new>}}
+       ```
+
+    **Inference fallback:** if a completed story has no `registry_entries` field but its parent epic has non-empty `registry_entries` in `epic-registry.json`, infer the link with `delta: 1` for each entry, and tag the `notes` as `"Inferred from parent epic; explicit delta recommended"`. This prevents silent zero-progress on stories whose authors forgot to set the field, but it's strictly a safety net — the `TaskUpdate` that transitions the task to `completed` should print a one-line warning in the orchestrator log noting the inference.
+
+    **No-op path:** stories with no `registry_entries` AND a parent epic with no `registry_entries` get no write. This is normal — not every story is linked to a quantified scope entry. Infrastructure stories, test-only stories, and spike outcomes often fall into this bucket.
+
 1b. **Update STATE.md** — After each story completion (or at wave boundaries), update `${SPRINT_DIR}/STATE.md` per [checkpoint-protocol.md](/_shared/checkpoint-protocol.md). This enables session recovery if interrupted. Include wave progress.
 1c. **Commit and push at wave boundaries** — When a wave completes, commit all changes and push to the remote. This ensures progress is persisted and visible to other sessions (especially in `/loop` mode where the next tick runs in a fresh context):
    ```bash

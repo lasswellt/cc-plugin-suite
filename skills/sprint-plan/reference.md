@@ -34,8 +34,25 @@ carry_forward: false                   # true if from a previous sprint
 research_refs:                         # Research findings referenced
   - "domain-researcher:auth-patterns"
   - "codebase-analyst:existing-models"
+registry_entries:                      # Optional: carry-forward registry ids this story advances
+  - id: "cf-2026-04-02-modal-consistency"
+    delta: 10                          # Units of progress this story contributes (files, components, etc.)
 ---
 ```
+
+### `registry_entries` — Story → Registry Link
+
+Optional. When present, sprint-dev writes a `progress` event line to `.cc-sessions/carry-forward.jsonl` for each referenced id when the story is marked `done`. This gives live coverage visibility during implementation — the registry updates as work lands, not only at sprint-review close.
+
+**Fields per entry:**
+- **`id`** (required) — An existing carry-forward registry id. Sprint-dev hard-fails if the id doesn't exist in the registry.
+- **`delta`** (optional) — Integer units of progress this story contributes toward `scope.target`. If omitted, sprint-dev falls back to `len(story.files)` as a best-effort estimate. Authors should set `delta` explicitly whenever the story's file list is a poor proxy for its contribution (e.g., a single-file refactor that removes `class="modal-overlay"` from 40 files counts as a delta of 40, not 1).
+
+**Inference fallback:** if a story has no `registry_entries` field but the parent epic has a non-empty `registry_entries` array in `epic-registry.json`, sprint-dev infers the link — but with `delta` forced to `1` (single-story pro-rata against the epic's children count). Authors are encouraged to set `registry_entries` explicitly for any story whose coverage contribution is non-trivial; the fallback is there to prevent silent zero-progress, not as a substitute for explicit tracking.
+
+**Multi-entry stories:** a story can advance more than one registry entry simultaneously (e.g., a single commit that migrates modals AND normalizes z-index layers). Each entry gets its own `progress` line with its own `delta`.
+
+See [carry-forward-registry.md](/_shared/carry-forward-registry.md) for the writer contract.
 
 ### Body Sections (required)
 
