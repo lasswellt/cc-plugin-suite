@@ -2,6 +2,9 @@
 
 Supporting schemas, templates, and logic for the sprint-plan skill.
 
+**Companion protocols:**
+- [carry-forward-registry.md](/_shared/carry-forward-registry.md) — The append-only JSONL registry. Sprint-plan reads it in Phase 0 for mandatory planning inputs and writes to it in Phase 4.1 when auto-waiving acceptance criteria.
+
 ---
 
 ## Story File Format (YAML Frontmatter Schema)
@@ -136,6 +139,59 @@ After partitioning, verify rough balance:
 - No single agent has more than 50% of total story points.
 - If imbalanced, consider splitting large stories or reassigning borderline stories.
 - Test stories should be ~20-30% of total count (one test story per 2-3 implementation stories).
+
+---
+
+## Sprint Manifest JSON Schema
+
+The per-sprint manifest lives at `sprints/sprint-${N}/manifest.json` and captures sprint-scoped state that is too volatile for the global `sprint-registry.json`. Sprint-plan writes this file at Phase 1.4; sprint-dev and sprint-review read and update it.
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["sprint", "status", "created", "epics", "story_count"],
+  "properties": {
+    "sprint": { "type": "integer" },
+    "status": {
+      "type": "string",
+      "enum": ["planning", "planned", "in-progress", "review", "reviewed", "done", "cancelled"]
+    },
+    "created": { "type": "string", "format": "date-time" },
+    "epics": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Epic IDs selected for this sprint"
+    },
+    "carry_forward": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Story IDs carried forward from the previous sprint (incomplete stories)"
+    },
+    "story_count": { "type": "integer" },
+
+    "waived_ac_count": {
+      "type": "integer",
+      "description": "Number of acceptance criteria auto-waived during Phase 4.1 under autonomy=high|full. Every waiver MUST also append a corresponding line to .cc-sessions/carry-forward.jsonl with event: 'auto_waived' — see skills/_shared/carry-forward-registry.md."
+    },
+    "reason_waivers": {
+      "type": "string",
+      "description": "Short phrase explaining why waivers were applied, e.g., 'autonomy=full'. Populated alongside waived_ac_count."
+    },
+    "registry_entries_touched": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of carry-forward registry ids (cf-*) that this sprint's stories advanced. Each entry MUST have been injected as a mandatory planning input OR explicitly claimed by a story in this sprint. Written during Phase 4.1 coverage check; audited in sprint-review Phase 3.5 Invariant 2."
+    },
+    "mandatory_planning_inputs_source": {
+      "type": "string",
+      "description": "Path to sprints/sprint-${N}-planning-inputs.json if the previous sprint-review auto-injected entries into this sprint. Empty when no carry-forward was pending."
+    }
+  }
+}
+```
+
+**Waiver accounting:** `waived_ac_count` is the local mirror of what also gets written to the carry-forward registry. Sprint-review Phase 3.5 Invariant 2 cross-checks the two: for every `waived_ac_count > 0`, there MUST be a matching `event: "auto_waived"` line in `.cc-sessions/carry-forward.jsonl` for an entry whose parent epic appears in this manifest's `epics` field. Missing mirror → invariant failure.
 
 ---
 
