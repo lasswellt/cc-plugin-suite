@@ -2,6 +2,9 @@
 
 This file provides schemas, templates, classification tables, and detailed procedures for Phases 5-8 used by the roadmap skill.
 
+**Companion protocols:**
+- [carry-forward-registry.md](/_shared/carry-forward-registry.md) — The append-only JSONL registry that links research-doc scope claims to delivered artifacts. Capability and Epic schemas below include fields that roll up to and from this registry.
+
 ---
 
 ## Capability Extraction Schema
@@ -10,6 +13,7 @@ This file provides schemas, templates, classification tables, and detailed proce
 id: CAP-NNN            # Sequential ID, zero-padded to 3 digits
 title: ""              # Short descriptive title (max 80 chars)
 source_document: ""    # Relative path to the research doc
+source_anchor: ""      # Heading anchor or line reference inside source_document (e.g., "#scope" or "L142")
 document_type: ""      # One of the 8 classification types
 description: ""        # 2-3 sentences describing the capability
 user_value: ""         # Who benefits and how (1-2 sentences)
@@ -22,8 +26,20 @@ dependencies_hint:     # CAP-IDs this likely depends on
 research_needed: false # Whether additional research is required
 research_triggers:     # Questions that need answering before implementation
   - ""
+scope_metric:          # Optional quantified scope — required if source doc has a `scope:` YAML block
+  unit: ""             # files | components | routes | tests | endpoints | ...
+  target: 0            # Integer count of units promised by the research doc
+  description: ""      # Human-readable scope description
+  acceptance:          # Executable DoD checks — see carry-forward-registry.md
+    - grep_absent: ""
+    - grep_present: { pattern: "", min: 0 }
+registry_entry_id: ""  # Populated when roadmap-extend writes a carry-forward registry line
 tags: []               # Freeform tags for cross-referencing
 ```
+
+**Scope metric extraction:** When the source research doc contains a `scope:` YAML frontmatter block (see `skills/research/SKILL.md` Phase 3), every entry in that block becomes a capability's `scope_metric` and must also be written to `.cc-sessions/carry-forward.jsonl` as a registry entry with `status: active`. See [carry-forward-registry.md](/_shared/carry-forward-registry.md) for the full schema and writer responsibilities.
+
+If the research doc contains quantified language (regex: `\d+\s+(files|components|modals|routes|tests|endpoints)`) but no `scope:` block, the roadmap-extend step must warn the user and either (a) prompt to add a block or (b) write an explicit `<!-- no-registry: <reason> -->` waiver. This is enforced by `sprint-review` Invariant 1.
 
 ### Complexity Guidelines
 
@@ -554,7 +570,16 @@ Tracker: docs/roadmap/tracker.md
       "domain": "",
       "status": "planned",
       "depends_on": [],
-      "estimated_stories": 0
+      "estimated_stories": 0,
+
+      "source_research_doc": "docs/_research/YYYY-MM-DD_<slug>.md",
+      "registry_entries": ["cf-YYYY-MM-DD-<slug>"],
+      "acceptance_criteria_count": 0,
+      "acceptance_criteria_met": 0,
+      "acceptance_criteria_waived": 0,
+      "coverage": 0.0,
+      "carry_forward_count": 0,
+      "last_touched_sprint": "sprint-<N>"
     }
   ],
   "dependency_graph": {
@@ -567,3 +592,20 @@ Tracker: docs/roadmap/tracker.md
   }
 }
 ```
+
+### Carry-Forward Integration Fields
+
+The following epic fields link the roadmap to the carry-forward registry described in [carry-forward-registry.md](/_shared/carry-forward-registry.md). They are the rollup view of the registry from an epic's perspective — the authoritative per-entry state lives in `.cc-sessions/carry-forward.jsonl`, not here.
+
+| Field | Purpose | Written by |
+|---|---|---|
+| `source_research_doc` | Back-link to the research doc that originated the epic's scope. Enables `sprint-review` Invariant 3 to verify that roadmap "N/N complete" claims match registry coverage. | `roadmap` phases 1 and 7 (ingest + epic generation) |
+| `registry_entries` | List of carry-forward registry ids whose parent is this epic. One epic can have multiple registry entries if its research doc had multiple quantified scope claims. | `roadmap extend` when it writes a new registry line |
+| `acceptance_criteria_count` | Total ACs across all stories in all sprints for this epic. | `sprint-plan` Phase 4.1 |
+| `acceptance_criteria_met` | Count of ACs whose executable DoD checks passed in `completeness-gate`. | `sprint-review` Phase 3.5 |
+| `acceptance_criteria_waived` | Count of ACs auto-waived by `sprint-plan` Phase 4.1 in `autonomy ∈ {high, full}`. | `sprint-plan` Phase 4.1 |
+| `coverage` | `acceptance_criteria_met / acceptance_criteria_count`. Never set manually. | `sprint-review` Phase 3.5 |
+| `carry_forward_count` | Sum of `rollover_count` across all child registry entries. When any child crosses `rollover_count >= 3`, this also crosses 3 and the epic is flagged for mandatory human review. | `sprint-review` Phase 3.5 |
+| `last_touched_sprint` | The most recent sprint that shipped a story against this epic. Used by `sprint --loop` to distinguish stalled epics from completed ones. | `sprint-dev` on story completion |
+
+**Epic completion gate:** an epic's `status` cannot transition to `done|complete` while any of its `registry_entries` have `status ∈ {active, partial}` in the carry-forward registry. This is enforced by `sprint-review` Invariant 3 and `sprint --loop` Step 2 row 7.
