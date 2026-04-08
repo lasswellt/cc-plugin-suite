@@ -221,6 +221,53 @@ This is the entry that would have existed if the registry had been in place when
 
 ---
 
+## Backfilling Legacy Research Docs
+
+Consumer projects that adopted blitz before the carry-forward registry shipped will have research docs that predate the `scope:` YAML convention. A common case: `docs/_research/2026-04-02_modal-consistency.md` says "migrate 130 modal files" in prose, but has no frontmatter block. Its parent epic may already be marked `done` while real coverage sits at ~64%. Backfill is how you reconcile.
+
+**Canonical backfill procedure** (one doc at a time):
+
+1. **Open the legacy research doc** in an editor. Scan Summary / Findings / Recommendation for quantified claims.
+
+2. **Add a `scope:` YAML frontmatter block** at the very top of the file, above the `# <title>` heading. Use best-guess values for unit, target, and acceptance checks — the recompute step will correct the delivered counts:
+   ```yaml
+   ---
+   scope:
+     - id: cf-YYYY-MM-DD-<short-slug>     # Use the doc's date as the stem
+       unit: files
+       target: 130                         # The number from the original prose claim
+       description: |
+         <Quote the original scope statement from the doc>
+       acceptance:
+         - grep_absent: '<legacy pattern that should disappear>'
+         - grep_present:
+             pattern: '<new pattern that should appear>'
+             min: <integer>
+   ---
+   ```
+
+3. **Run `/blitz:roadmap refresh`.** Two things happen automatically:
+   - **Phase 1.1.5** ingests the new `scope:` block and writes a `created` line to `.cc-sessions/carry-forward.jsonl` with `status: active, delivered.actual: 0`.
+   - **Phase 2.4** runs the acceptance checks against the current codebase and appends a `progress` (or `complete`) line with the real `delivered.actual` and `coverage`.
+
+4. **Verify the reconciliation.** Reduce the registry with `jq` and confirm the entry reflects true state:
+   ```bash
+   jq -s 'group_by(.id) | map(max_by(.ts)) | map(select(.id == "cf-YYYY-MM-DD-<slug>"))' \
+     .cc-sessions/carry-forward.jsonl
+   ```
+   If `coverage` is `1.0` and `status` is `complete`, the legacy work was already fully shipped — no further action needed. The next `sprint-review` will honor this and the parent epic can close cleanly.
+   If `coverage < 1.0`, the remaining scope is now visible to `sprint-plan` Phase 0 step 8 and will auto-inject into the next sprint's planning inputs. The previously-silent drop is now loud.
+
+5. **Optionally, run `/blitz:sprint --loop`.** With backfilled registry state, the loop's Step 2 decision tree will either exit idle cleanly (if everything is `complete`) or dispatch a gap-closure sprint against the remaining scope. Either way, the prior incoherent state is resolved.
+
+**Multi-doc backfill:** There is no bulk backfill command. Each legacy doc must be edited individually because only a human can translate "130 files in the prose" into a meaningful acceptance check. This is intentional — a sloppy bulk backfill would defeat the point of the registry (loudly visible scope). Walk the docs one at a time, run refresh after each, and sanity-check the registry delta. Expect 5-15 minutes per doc.
+
+**Edge case — the work is already done.** If the backfill recompute immediately sets `status: complete` and the parent epic is also `done`, no story needs to be planned; the registry just catches up with reality. Log a `backfilled` event note so the audit trail is clear.
+
+**Edge case — the work was silently dropped.** If the backfill recompute yields `coverage < 1.0` on an epic that roadmap-registry claims is done, that's exactly the CAP-133 incident. `sprint-review` Invariant 3 will fail on the next review run, forcing the operator to either (a) reopen the epic and plan gap-closure stories, or (b) write an explicit `deferred` or `dropped` event on the registry entry with a reason. The state-machine no longer silently tolerates mismatch.
+
+---
+
 ## Anti-Patterns (Don't)
 
 - **Don't rewrite prior lines.** Corrections are new lines with `event: "correction"`. The audit trail is the point.
