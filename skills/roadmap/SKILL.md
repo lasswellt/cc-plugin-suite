@@ -13,6 +13,7 @@ argument-hint: "[full | refresh | extend | status]"
 
 ## Additional Resources
 - For capability schema, document classification, and Phases 5-8 procedures, see [reference.md](reference.md)
+- For the carry-forward registry (written in Phase 1 from research doc scope: blocks; re-scanned in refresh mode), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
 
 All generated epics and roadmap artifacts must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder descriptions.
 
@@ -39,9 +40,9 @@ If no argument is provided, default to `full`.
 
 **For `status` mode**: Skip to Phase 0 context loading, then print a status report and STOP. Do not generate anything.
 
-**For `refresh` mode**: Run Phases 0-4, then selectively re-run Phases 5-8 only for changed domains.
+**For `refresh` mode**: Run Phases 0-4, then selectively re-run Phases 5-8 only for changed domains. Phase 1 also re-scans the carry-forward registry against existing research docs — see Phase 1.1.6 and the refresh-specific backfill path documented in `skills/_shared/carry-forward-registry.md`.
 
-**For `extend` mode**: Run Phase 0, then Phase 1 for new documents only, skip to Phase 4 for dependency re-resolution, then Phases 5-8 for new domains only.
+**For `extend` mode**: Run Phase 0, then Phase 1 for new documents only (including Phase 1.1.5 scope-block ingestion — hard-fails on duplicate registry ids), skip to Phase 4 for dependency re-resolution, then Phases 5-8 for new domains only.
 
 ---
 
@@ -128,6 +129,48 @@ Read every file found in Phase 0.2. For each document:
 
 2. **Extract capabilities** from the document. A capability is a discrete unit of functionality that can be implemented. Assign sequential IDs: `CAP-001`, `CAP-002`, etc.
 
+### 1.1.5 Parse `scope:` YAML Frontmatter (Carry-Forward Registry Ingestion)
+
+Before extracting capabilities, check the research doc for a **`scope:` YAML frontmatter block**. This is the structured-scope contract emitted by `skills/research` Phase 3.1.1. Each entry in the block becomes both a capability `scope_metric` (see `reference.md`) **and** an append-only line in `.cc-sessions/carry-forward.jsonl`. See [carry-forward-registry.md](/_shared/carry-forward-registry.md) for the full registry protocol.
+
+**Parse step (all modes):**
+
+1. **Detect the block.** Read the top of the research doc. If it starts with `---` followed by a `scope:` key, extract the YAML between the `---` delimiters:
+   ```bash
+   # Rough shape — adapt to available tooling
+   awk '/^---$/{f=!f; next} f' "${DOC_PATH}" > "${SESSION_TMP_DIR}/frontmatter.yaml"
+   ```
+   If no frontmatter or no `scope:` key exists, skip to the "quantified claim fallback" below.
+
+2. **Parse each entry.** For every item under `scope:`, extract: `id`, `unit`, `target`, `description`, `acceptance[]`. All five fields are required; reject the entry with a loud error and skip it if any are missing.
+
+3. **Dedup against existing registry.** Reduce `.cc-sessions/carry-forward.jsonl` with `jq -s 'group_by(.id) | map(max_by(.ts))'` and check each parsed `id`:
+   - **`extend` mode** — Hard-fail on any duplicate id: print the offending id and the doc that introduced it, then STOP. The author must either rename the new entry or use `refresh` mode.
+   - **`refresh` mode** — Duplicates are expected (re-ingest path). See Phase 1.1.6 below.
+   - **`full` mode** — Treat duplicates as a registry conflict: warn the user, stop, and prompt for manual resolution. Full-mode runs usually start with an empty registry.
+
+4. **Write registry lines.** For each new (non-duplicate) entry, append a `created` line to `.cc-sessions/carry-forward.jsonl`:
+   ```jsonl
+   {"id":"<id>","ts":"<ISO-8601>","event":"created","source":{"doc":"<doc-path>","anchor":"#scope"},"parent":{"capability":null,"epic":null},"scope":{"unit":"<unit>","target":<target>,"description":"<description>","acceptance":<acceptance-array>},"delivered":{"unit":"<unit>","actual":0,"last_sprint":null},"coverage":0.0,"status":"active","last_touched":{"sprint":null,"date":"<ISO-8601>"},"rollover_count":0,"notes":"Created by roadmap/SKILL.md Phase 1.1.5 during <extend|refresh|full> run"}
+   ```
+   The `parent.capability` and `parent.epic` fields are null here — they will be backfilled in Phase 7 once capabilities and epics are derived and their `registry_entries` arrays are written.
+
+5. **Activity-feed mirror.** For each registry line, also append an event to `.cc-sessions/activity-feed.jsonl`:
+   ```jsonl
+   {"ts":"<ISO-8601>","session":"${SESSION_ID}","skill":"roadmap","event":"registry_write","message":"Ingested scope entry <id> from <doc-path>","detail":{"registry_id":"<id>","unit":"<unit>","target":<target>}}
+   ```
+
+6. **Propagate to capability extraction.** Each parsed scope entry is attached to its derived capability in Phase 1.2 as the capability's `scope_metric` field, with `registry_entry_id` pointing at the line just written. See `reference.md` Capability Extraction Schema.
+
+### 1.1.6 Quantified-Claim Fallback Scan
+
+Even if the doc has no `scope:` block, it may still contain prose-level quantified claims that should be registered (this is the CAP-133 drop mode — the original doc said "130 files" in prose and nothing caught it). Scan the document's Summary, Findings, and Recommendation sections for regex `\d+\s+(files|components|modals|routes|tests|endpoints|pages|views|tables|migrations|fields|records)`.
+
+For every match:
+
+- **Acceptable: `<!-- no-registry: <reason> -->` comment on the same line or immediately above** — this is an explicit author waiver. Record the waiver in the capability's `notes` field and continue.
+- **Unacceptable: no waiver comment** — warn with a precise location: `"${DOC_PATH}:${LINE}: unregistered quantified claim '<match>'. Add a scope: YAML block or a <!-- no-registry: <reason> --> waiver."`. In `extend` mode this is a **HARD FAIL**; the operator must fix the research doc before re-running extend. In `refresh`/`full` mode, log the warning and continue (these modes are allowed to be lenient on legacy docs, but the warning is logged and sprint-review Invariant 1 will re-enforce it at sprint close).
+
 ### 1.2 Capability Extraction Rules
 
 For each capability, capture:
@@ -135,6 +178,7 @@ For each capability, capture:
 id: CAP-NNN
 title: "<short descriptive title>"
 source_document: "<relative-path>"
+source_anchor: "<heading-anchor or line reference>"
 document_type: "<classification>"
 description: "<2-3 sentences>"
 user_value: "<who benefits and how>"
@@ -145,6 +189,12 @@ domain_hint: "<suggested domain cluster>"
 dependencies_hint: ["<CAP-IDs this likely depends on>"]
 research_needed: true | false
 research_triggers: ["<questions that need answering>"]
+scope_metric:                       # Populated from the scope: block if one exists
+  unit: "<files|components|...>"
+  target: <integer>
+  description: "<human-readable>"
+  acceptance: [ ... ]
+registry_entry_id: "cf-<id>"        # Back-link to .cc-sessions/carry-forward.jsonl entry
 ```
 
 ### 1.3 Deduplicate Capabilities
@@ -369,9 +419,13 @@ These phases are loaded on demand from `reference.md` to keep this skill file le
 
 **Phase 6**: Generate cross-cutting specs (auth system, error handling strategy, testing strategy, CI/CD pipeline, monitoring).
 
-**Phase 7**: Spawn agents per phase to convert specs into epics with stories, acceptance criteria, and effort estimates.
+**Phase 7**: Spawn agents per phase to convert specs into epics with stories, acceptance criteria, and effort estimates. **Phase 7 also backfills `parent.capability` and `parent.epic` on every carry-forward registry entry created in Phase 1.1.5.** For each registry entry, look up the capability whose `registry_entry_id` matches, then find the epic that contains that capability, and append a `correction` event line to `.cc-sessions/carry-forward.jsonl`:
+```jsonl
+{"id":"<registry-id>","ts":"<ISO-8601>","event":"correction","parent":{"capability":"CAP-NNN","epic":"E<NNN>"},"notes":"Parent backfilled by roadmap Phase 7 after epic generation"}
+```
+Also write the registry entry's id into the epic's `registry_entries` array in `docs/roadmap/epic-registry.json` (see `reference.md` Epic Registry JSON Schema).
 
-**Phase 8**: Write summary, update indexes, generate tracker, write manifest.
+**Phase 8**: Write summary, update indexes, generate tracker, write manifest. **In `refresh` mode, Phase 8 also runs the registry coverage recompute** — see the refresh-mode addendum below.
 
 ---
 
