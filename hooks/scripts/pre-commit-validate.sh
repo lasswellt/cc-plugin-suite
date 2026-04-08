@@ -129,5 +129,33 @@ if [[ "$WARNED" -gt 0 ]]; then
   echo "Warning: $WARNED banned pattern(s) found in staged files (commit allowed)." >&2
 fi
 
+# --- Check for version-reference drift ---
+# Runs on every commit. Warning-only on regular commits; blocks on commits
+# that touch .claude-plugin/plugin.json (those are version-bump commits and
+# drifted files in the same commit are an explicit bug).
+VERSION_SYNC_SCRIPT="${CLAUDE_PLUGIN_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/scripts/check-version-sync.sh"
+if [[ -x "$VERSION_SYNC_SCRIPT" ]]; then
+  SYNC_EXIT=0
+  SYNC_OUTPUT=$("$VERSION_SYNC_SCRIPT" 2>&1) || SYNC_EXIT=$?
+
+  if [[ "$SYNC_EXIT" -ne 0 ]]; then
+    echo "" >&2
+    echo "$SYNC_OUTPUT" >&2
+
+    # Is plugin.json in this commit? If yes, this is a bump commit — block.
+    if echo "$STAGED_FILES" | grep -qF ".claude-plugin/plugin.json"; then
+      echo "" >&2
+      echo "BLOCKED: version-bump commit has drifted version references." >&2
+      echo "  This commit stages .claude-plugin/plugin.json but other files are not in sync." >&2
+      echo "  Update the drifted files listed above and re-stage, or skip this check" >&2
+      echo "  with an explicit --no-verify if this is intentional." >&2
+      exit 2
+    fi
+
+    # Non-bump commit: warn only. The drift will be fixed in a future commit.
+    echo "  (This is a warning — commit allowed. Drift will be re-flagged on every commit until fixed.)" >&2
+  fi
+fi
+
 # No secrets found — allow the commit
 exit 0
