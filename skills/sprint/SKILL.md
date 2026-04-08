@@ -12,6 +12,8 @@ You orchestrate a full sprint cycle: **plan → implement → review**.
 
 **Verbose progress is mandatory.** Follow [verbose-progress.md](/_shared/verbose-progress.md) throughout. Print `[sprint]` prefixed status lines at every phase transition, decision point, and when dispatching to sub-skills. Log `skill_start` and `skill_complete` events to the activity feed (`.cc-sessions/activity-feed.jsonl`).
 
+**Carry-forward awareness is mandatory in `--loop` mode.** The reconciliation loop reads `.cc-sessions/carry-forward.jsonl` every tick and treats active/partial entries as load-bearing state. See [carry-forward-registry.md](/_shared/carry-forward-registry.md) for the full protocol. Silent scope drops are prevented by the decision-tree split at rows 6a-6d below.
+
 ## Flag Parsing
 
 Parse the following flags from the user's arguments:
@@ -48,6 +50,27 @@ cat "sprints/sprint-${LATEST}/STATE.md" 2>/dev/null | head -10 || echo "NO_STATE
 cat roadmap-registry.json 2>/dev/null | head -5 || echo "NO_ROADMAP"
 cat epic-registry.json 2>/dev/null | head -5 || echo "NO_EPICS"
 
+# Carry-forward registry — latest-wins reduction, active/partial only
+# (see skills/_shared/carry-forward-registry.md)
+CF_ACTIVE=$(jq -s '
+  group_by(.id)
+  | map(max_by(.ts))
+  | map(select(.status == "active" or .status == "partial"))
+  | length
+' .cc-sessions/carry-forward.jsonl 2>/dev/null || echo "0")
+
+# Carry-forward rollover escalations (rollover_count >= 3)
+CF_ESCALATED=$(jq -s '
+  group_by(.id)
+  | map(max_by(.ts))
+  | map(select((.status == "active" or .status == "partial") and (.rollover_count // 0) >= 3))
+  | length
+' .cc-sessions/carry-forward.jsonl 2>/dev/null || echo "0")
+
+# Next-sprint planning inputs auto-injected by previous sprint-review Invariant 4
+NEXT_SPRINT=$((LATEST + 1))
+CF_PENDING_INPUTS=$(test -f "sprints/sprint-${NEXT_SPRINT}-planning-inputs.json" && echo "1" || echo "0")
+
 # Active sessions (stale cleanup happens via session protocol step 5a)
 ls .cc-sessions/*.json 2>/dev/null
 ```
@@ -63,16 +86,23 @@ Apply this priority-ordered decision tree (same logic as `/next`):
 | 3 | Sprint status `review` | Run review | Invoke **sprint-review** `--sprint N` |
 | 4 | Sprint status `reviewed` + quality passing | Ship it | Invoke **ship** |
 | 5 | Sprint status `planned` | Start implementation | Invoke **sprint-dev** `--sprint N` |
-| 6 | No active sprint + roadmap with unblocked epics | Plan next sprint | Invoke **sprint-plan** |
-| 7 | No active sprint + all epics blocked/done | Nothing to do | Print status and exit |
-| 8 | No roadmap exists | Cannot proceed | Print "No roadmap. Run `/blitz:roadmap` first." and exit |
+| 6a | No active sprint + **`CF_ESCALATED > 0`** | Escalate — operator review needed | Print escalation banner with entry ids and exit cleanly |
+| 6b | No active sprint + **`CF_PENDING_INPUTS == 1`** (planning inputs file exists from prior review Invariant 4) | Plan gap-closure sprint against injected entries | Invoke **sprint-plan** (it will honor the planning-inputs file in Phase 0 step 8) |
+| 6c | No active sprint + roadmap with unblocked epics | Plan next sprint | Invoke **sprint-plan** |
+| 6d | No active sprint + **`CF_ACTIVE > 0`** (registry has active/partial entries even though epics look done) | Plan gap-closure sprint against registry | Invoke **sprint-plan** — it will read the registry in Phase 0 step 8 and select parent epics for re-planning |
+| 7 | No active sprint + all epics blocked/done **AND `CF_ACTIVE == 0` AND `CF_PENDING_INPUTS == 0`** | Nothing to do | Print status and exit |
+| 8 | No roadmap exists AND `CF_ACTIVE == 0` | Cannot proceed | Print "No roadmap. Run `/blitz:roadmap` first." and exit |
 
 **Tie-breaking** (if multiple conditions match):
 1. Resume interrupted work (STATE.md exists)
 2. Complete in-progress work
 3. Ship reviewed work
 4. Start planned work
-5. Plan new work
+5. Resolve carry-forward escalations (row 6a) — blocks all further progress until human review
+6. Plan new work from injected inputs (row 6b) before roadmap epics (row 6c)
+7. Plan carry-forward gap closure (row 6d) before declaring idle (row 7)
+
+**Why rows 6a-6d exist:** the prior state machine collapsed rows 6 and 7 together, so an idle roadmap with a non-empty carry-forward registry was indistinguishable from "nothing to do" — the exact silent-drop mode traced in `docs/_research/2026-04-08_sprint-carryforward-registry.md`. The four-way split makes registry state load-bearing: the loop cannot exit idle while there is pending carry-forward work, and it cannot bounce indefinitely on stuck entries because row 6a short-circuits `rollover_count >= 3` to human escalation.
 
 ### Step 3: Act — Execute One Phase
 
@@ -107,8 +137,46 @@ If nothing to do:
 [sprint] Loop reconciliation:
   ├─ Sprint 3: reviewed (quality: PASS)
   ├─ All epics: done or blocked
+  ├─ Carry-forward registry: 0 active, 0 partial, 0 pending inputs
   ├─ DECISION: Nothing to do
   └─ Idle — waiting for new epics or roadmap changes
+```
+
+If carry-forward work is pending (row 6d):
+
+```
+[sprint] Loop reconciliation:
+  ├─ Sprint 3: reviewed (quality: PASS)
+  ├─ All epics: done in epic-registry.json
+  ├─ Carry-forward registry: 2 active, 1 partial (NOT idle)
+  │    - cf-2026-04-02-modal-consistency: partial, coverage 0.646
+  │    - cf-2026-04-05-api-error-handling: active, coverage 0.0
+  │    - cf-2026-04-07-auth-rate-limits: partial, coverage 0.33
+  ├─ DECISION: Plan gap-closure sprint
+  │    Reason: registry has 3 entries with incomplete scope
+  ├─ Dispatching: sprint-plan (will re-select parent epics)
+  └─ Next /loop tick will re-evaluate after planning completes
+```
+
+If a carry-forward escalation is present (row 6a):
+
+```
+[sprint] Loop reconciliation:
+  ├─ Sprint 3: reviewed (quality: CONDITIONAL)
+  ├─ Carry-forward registry: 1 escalation (rollover_count >= 3)
+  │    - cf-2026-04-02-modal-consistency: rollover_count=3
+  │      Parent: CAP-133 / EPIC-105
+  │      Last touched: sprint-197 (3 sprints ago)
+  │      Reason: repeated auto-waivers; blocked by type-check failures
+  ├─ DECISION: Escalate to human review
+  │    Loop cannot auto-advance while this entry is stuck.
+  │    Resolve with one of:
+  │      a) /blitz:sprint-plan with explicit split targeting this entry
+  │      b) Append `deferred` event to .cc-sessions/carry-forward.jsonl
+  │         with a revisit date in notes
+  │      c) Append `dropped` event with drop_reason + revival_candidate
+  └─ Exiting — /loop will re-evaluate on next tick (will re-escalate
+       until resolved)
 ```
 
 ### Session Conflict Handling in Loop Mode
