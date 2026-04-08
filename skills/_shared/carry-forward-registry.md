@@ -1,0 +1,231 @@
+# Carry-Forward Registry Protocol
+
+Shared reference for the **carry-forward registry** — an append-only JSONL ledger that links research-doc scope claims to delivered artifacts across sprints. Its purpose is to make silent scope drops impossible: any promised scope that hasn't been delivered remains loudly visible until it is completed, explicitly deferred, or dropped with a reason.
+
+**Motivation:** see `docs/_research/2026-04-08_sprint-carryforward-registry.md` for the full incident analysis, industry precedent (Linear cycles, KEP lifecycles, PEP status headers, Shortcut archiving, Jira rightmost-column close, burn-up charts), and design rationale. The short version: when `sprint-plan` auto-waives uncovered acceptance criteria in `full` autonomy, the waiver currently lives only in the sprint manifest's `carry_forward` array, which the next sprint's planner never reads. The registry is the fix.
+
+**Companion protocols:**
+- [session-protocol.md](session-protocol.md) — Multi-session safety. The registry follows the same append-only convention as `.cc-sessions/activity-feed.jsonl`.
+- [verbose-progress.md](verbose-progress.md) — Every registry write must also log a corresponding activity-feed event.
+- [definition-of-done.md](definition-of-done.md) — Capability-level DoD should be an executable check (e.g., grep/AST), not a checklist item.
+
+---
+
+## Storage
+
+**File:** `.cc-sessions/carry-forward.jsonl`
+
+- One JSON object per line. Never comma-separated, never a JSON array.
+- Append-only. Updates are new lines with the same `id`; **latest-wins by `id`** when reducing.
+- Readers reduce to latest state with:
+  ```bash
+  jq -s 'group_by(.id) | map(max_by(.ts))' .cc-sessions/carry-forward.jsonl
+  ```
+- Never rewrite prior lines. Corrections are a new line with a corrected state plus `event: "correction"` and `notes` explaining the prior mistake.
+- The registry lives in the consumer project's `.cc-sessions/` directory, co-located with the activity feed. The blitz plugin source does not ship a registry file — it ships the *protocol* and the skill behaviors that read and write it.
+
+---
+
+## Entry Schema
+
+Every line is a JSON object. Eight fields are **load-bearing** (required to detect silent drops). Three are **optional but cheap**.
+
+```jsonc
+{
+  // Load-bearing (required)
+  "id": "cf-<YYYY-MM-DD>-<slug>",       // Stable across updates; new lines use same id
+  "ts": "<ISO-8601>",                    // Each line is uniquely timestamped
+  "event": "created|progress|auto_waived|deferred|dropped|complete|revived|correction",
+  "source": {
+    "doc": "<relative-path-to-research-doc>",
+    "anchor": "<markdown-anchor-or-line>"
+  },
+  "parent": {
+    "capability": "<CAP-NNN>",
+    "epic": "<E-NNN>"
+  },
+  "scope": {
+    "unit": "files|components|routes|tests|endpoints|...",
+    "target": <integer>,
+    "description": "<human-readable scope>",
+    "acceptance": [
+      // Executable DoD checks — each must be verifiable in seconds
+      { "grep_absent":  "<regex>" },
+      { "grep_present": { "pattern": "<regex>", "min": <integer> } },
+      { "ast_absent":   "<query>" },
+      { "shell":        "<command>" }
+    ]
+  },
+  "delivered": {
+    "unit": "<same as scope.unit>",
+    "actual": <integer>,
+    "last_sprint": "sprint-<N>"
+  },
+  "coverage": <float 0.0 to 1.0>,        // Precomputed: delivered.actual / scope.target
+  "status": "provisional|active|partial|complete|deferred|dropped|replaced",
+  "last_touched": {
+    "sprint": "sprint-<N>",
+    "date": "<ISO-8601>"
+  },
+
+  // Optional but cheap
+  "children":          ["<story-id>", ...],     // Sprint stories that advanced this entry
+  "blocker":           "<reason or null>",      // GitHub-style "blocked by" note
+  "drop_reason":       "<required if status=dropped>",
+  "revival_candidate": true|false,              // Required if status=dropped; true means a future sprint should revisit
+  "rollover_count":    <integer>,               // Incremented each sprint the entry remains status ∈ {active, partial}
+  "notes":             "<free text>"
+}
+```
+
+### Field notes
+
+- **`id` format** — kebab-case with a date stem for uniqueness: `cf-2026-04-02-modal-consistency`. Never reuse ids across distinct scope claims.
+- **`event` enum** — describes *why this line was written*, not the resulting state. The resulting state is in `status`.
+- **`source.anchor`** — a markdown heading anchor (`#scope`) or a line reference (`L142`). Required so readers can re-locate the original scope claim if the doc is edited.
+- **`scope.acceptance`** — the executable DoD. Prefer `grep_absent` / `grep_present` / `shell` over prose — they can be run in `completeness-gate` without human interpretation.
+- **`coverage`** — precomputed on write. Dashboards and invariants must not re-derive it from prior lines; they read the latest-wins value directly.
+- **`rollover_count`** — incremented by `sprint-review` at sprint close if `status ∈ {active, partial}` and the entry was not touched this sprint. Any entry with `rollover_count >= 3` escalates to mandatory human review instead of auto-injecting into the next sprint (prevents infinite bounce loops).
+
+---
+
+## Status Enum (Lifecycle)
+
+Adapted from Kubernetes KEP + Python PEP + Shortcut archiving lifecycles.
+
+| Status | Meaning | Transition triggers |
+|---|---|---|
+| `provisional` | Entry exists but scope has not been formally accepted | `research` skill emits a scope block; roadmap hasn't ingested it yet |
+| `active` | Accepted, in flight, has not yet been touched by a sprint | Roadmap extend ingests the scope; initial coverage is 0 |
+| `partial` | Sprint delivered some but not all of the target | Any sprint touches `delivered.actual`; coverage > 0 and < 1.0 |
+| `complete` | Coverage reached 1.0; DoD checks pass | `completeness-gate` confirms all `scope.acceptance` checks pass |
+| `deferred` | Explicitly pushed out with a reason; not counted against current-sprint invariants | Human or skill writes a `deferred` event with `notes` |
+| `dropped` | Explicitly abandoned; `drop_reason` + `revival_candidate` required | Human writes a `dropped` event; default path for entries hitting `rollover_count >= 3` that cannot be completed |
+| `replaced` | Superseded by a newer entry; `notes` must reference the replacement id | Research doc is updated with new scope; old entry is closed out |
+
+**Invalid transitions** (must be caught by the writer):
+- `complete → partial` — completion is a one-way door unless a new `replaced`/`created` pair is written
+- `dropped → active` — revival must create a **new** entry and mark the old one `replaced`, not re-activate
+- Any transition that sets `coverage >= 1.0` without `status == complete`
+
+---
+
+## Writers
+
+Four skills write to the registry. Each writer is responsible for logging **both** a registry line **and** a matching `activity-feed.jsonl` event so cross-session observers see the transition.
+
+### 1. `research` — emits provisional entries
+
+When Phase 3 of the research skill identifies a quantified scope claim (regex `\d+\s+(files|components|modals|routes|tests|endpoints|...)` in findings or recommendation), it emits a `scope:` YAML frontmatter block in the research doc. The roadmap skill (below) later ingests this block.
+
+Research itself does **not** write directly to `.cc-sessions/carry-forward.jsonl` — it only emits the YAML block. This keeps research docs self-contained in consumer projects and avoids double-writes.
+
+### 2. `roadmap extend` — creates entries from ingested scope blocks
+
+When `/blitz:roadmap extend` reads a research doc with a `scope:` block, it:
+1. Generates a registry `id` derived from the doc date and slug.
+2. Appends a `created` line with `status: active`, `delivered.actual: 0`, `coverage: 0.0`.
+3. Records the new entry id in the affected epic's `registry_entries` field (see `roadmap/reference.md`).
+
+Roadmap `refresh` mode re-verifies existing entries against the current codebase: if the executable DoD checks now pass, it appends a `complete` line.
+
+### 3. `sprint-plan` — auto-waivers write `partial` entries
+
+When Phase 4.1 auto-waives uncovered acceptance criteria in `autonomy=full`:
+1. Append an `auto_waived` line against the parent registry entry with `waived_count: N` and `reason: "autonomy=full"`.
+2. If the entry's status was `active`, transition it to `partial`.
+3. Compute and write updated `coverage = delivered.actual / scope.target`.
+4. Log a corresponding `decision` event to the activity feed.
+
+Phase 0 step 6 **reads** the registry (latest-wins reduction) and injects every `status ∈ {active, partial}` entry as a **mandatory** planning input, regardless of whether the parent epic's status is `done` in `epic-registry.json`. This closes the "epic marked done → next sprint ignores the waived scope" hole.
+
+### 4. `sprint-review` — enforces invariants at sprint close
+
+Phase 3.5 (registry invariants, hard gate) runs before the sprint can close. See **Invariants** below.
+
+---
+
+## Invariants (sprint-review Phase 3.5)
+
+At sprint close, `sprint-review` reduces the registry to latest-wins state and enforces four hard gates. **Failing any one fails the sprint close.**
+
+### Invariant 1 — Quantified scope claims have registry entries
+
+For every research doc touched this sprint (any doc referenced by a story, epic, or capability in the sprint manifest), scan for quantified language (regex `\d+\s+(files|components|modals|routes|tests|endpoints|...)` in the first two pages, or any `scope:` YAML block).
+
+- If a doc contains a quantified claim AND no matching registry entry exists → **FAIL**. Require the author to add a `scope:` block and re-run `roadmap extend`, or write an explicit `<!-- no-registry: <reason> -->` comment on the scope statement.
+- If a doc already has a `scope:` block but no registry ingestion has occurred → **FAIL**. The author must run `roadmap extend` before sprint close.
+
+### Invariant 2 — Active entries are touched or deferred
+
+For every registry entry with `status ∈ {active, partial}`:
+- If `last_touched.sprint == <current sprint>` → pass (entry was touched this sprint).
+- Else if the latest line for the entry has `event: "deferred"` with a non-empty `notes` → pass (explicitly deferred).
+- Else → **FAIL** and increment `rollover_count`. Require the author to either (a) link a story in this sprint that touched the entry, (b) write a `deferred` event with a reason, or (c) write a `dropped` event with `drop_reason` + `revival_candidate`.
+
+Entries with `rollover_count >= 3` escalate: they must be resolved by human action before sprint close (no auto-inject into next sprint). This prevents infinite bounce loops.
+
+### Invariant 3 — Roadmap completion claims match registry coverage
+
+If `roadmap-registry.json` or `tracker.md` claims "N/N epics complete" or equivalent, cross-check:
+- Every epic marked `status: done|complete` that has a `registry_entries` field must have every referenced entry at `status == complete` in the registry.
+- Mismatch → **FAIL**. Print the delta: "Epic E-105 claims done, but cf-2026-04-02-modal-consistency is partial at 0.646 coverage."
+
+### Invariant 4 — Uncompleted active entries auto-inject into next sprint
+
+Any entry with `status == active` and `coverage < 1.0` is written to `sprints/sprint-(N+1)-planning-inputs.json` as a mandatory planning input. The next invocation of `sprint-plan` must select the parent epic and generate stories against the remaining uncovered scope, OR the operator must explicitly `defer` the entry before planning runs.
+
+This is **Linear cycle semantics** — nothing silently falls out of view. The operator is always choosing between "work it," "defer it with a reason," or "drop it with a reason + revival decision."
+
+---
+
+## Readers
+
+Any skill or agent that needs to audit coverage reduces the registry with `jq`:
+
+```bash
+# Latest-wins reduction
+jq -s 'group_by(.id) | map(max_by(.ts))' .cc-sessions/carry-forward.jsonl
+
+# All active entries
+jq -s 'group_by(.id) | map(max_by(.ts)) | map(select(.status == "active" or .status == "partial"))' \
+  .cc-sessions/carry-forward.jsonl
+
+# Entries stalled for 2+ sprints
+jq -s --arg sprint "sprint-42" '
+  group_by(.id) | map(max_by(.ts))
+  | map(select(.status == "partial" and .last_touched.sprint != $sprint and .rollover_count >= 2))
+' .cc-sessions/carry-forward.jsonl
+
+# Coverage by parent epic
+jq -s 'group_by(.id) | map(max_by(.ts))
+       | group_by(.parent.epic)
+       | map({epic: .[0].parent.epic, entries: length,
+              avg_coverage: (map(.coverage) | add / length)})' \
+  .cc-sessions/carry-forward.jsonl
+```
+
+---
+
+## Example: The Modal Standardization Incident (Backfilled)
+
+This is the entry that would have existed if the registry had been in place when CAP-133 was first researched. Shown as three successive JSONL lines — the latest wins.
+
+```jsonl
+{"id":"cf-2026-04-02-modal-consistency","ts":"2026-04-02T10:00:00Z","event":"created","source":{"doc":"docs/_research/2026-04-02_modal-consistency.md","anchor":"#scope"},"parent":{"capability":"CAP-133","epic":"EPIC-105"},"scope":{"unit":"files","target":130,"description":"Migrate modal components to @mbk/ui Modal.vue","acceptance":[{"grep_absent":"class=\"modal-overlay\""},{"grep_absent":"from.*shared/ConfirmDialog"},{"grep_present":{"pattern":"from.*@mbk/ui.*Modal","min":30}}]},"delivered":{"unit":"files","actual":0,"last_sprint":null},"coverage":0.0,"status":"active","last_touched":{"sprint":null,"date":"2026-04-02"},"rollover_count":0,"notes":""}
+{"id":"cf-2026-04-02-modal-consistency","ts":"2026-04-03T18:30:00Z","event":"progress","delivered":{"unit":"files","actual":84,"last_sprint":"sprint-197"},"coverage":0.646,"status":"partial","last_touched":{"sprint":"sprint-197","date":"2026-04-03"},"children":["S197-004"],"rollover_count":0,"notes":""}
+{"id":"cf-2026-04-02-modal-consistency","ts":"2026-04-03T18:31:00Z","event":"auto_waived","waived_count":46,"reason":"autonomy=full auto-waiver at sprint-plan Phase 4.1","notes":"46 files uncovered — carry_forward in sprint-197 manifest"}
+```
+
+**With the registry and invariants in place**, sprint-198's planner would have seen the `partial`/`active` entry in its mandatory planning inputs and generated stories against the remaining 46 files. Sprint-197's review would have incremented `rollover_count`, and if sprint-198 also failed to close it, sprint-199 review would have escalated to mandatory human review at `rollover_count == 3`. No silent drop is possible.
+
+---
+
+## Anti-Patterns (Don't)
+
+- **Don't rewrite prior lines.** Corrections are new lines with `event: "correction"`. The audit trail is the point.
+- **Don't batch registry writes outside a writer's own transaction.** Each writer (research, roadmap, sprint-plan, sprint-review) writes its own lines atomically.
+- **Don't skip the activity-feed companion event.** The registry is the machine-readable state; the activity feed is the human-readable timeline. Both must be updated.
+- **Don't treat `deferred` as permanent.** Deferred entries must reappear in planning inputs at a specified revisit sprint or date, tracked in `notes`.
+- **Don't mark `status: complete` without running the `scope.acceptance` checks.** `completeness-gate` is the authority — never self-mark.
+- **Don't auto-revive `dropped` entries.** Revival is always a fresh `created` line with a new `id` and a `replaced` transition on the old one.
