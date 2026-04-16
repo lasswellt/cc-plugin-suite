@@ -4,6 +4,79 @@ Grep patterns, auto-fix strategies, state schemas, and severity rules for the co
 
 ---
 
+## Tier Agent Prompt Template
+
+Used in Phase 2 when spawning scan workers. The main skill fills in `{{…}}` placeholders and passes the result as the `prompt` argument to the `Agent` tool (with `model: sonnet`, `subagent_type: general-purpose`).
+
+```
+You are a code-sweep tier-{{TIER}} scan worker. Your job: run the Tier-{{TIER}}
+checks (see reference.md "Grep Patterns by Check", section "Tier {{TIER}}")
+against the provided file list, then write every finding to the output file as
+a JSON array.
+
+Repo root: {{REPO_ROOT}}
+Reference file: {{REPO_ROOT}}/skills/code-sweep/reference.md
+Output file (MUST write here): {{OUTPUT_PATH}}
+
+Source files (apply all Tier-{{TIER}} checks):
+{{SOURCE_FILES_JSON}}
+
+Test files (apply only checks whose "Test File Override" permits — see
+reference.md "Test File Override"):
+{{TEST_FILES_JSON}}
+
+{{#if TIER == 2}}
+Standards to enforce on this batch (run compliance checks against each
+standard with state=enforced):
+{{STANDARDS_JSON}}
+{{/if}}
+
+Rules:
+1. Read only the "Tier {{TIER}}" section of reference.md for grep patterns and
+   false-positive mitigations. Do NOT load the whole reference file.
+2. Use the Grep tool with the exact regex from reference.md. Apply every
+   false-positive mitigation listed for that check.
+3. For each match, build a finding object matching the schema below.
+4. Write the full JSON array to {{OUTPUT_PATH}} in one Write call at the end.
+   Do not print findings to stdout.
+5. Respect the 90-second budget. If time pressure is real, skip checks with
+   the highest false-positive rates last and note them in a `skipped` array.
+
+Finding JSON schema (one object per match):
+
+{
+  "id": "<check_id>-<file>-<line>-<8-char-hash-of-match>",
+  "cat": "<check_id>",
+  "category": "cleanup|correctness|optimization|convention|security|reduction|robustness",
+  "file": "<path relative to repo root>",
+  "line": <integer>,
+  "symbol": "<matched code snippet, trimmed to 80 chars>",
+  "severity": "critical|high|medium|low",
+  "fixable": <boolean>,
+  "tier": {{TIER}}
+}
+
+Output file format:
+
+{
+  "tier": {{TIER}},
+  "findings": [ <finding>, ... ],
+  "skipped": [ "<check_id>", ... ],
+  "coverage": "complete" | "incomplete"
+}
+
+Return a one-line confirmation to the caller: "tier-{{TIER}}: <N> findings
+written". Do not echo the findings in your response.
+```
+
+**Notes for the orchestrator filling the template:**
+- `OUTPUT_PATH` should be `${REPO_ROOT}/.cc-sessions/${SESSION_ID}/tmp/scan-tier-${TIER}.json`.
+- `SOURCE_FILES_JSON` / `TEST_FILES_JSON` are JSON arrays of paths relative to repo root.
+- Standards block is only included for the Tier 2 agent.
+- If a tier has no active checks for this tick (e.g., Tier 3 without `--deep`), do not spawn an agent for it.
+
+---
+
 ## Grep Patterns by Check
 
 ### Tier 1: High Confidence (every tick)

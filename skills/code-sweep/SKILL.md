@@ -1,7 +1,7 @@
 ---
 name: code-sweep
 description: "Iterative code improvement with loop support. Discovers conventions from the codebase, defines standards, and progressively aligns code. 30 checks across 7 categories plus dynamic standards. Ratchet mechanism ensures quality only improves. Use when user says 'sweep', 'cleanup', 'improve code', 'code quality', 'find TODOs', 'dead code', 'optimize', 'enforce standards'."
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent
 model: sonnet
 compatibility: ">=2.1.71"
 argument-hint: "<scope> | --fix | --scan-only | --fix-all | --deep | --loop | --discover | --standards-report | --category <list>"
@@ -92,9 +92,9 @@ Verify at least one scope directory exists. Stop if none found.
 
 ---
 
-## Phase 2: SCAN
+## Phase 2: SCAN — Parallel Tier Agents
 
-Run checks in tier order. **Read the "Grep Patterns by Check" section of reference.md** for each check's regex, file globs, false-positive mitigations, and fixable status.
+Scanning is delegated to worker agents so the skill itself stays lightweight and each tier runs in its own independent context. Spawn one agent per **active** tier; run all spawns in a single message so they execute in parallel.
 
 ### Check Summary Table
 
@@ -133,9 +133,41 @@ Run checks in tier order. **Read the "Grep Patterns by Check" section of referen
 | 3 | `v-html-xss` | Security | No |
 | 3 | `nesting-depth` | Convention | No |
 
-**Tier execution**: Tier 1 every tick. Tier 2 once per session or first run. Tier 3 only with `--deep`.
+### 2.1 Determine Active Tiers
 
-**Standards checks**: For each enforced standard, check batch files for compliance. Non-compliant → finding with `category: "convention"`.
+- Tier 1: every tick (always active).
+- Tier 2: active on first run of session, on `--deep`, or when no Tier 2 results exist in latest snapshot.
+- Tier 3: only on `--deep`.
+- Standards checks: merged into Tier 2 agent (both operate on the batch file set).
+
+### 2.2 Spawn Tier Agents (Parallel)
+
+For each active tier, call the `Agent` tool with:
+
+- `subagent_type`: `general-purpose`
+- `model`: `sonnet` (explicit — prevents `[1m]` inheritance from parent)
+- `description`: `code-sweep tier <N> scan`
+- `prompt`: the tier-agent prompt — see "Tier Agent Prompt Template" in reference.md. The prompt contains the tier number, the file list (separated source vs test), the scope, and the absolute path of the findings file the agent must write.
+
+**Inputs each agent receives:**
+1. Tier number (1/2/3).
+2. Source file list and test file list (as JSON arrays passed inline).
+3. Repo root absolute path.
+4. Path to write findings JSON: `.cc-sessions/${SESSION_ID}/tmp/scan-tier-${N}.json`.
+5. For Tier 2: also the `.code-sweep-standards.json` content (so the agent can run standards checks).
+
+**IMPORTANT:** emit all Agent tool calls in the same assistant message to run them concurrently. Do not chain them sequentially.
+
+### 2.3 Merge Findings
+
+After all agents return:
+
+1. Read each `scan-tier-${N}.json` file.
+2. Concatenate the findings arrays into a single in-memory list.
+3. Deduplicate by finding `id`. On collision, prefer the entry with the lower tier (stronger signal).
+4. Proceed to Phase 3 (DIFF) with the merged list.
+
+If any agent failed or produced invalid JSON: log a warning, mark coverage as `incomplete` for that tier, and continue with the tiers that succeeded. Do not retry within the same tick — let the next sweep run cover it.
 
 ---
 
