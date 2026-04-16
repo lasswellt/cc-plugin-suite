@@ -2,7 +2,7 @@
 name: code-sweep
 description: "Iterative code improvement with loop support. Discovers conventions from the codebase, defines standards, and progressively aligns code. 30 checks across 7 categories plus dynamic standards. Ratchet mechanism ensures quality only improves. Use when user says 'sweep', 'cleanup', 'improve code', 'code quality', 'find TODOs', 'dead code', 'optimize', 'enforce standards'."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent
-model: sonnet
+model: opus
 compatibility: ">=2.1.71"
 argument-hint: "<scope> | --fix | --scan-only | --fix-all | --deep | --loop | --discover | --standards-report | --category <list>"
 ---
