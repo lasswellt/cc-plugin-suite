@@ -497,7 +497,4 @@ Sprint ${SPRINT_NUMBER} planned successfully.
 
 ## Error Recovery
 
-- **No epics available**: All epics are blocked or done. Inform user and suggest updating the roadmap. *(If autonomy is `high` or `full`, log to activity feed and exit cleanly — the `/loop` reconciler will detect this state.)*
-- **Research agent failure**: Retry once. If still failing, proceed with partial research and flag gaps in summary.
-- **Circular dependencies detected**: Report the cycle and ask user to resolve before continuing. *(If autonomy is `high` or `full`, break the cycle by removing the weakest dependency edge — the one with the lowest story priority — log the decision to the activity feed, and proceed.)*
-- **GitHub CLI unavailable**: Skip issue creation, note in summary. Stories are still valid without issues.
+See `reference.md` section **"Error Recovery"**.

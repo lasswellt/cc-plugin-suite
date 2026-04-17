@@ -408,3 +408,175 @@ export const userProfileFixtures = {
 ### Agent Instructions for Seed Data
 
 When an agent creates a schema or model, it should also create a corresponding fixture factory in the same commit if a test story references that model. The factory is committed by the implementing agent; the test-writer uses it.
+
+---
+
+## Selective Re-Verification Strategy
+
+Used in Phase 4.2 after the first full verification sweep. Re-runs during subsequent fix iterations use selective scope to save time.
+
+| Check | Re-run Strategy |
+|-------|----------------|
+| Type-check | Always re-run (full — type errors cascade) |
+| Build | Always re-run (full — build errors cascade) |
+| Tests | Re-run only tests in changed packages: `npm run test -- --filter <changed-packages>` |
+| Lint | Re-lint only modified files: `npx eslint <modified-files>` |
+
+Track time savings:
+```
+Verification: full sweep 45s → selective re-run 12s (73% faster)
+```
+
+The final fix round always gets one full sweep to catch cross-package regressions.
+
+---
+
+## Cross-Phase Regression Testing
+
+Used in Phase 4.2.1 when `SPRINT_NUMBER > 1`.
+
+1. **Identify pre-existing test files:**
+   ```bash
+   # Find test files that existed before this sprint started
+   git diff --name-only --diff-filter=A ${SPRINT_BASE}..HEAD -- '*.test.*' '*.spec.*' > ${SESSION_TMP_DIR}/new-tests.txt
+   git ls-files '*.test.*' '*.spec.*' | grep -v -F -f ${SESSION_TMP_DIR}/new-tests.txt > ${SESSION_TMP_DIR}/pre-existing-tests.txt
+   ```
+
+2. **Run pre-existing tests selectively:**
+   ```bash
+   cat ${SESSION_TMP_DIR}/pre-existing-tests.txt | xargs npx vitest run --reporter=verbose 2>&1
+   ```
+
+3. **Flag regressions as Critical:** Any pre-existing test that now fails is a **Critical** regression. These take priority over new test failures.
+
+4. **Attempt fix (max 2 rounds):**
+   - Round 1: Analyze. If new code changed behavior intentionally, update the old test. If unintentional, fix the new code.
+   - Round 2: If still failing, document and flag for manual review.
+
+5. **Report:**
+   ```
+   Cross-Phase Regression:
+     Pre-existing tests: N
+     Still passing: M
+     Regressions found: K (Critical)
+     Fixed: J
+     Remaining: K-J (requires manual review)
+   ```
+
+---
+
+## Final Output Template
+
+Print summary to user:
+
+```
+Sprint ${SPRINT_NUMBER} implementation complete.
+- Stories completed: X/Y
+- Stories blocked: Z
+- Build status: PASS/FAIL
+- Type-check: PASS/FAIL (N errors)
+- Tests: X passed, Y failed
+- Integration issues fixed: N
+- Branch: sprint-${SPRINT_NUMBER}/merged
+```
+
+---
+
+## Error Recovery
+
+- **Worktree creation fails**: Fall back to branch-only isolation (agents work on branches, merge sequentially).
+- **Agent unresponsive**: After 3 message attempts with no response, mark agent as failed. Reassign stories to another agent or handle directly.
+- **Merge conflicts**: Attempt auto-resolution for trivial conflicts (added-added in different sections). For complex conflicts, present to user with context from both sides. *(If autonomy is `high` or `full`, attempt auto-resolution for all conflicts. If auto-resolution fails, mark the conflicting stories as `blocked`, log the conflict details to the activity feed and STATE.md, and continue with remaining stories.)*
+- **Build fails after merge**: Systematically fix by category. If unfixable in 5 rounds, create a detailed issue list and ask user for guidance. *(If autonomy is `high` or `full`, log the issue list to STATE.md and the activity feed, mark the sprint as `review` with integration issues noted, and exit. The next `/loop` tick or manual review will handle it.)*
+- **All agents stuck**: Likely a fundamental design issue. Report the common blocker and ask user to intervene. *(If autonomy is `high` or `full`, mark all remaining stories as `blocked` with reason "all agents stuck", write STATE.md checkpoint, update sprint status to `review` with blocked stories noted, log to activity feed, and exit cleanly.)*
+
+---
+
+## Integration Agent Spawn + Fallback
+
+Used in Phase 3.5.1.
+
+**Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)).
+
+**Spawn parameters**:
+- `subagent_type: blitz:frontend-dev` (has Write + Edit — required for integration edits)
+- `isolation: "worktree"` on a dedicated `sprint-${N}/integration` branch
+- Budget declared in prompt: max 15 file reads, 25 tool calls, 5-min wall-clock
+- Write-as-you-go: append a progress line to `${SESSION_TMP_DIR}/agent-ui-integrator-progress.md` after each checklist item completed
+- HEARTBEAT protocol (same snippet as Phase 2.3 dev agents)
+
+**Fallback if agent fails**:
+- If the integration agent exits without completing the Integration Checklist, the orchestrator MUST:
+  1. Read the progress file to identify which checklist items completed.
+  2. For remaining items: either re-spawn with narrower scope (single checklist item) OR complete inline from the orchestrator if the remaining work is <3 checklist items.
+  3. Do NOT proceed to Phase 3.5.3 Integration Commit until every checklist item is confirmed done (either by agent or orchestrator) — a silent half-integration shipped to main has been the most common sprint-dev failure pattern.
+
+---
+
+## Integration Checklist
+
+Full item definitions for the integration agent (Phase 3.5.2):
+
+1. **Navigation entries** — Any new pages/routes have corresponding nav entries in the app's navigation config.
+2. **Design tokens** — New components use existing design tokens (colors, spacing, typography). No hardcoded values.
+3. **Layout consistency** — New pages use the correct layout wrapper. Responsive breakpoints match existing patterns.
+4. **State wiring** — All new stores are properly initialized. Composables are registered where framework requires it.
+5. **Accessibility** — New interactive elements have proper ARIA attributes, keyboard navigation, focus management.
+6. **Loading states** — Async operations show loading indicators. Error states are handled.
+7. **Route guards** — Protected routes have appropriate auth guards if the project uses authentication.
+
+---
+
+## Dev Agent Prompt Specification
+
+Every dev agent prompt (Phase 2.3) must include all 12 items:
+
+1. Agent role and responsibilities (see the agent-specific prompt templates in this reference.md).
+2. List of assigned stories in dependency order, with their `verify` and `done` fields. Capped at 4 stories per wave per agent.
+3. **Budget declaration** (add verbatim to prompt):
+   ```
+   BUDGET:
+   - Max stories this wave: 4 (already enforced by orchestrator)
+   - Max file reads per story: 6
+   - Max tool calls total: 40 (if you hit 30, finish current story and stop)
+   - Wall-clock: 8 min
+   ```
+4. Project conventions (detected stack, coding patterns, naming conventions).
+5. Commit message format: `feat(sprint-${N}/<role>): S${N}-XXX <description>`.
+6. Project conventions guide from Phase 0.5 (full text, not a file reference).
+7. Reusable assets list — composables, utilities, and shared components agents must use.
+8. Anti-mock rules — Every function must be fully implemented, no placeholders. See [Definition of Done](/_shared/definition-of-done.md).
+9. Deviation handling rules — Follow the [Deviation Handling Protocol](/_shared/deviation-protocol.md). Auto-fix small issues, report deviations, escalate architectural changes.
+10. Wave assignment — Tell each agent which wave their stories belong to, so they understand the execution order context.
+11. Context management rules — Follow the [Context Management Protocol](/_shared/context-management.md). Self-contained DONE summaries, reference files by path not memory, compact verification output, prune context between stories.
+12. **HEARTBEAT + PARTIAL protocol** (add verbatim to prompt):
+    ```
+    HEARTBEAT: After each story DONE, write a file ${SESSION_TMP_DIR}/agent-<role>-progress.md
+    appending: HEARTBEAT: S${N}-XXX done at <ISO-timestamp>. Use date -u +%Y-%m-%dT%H:%M:%SZ.
+
+    PARTIAL: If you have fewer than 3 tool calls remaining, STOP before starting
+    a new story. Append to your progress file:
+      PARTIAL: true
+      COMPLETED: [list of story ids finished]
+      REMAINING: [list of story ids unstarted]
+      CONFIDENCE: low|medium|high
+    Send PARTIAL: <N> done, <M> remaining to orchestrator via the DONE/BLOCKED
+    protocol and end.
+    ```
+
+---
+
+## Communication Prefix Table
+
+Used by dev agents and orchestrator in Phase 3.3.
+
+| Prefix | Direction | Purpose |
+|---|---|---|
+| `DONE:` | Agent -> Orchestrator | Story completed, requesting next |
+| `BLOCKED:` | Agent -> Orchestrator | Cannot proceed, needs help |
+| `DEVIATION:` | Agent -> Orchestrator | Auto-added code outside story scope (see [deviation-protocol.md](/_shared/deviation-protocol.md)) |
+| `ESCALATE:` | Agent -> Orchestrator | Needs decision on architectural/scope change |
+| `UNBLOCK:` | Orchestrator -> Agent | Dependency resolved, new story available |
+| `ASSIST:` | Orchestrator -> Agent | Help with current issue |
+| `SYNC:` | Orchestrator -> Agent | File paths or exports from another agent |
+| `HALT:` | Orchestrator -> Agent | Stop current work (critical issue) |

@@ -206,39 +206,7 @@ Agent(
 
 **Per-wave story cap (CRITICAL)**: distribute at most **4 stories per agent per wave**. If a single wave assigns more than 4 stories to any one agent, split the excess to the next wave — even if this creates an otherwise-empty wave. A 6-story agent needs ~54 tool calls (5 reads + 3 writes + 1 verify × 6), well past the ~20/turn server cap.
 
-Include in the agent prompt:
-1. Agent role and responsibilities (see reference.md for prompt templates).
-2. List of assigned stories in dependency order, with their `verify` and `done` fields. Capped at 4 stories per wave per agent.
-3. **Budget declaration** (add verbatim to prompt):
-   ```
-   BUDGET:
-   - Max stories this wave: 4 (already enforced by orchestrator)
-   - Max file reads per story: 6
-   - Max tool calls total: 40 (if you hit 30, finish current story and stop)
-   - Wall-clock: 8 min
-   ```
-4. Project conventions (detected stack, coding patterns, naming conventions).
-5. Commit message format: `feat(sprint-${N}/<role>): S${N}-XXX <description>`.
-6. Project conventions guide from Phase 0.5 (full text, not a file reference).
-7. Reusable assets list — composables, utilities, and shared components agents must use.
-8. Anti-mock rules — Every function must be fully implemented, no placeholders. See [Definition of Done](/_shared/definition-of-done.md).
-9. Deviation handling rules — Follow the [Deviation Handling Protocol](/_shared/deviation-protocol.md). Auto-fix small issues, report deviations, escalate architectural changes.
-10. Wave assignment — Tell each agent which wave their stories belong to, so they understand the execution order context.
-11. Context management rules — Follow the [Context Management Protocol](/_shared/context-management.md). Self-contained DONE summaries, reference files by path not memory, compact verification output, prune context between stories.
-12. **HEARTBEAT + PARTIAL protocol** (add verbatim to prompt):
-    ```
-    HEARTBEAT: After each story DONE, write a file ${SESSION_TMP_DIR}/agent-<role>-progress.md
-    appending: HEARTBEAT: S${N}-XXX done at <ISO-timestamp>. Use date -u +%Y-%m-%dT%H:%M:%SZ.
-
-    PARTIAL: If you have fewer than 3 tool calls remaining, STOP before starting
-    a new story. Append to your progress file:
-      PARTIAL: true
-      COMPLETED: [list of story ids finished]
-      REMAINING: [list of story ids unstarted]
-      CONFIDENCE: low|medium|high
-    Send PARTIAL: <N> done, <M> remaining to orchestrator via the DONE/BLOCKED
-    protocol and end.
-    ```
+**Agent prompt content** — the full 12-item prompt specification (role, stories, BUDGET block, project conventions, commit format, conventions guide, reusable assets, anti-mock rules, deviation protocol, wave assignment, context management, HEARTBEAT+PARTIAL protocol) is in `reference.md` section **"Dev Agent Prompt Specification"**. Every spawn must include all 12 items.
 
 ### 2.5 Create Tasks with Dependency Ordering
 
@@ -349,18 +317,7 @@ The orchestrator (you) must:
 
 ### 3.3 Cross-Agent Communication Protocol
 
-Agents communicate through the orchestrator using prefixed messages:
-
-| Prefix | Direction | Purpose |
-|---|---|---|
-| `DONE:` | Agent -> Orchestrator | Story completed, requesting next |
-| `BLOCKED:` | Agent -> Orchestrator | Cannot proceed, needs help |
-| `DEVIATION:` | Agent -> Orchestrator | Auto-added code outside story scope (see [deviation-protocol.md](/_shared/deviation-protocol.md)) |
-| `ESCALATE:` | Agent -> Orchestrator | Needs decision on architectural/scope change (see [deviation-protocol.md](/_shared/deviation-protocol.md)) |
-| `UNBLOCK:` | Orchestrator -> Agent | Dependency resolved, new story available |
-| `ASSIST:` | Orchestrator -> Agent | Help with current issue |
-| `SYNC:` | Orchestrator -> Agent | File paths or exports from another agent |
-| `HALT:` | Orchestrator -> Agent | Stop current work (critical issue) |
+Agents communicate through the orchestrator using prefixed messages (DONE, BLOCKED, DEVIATION, ESCALATE, UNBLOCK, ASSIST, SYNC, HALT). Full direction/purpose table in `reference.md` section **"Communication Prefix Table"**. See also [deviation-protocol.md](/_shared/deviation-protocol.md).
 
 ### 3.4 Story Distribution Rules
 
@@ -394,36 +351,11 @@ If integration-check finds high-severity issues, address them before the UI pass
 
 ### 3.5.1 Spawn Integration Agent
 
-After all `frontend-dev` stories are complete (or in parallel with final frontend stories), spawn or reuse an agent for integration work:
-
-Agent: `frontend-dev` (reuse) or `ui-integrator` (new)
-
-**Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)).
-
-**Spawn parameters**:
-- `subagent_type: blitz:frontend-dev` (has Write + Edit — required for integration edits)
-- `isolation: "worktree"` on a dedicated `sprint-${N}/integration` branch
-- Budget declared in prompt: max 15 file reads, 25 tool calls, 5-min wall-clock
-- Write-as-you-go: append a progress line to `${SESSION_TMP_DIR}/agent-ui-integrator-progress.md` after each checklist item completed
-- HEARTBEAT protocol (same snippet as Phase 2.3 dev agents — 12th bullet)
-
-**Fallback if agent fails**:
-- If the integration agent exits without completing the Integration Checklist, the orchestrator MUST:
-  1. Read the progress file to identify which checklist items completed.
-  2. For remaining items: either re-spawn with narrower scope (single checklist item) OR complete inline from the orchestrator if the remaining work is <3 checklist items.
-  3. Do NOT proceed to Phase 3.5.3 Integration Commit until every checklist item is confirmed done (either by agent or orchestrator) — a silent half-integration shipped to main has been the most common sprint-dev failure pattern.
+Spawn `blitz:frontend-dev` (reused or fresh as `ui-integrator`) as a Medium-class agent on a dedicated `sprint-${N}/integration` worktree branch. Full spawn parameters, progress-file schema, HEARTBEAT inclusion, and the mandatory-fallback rule when the agent exits mid-checklist are in `reference.md` section **"Integration Agent Spawn + Fallback"**. See also [spawn-protocol.md](/_shared/spawn-protocol.md).
 
 ### 3.5.2 Integration Checklist
 
-The integration agent must verify and implement:
-
-1. **Navigation entries** — Any new pages/routes have corresponding nav entries in the app's navigation config.
-2. **Design tokens** — New components use existing design tokens (colors, spacing, typography). No hardcoded values.
-3. **Layout consistency** — New pages use the correct layout wrapper. Responsive breakpoints match existing patterns.
-4. **State wiring** — All new stores are properly initialized. Composables are registered where framework requires it.
-5. **Accessibility** — New interactive elements have proper ARIA attributes, keyboard navigation, focus management.
-6. **Loading states** — Async operations show loading indicators. Error states are handled.
-7. **Route guards** — Protected routes have appropriate auth guards if the project uses authentication.
+The integration agent verifies and implements: **Navigation entries**, **Design tokens**, **Layout consistency**, **State wiring**, **Accessibility**, **Loading states**, **Route guards**. Full item definitions in `reference.md` section **"Integration Checklist"**.
 
 ### 3.5.3 Integration Commit
 
@@ -448,29 +380,7 @@ git merge sprint-${SPRINT_NUMBER}/tests --no-edit
 
 ### 4.2 Full Build Verification (Selective Re-Runs)
 
-Run the initial full verification sweep:
-```bash
-npm run type-check 2>&1
-npm run lint 2>&1
-npm run test 2>&1       # or test runner equivalent
-npm run build 2>&1
-```
-
-**After the first full sweep, use selective re-verification to save time:**
-
-| Check | Re-run Strategy |
-|-------|----------------|
-| Type-check | Always re-run (full — type errors cascade) |
-| Build | Always re-run (full — build errors cascade) |
-| Tests | Re-run only tests in changed packages: `npm run test -- --filter <changed-packages>` |
-| Lint | Re-lint only modified files: `npx eslint <modified-files>` |
-
-Track time savings:
-```
-Verification: full sweep 45s → selective re-run 12s (73% faster)
-```
-
-The **final fix round** (last iteration of Phase 4.3) always gets one full sweep to catch any cross-package regressions.
+Run the initial full verification sweep (type-check, lint, test, build). On re-runs during Phase 4.3 fix iterations, use the selective re-verification strategy in `reference.md` section **"Selective Re-Verification Strategy"**. The final fix round always gets one full sweep to catch cross-package regressions.
 
 ### 4.2.5 Completeness Gate
 
@@ -484,37 +394,7 @@ If the score is below C (70), flag critical findings in the integration report b
 
 ### 4.2.1 Cross-Phase Regression Testing
 
-If `SPRINT_NUMBER > 1`, run regression tests from prior sprints to catch unintended breakage:
-
-1. **Identify pre-existing test files:**
-   ```bash
-   # Find test files that existed before this sprint started
-   git diff --name-only --diff-filter=A ${SPRINT_BASE}..HEAD -- '*.test.*' '*.spec.*' > ${SESSION_TMP_DIR}/new-tests.txt
-   git ls-files '*.test.*' '*.spec.*' | grep -v -F -f ${SESSION_TMP_DIR}/new-tests.txt > ${SESSION_TMP_DIR}/pre-existing-tests.txt
-   ```
-
-2. **Run pre-existing tests selectively:**
-   ```bash
-   # Run only pre-existing tests (not new sprint tests)
-   cat ${SESSION_TMP_DIR}/pre-existing-tests.txt | xargs npx vitest run --reporter=verbose 2>&1
-   ```
-
-3. **Flag regressions as Critical:**
-   Any pre-existing test that now fails is a **Critical** regression. These take priority over new test failures.
-
-4. **Attempt fix (max 2 rounds):**
-   - Round 1: Analyze the regression. If the new code changed behavior intentionally, the old test needs updating. If the change was unintentional, fix the new code.
-   - Round 2: If still failing, document the regression and flag for manual review.
-
-5. **Report:**
-   ```
-   Cross-Phase Regression:
-     Pre-existing tests: N
-     Still passing: M
-     Regressions found: K (Critical)
-     Fixed: J
-     Remaining: K-J (requires manual review)
-   ```
+If `SPRINT_NUMBER > 1`, run regression tests from prior sprints. Full procedure (pre-existing test identification, selective run, fix rounds, report schema) in `reference.md` section **"Cross-Phase Regression Testing"**.
 
 ### 4.3 Fix Integration Issues
 
@@ -612,27 +492,6 @@ git commit -m "feat(sprint-${N}): complete sprint implementation — ${COMPLETED
 git push origin HEAD
 ```
 
-### 4.10 Final Output
+### 4.10 Final Output and Error Recovery
 
-Print summary to user:
-
-```
-Sprint ${SPRINT_NUMBER} implementation complete.
-- Stories completed: X/Y
-- Stories blocked: Z
-- Build status: PASS/FAIL
-- Type-check: PASS/FAIL (N errors)
-- Tests: X passed, Y failed
-- Integration issues fixed: N
-- Branch: sprint-${SPRINT_NUMBER}/merged
-```
-
----
-
-## Error Recovery
-
-- **Worktree creation fails**: Fall back to branch-only isolation (agents work on branches, merge sequentially).
-- **Agent unresponsive**: After 3 message attempts with no response, mark agent as failed. Reassign stories to another agent or handle directly.
-- **Merge conflicts**: Attempt auto-resolution for trivial conflicts (added-added in different sections). For complex conflicts, present to user with context from both sides. *(If autonomy is `high` or `full`, attempt auto-resolution for all conflicts. If auto-resolution fails, mark the conflicting stories as `blocked`, log the conflict details to the activity feed and STATE.md, and continue with remaining stories.)*
-- **Build fails after merge**: Systematically fix by category. If unfixable in 5 rounds, create a detailed issue list and ask user for guidance. *(If autonomy is `high` or `full`, log the issue list to STATE.md and the activity feed, mark the sprint as `review` with integration issues noted, and exit. The next `/loop` tick or manual review will handle it.)*
-- **All agents stuck**: Likely a fundamental design issue. Report the common blocker and ask user to intervene. *(If autonomy is `high` or `full`, mark all remaining stories as `blocked` with reason "all agents stuck", write STATE.md checkpoint, update sprint status to `review` with blocked stories noted, log to activity feed, and exit cleanly.)*
+Print the summary block and apply recovery rules from `reference.md` sections **"Final Output Template"** and **"Error Recovery"**.

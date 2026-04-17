@@ -4,10 +4,10 @@
     {
       "id": "no-auto-commit",
       "patterns": [
-        "\\bnever\\b.*\\bcommit\\b",
-        "\\bdon'?t\\b.*\\bauto.?commit\\b",
-        "\\balways\\s+ask\\b.*\\bcommit\\b",
-        "\\balways\\b.*(show|review).*\\bdiff\\b.*\\bbefore\\b.*\\bcommit\\b"
+        "\\bnever\\b.*\\bcommit",
+        "\\bdon'?t\\b.*\\bauto.?commit",
+        "\\balways\\s+ask\\b.*\\bcommit",
+        "\\balways\\b.*(show|review).*\\bdiff\\b.*\\bbefore\\b.*\\bcommit"
       ],
       "skills": ["sprint-dev", "code-sweep", "fix-issue", "release", "ship"],
       "severity": "HIGH",
@@ -19,6 +19,7 @@
       "patterns": [
         "\\bnever\\b.*\\bpush\\b",
         "\\bdon'?t\\b.*\\bauto.?push\\b",
+        "\\bdon'?t\\b.*\\bpush\\b.*\\bwithout\\b",
         "\\balways\\s+ask\\b.*\\bpush\\b",
         "\\balways\\b.*review.*\\bbefore\\b.*\\bpush\\b"
       ],
@@ -104,7 +105,7 @@
     {
       "id": "custom-commit-format",
       "patterns": [
-        "\\bcommit\\b.*\\bmust\\b.*\\b(reference|include)\\b.*\\b(jira|ticket)\\b",
+        "\\bcommits?\\b.*\\bmust\\b.*\\b(reference|include)\\b.*\\b(jira|ticket)\\b",
         "\\bcommit\\s+messages?\\b.*\\bformat\\b",
         "\\buse\\s+conventional\\s+commits?\\s+with\\s+scope\\b"
       ],

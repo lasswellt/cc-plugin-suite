@@ -633,3 +633,29 @@ The following epic fields link the roadmap to the carry-forward registry describ
 | `last_touched_sprint` | The most recent sprint that shipped a story against this epic. Used by `sprint --loop` to distinguish stalled epics from completed ones. | `sprint-dev` on story completion |
 
 **Epic completion gate:** an epic's `status` cannot transition to `done|complete` while any of its `registry_entries` have `status ∈ {active, partial}` in the carry-forward registry. This is enforced by `sprint-review` Invariant 3 and `sprint --loop` Step 2 row 7.
+
+---
+
+## Autonomous Execution Rules
+
+1. **Never ask for confirmation between phases.** Execute all phases in sequence. Only stop if a gate condition fails.
+2. **Write artifacts incrementally.** Do not accumulate everything in memory. Write each document as it is completed.
+3. **Prefer specificity over abstraction.** Generated specs should reference actual file paths, function names, and types from the codebase.
+4. **Respect existing code.** If the codebase already has a pattern for something, the roadmap should use that pattern, not invent a new one.
+5. **Cap research time.** Context7 lookups: max 8. Web searches: max 12. Do not spend more than 20% of total execution on research.
+6. **Handle missing data gracefully.** If a research document is vague, extract what you can and flag gaps. Do not stop the pipeline.
+7. **Maintain traceability.** Every epic must trace back to capabilities. Every capability must trace back to a source document.
+8. **Phase gates are strict.** If a gate fails, stop and report why. Do not proceed with insufficient data.
+9. **Parallelize where possible.** When spawning agents (Phases 5, 7), run them concurrently.
+10. **Produce machine-readable outputs.** Every phase writes both human-readable markdown and machine-readable JSON. The JSON feeds downstream skills (sprint-plan, sprint-dev).
+
+---
+
+## Error Recovery
+
+- **No research documents found**: Inform user. Suggest creating research docs in `docs/_research/` and provide the 8-type classification table.
+- **Existing roadmap found on `full` mode**: Warn user that this will overwrite. Suggest `refresh` or `extend` instead. Proceed only if user confirms (or rename existing to `.bak`).
+- **Circular dependencies detected**: Report the cycle with involved capabilities. Suggest breaking the cycle by splitting a capability. Do not proceed with phase assignment until resolved.
+- **Agent failure in Phases 5/7**: Retry once. If still failing, generate specs manually for that domain and note reduced quality.
+- **Insufficient capabilities**: If fewer than 5 capabilities extracted, warn that the roadmap may be too thin. Proceed but flag in the summary.
+- **Conflicting research**: If two documents contradict each other, flag the conflict in the capability notes and use the more recent document as primary source.
