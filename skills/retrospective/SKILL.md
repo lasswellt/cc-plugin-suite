@@ -49,18 +49,32 @@ Follow the session protocol from [session-protocol.md](/_shared/session-protocol
 
 ### 0.1 Check Minimum Sessions
 
-Read all `.cc-sessions/*.json` files. Count sessions with `status: completed`.
+Count completed work signals from two sources: session JSON files (`.cc-sessions/*.json` with `status: completed`) AND `task_complete` events in the activity feed within the last 30 days. Projects that log via the activity-feed but don't register full session JSONs are valid retrospective input.
 
 ```bash
-COMPLETED=$(find .cc-sessions -maxdepth 1 -name "*.json" -exec grep -l '"status": "completed"' {} \; 2>/dev/null | wc -l)
-echo "Completed sessions: ${COMPLETED}"
-if [ "$COMPLETED" -lt 3 ]; then
-  echo "ABORT: Insufficient data — need at least 3 completed sessions (found ${COMPLETED})"
+# Signal 1: completed session JSONs
+COMPLETED_JSONS=$(find .cc-sessions -maxdepth 1 -name "*.json" -exec grep -l '"status": "completed"' {} \; 2>/dev/null | wc -l)
+
+# Signal 2: task_complete events in activity-feed within the last 30 days
+CUTOFF_DATE=$(date -u -d '30 days ago' +%Y-%m-%d 2>/dev/null || date -u -v-30d +%Y-%m-%d 2>/dev/null)
+COMPLETED_EVENTS=0
+if [ -f ".cc-sessions/activity-feed.jsonl" ] && [ -n "$CUTOFF_DATE" ]; then
+  COMPLETED_EVENTS=$(awk -v cutoff="$CUTOFF_DATE" '
+    /"event"[[:space:]]*:[[:space:]]*"task_complete"/ {
+      if (match($0, /"ts"[[:space:]]*:[[:space:]]*"([^"]+)"/, t) && t[1] >= cutoff) print
+    }' .cc-sessions/activity-feed.jsonl | wc -l)
+fi
+
+TOTAL_SIGNAL=$((COMPLETED_JSONS + COMPLETED_EVENTS))
+echo "Session JSONs: ${COMPLETED_JSONS}  |  Activity-feed task_completes (30d): ${COMPLETED_EVENTS}  |  Total signal: ${TOTAL_SIGNAL}"
+
+if [ "$TOTAL_SIGNAL" -lt 3 ]; then
+  echo "ABORT: Insufficient data — need at least 3 combined signals (session JSONs + activity-feed task_complete events). Found ${TOTAL_SIGNAL}."
   exit 1
 fi
 ```
 
-If fewer than 3 completed sessions exist, abort with a clear message explaining the minimum threshold.
+If the combined signal is ≥ 3, proceed. If the signal is primarily activity-feed events (not session JSONs), note this in the analysis report — patterns derived from feed events have less structured metadata (no duration, no lock conflicts) than full session JSONs.
 
 ### 0.2 Gather Data Sources
 

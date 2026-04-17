@@ -40,7 +40,7 @@ Match the user's request against this routing table:
 | "dependencies", "outdated", "npm audit"   | dep-health     | —                                |
 | "quality dashboard", "metrics"            | quality-metrics| → (context-dependent)            |
 | "completeness", "production ready"        | completeness-gate | → fix-issue (per finding)     |
-| "retrospective", "improve plugin"         | retrospective  | —                                |
+| "retrospective", "retro", "postmortem", "reflect", "improve plugin" | retrospective | —                    |
 | "quick", "small change", "just do it", "trivial", "one-liner" | quick | —                     |
 | "next", "what now", "continue", "what's next" | next          | —                                |
 | "health", "status", "check plugin"        | health         | —                                |
@@ -48,7 +48,7 @@ Match the user's request against this routing table:
 | "todo", "note", "remember to", "add todo" | todo           | —                                |
 | "check integration", "wiring check", "are modules connected" | integration-check | —                   |
 | "fix gaps", "close gaps", "gap closure"   | sprint (--gaps) | —                               |
-| "setup", "doctor", "claude.md conflict", "check config" | setup | —                       |
+| "setup", "doctor", "claude.md conflict", "check config", "conflict check" | setup | —           |
 
 If the request does not clearly match any row, ask the user to clarify before
 proceeding.

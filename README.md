@@ -15,7 +15,7 @@
 
 **Production-grade Claude Code plugin for Vue/Nuxt + Firebase**
 
-**31 skills** · **6 agents** · **9 hooks**
+**33 skills** · **6 agents** · **12 hooks**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude_Code-Plugin-blue)](https://docs.anthropic.com/en/docs/claude-code)
@@ -112,7 +112,7 @@ Skills auto-detect the project's tech stack at invocation time — no manual con
 
 ---
 
-## Skills (31)
+## Skills (33)
 
 ### Core Development Skills
 
@@ -222,7 +222,7 @@ blitz/
 │   ├── detect-stack.sh            # Dynamic stack detection
 │   ├── validate-skill-output.sh   # Skill output validation
 │   └── validate-plugin-structure.sh
-├── skills/                        # 31 skills (SKILL.md + reference.md)
+├── skills/                        # 33 skills (SKILL.md + reference.md)
 │   ├── _shared/                   # 7 shared protocols
 │   │   ├── session-protocol.md    # Multi-session safety
 │   │   ├── verbose-progress.md    # Output format + activity feed

@@ -123,6 +123,7 @@ Scanning is delegated to worker agents so the skill itself stays lightweight and
 | 2 | `three-state-ui` | Robustness | No |
 | 2 | `file-length` | Convention | No |
 | 2 | `missing-v-for-key` | Correctness | No |
+| 2 | `missing-subagent-type` | Correctness | No |
 | 3 | `orphaned-file` | Cleanup | No |
 | 3 | `dead-export` | Cleanup | No |
 | 3 | `unused-dep` | Cleanup | Semi |

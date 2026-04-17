@@ -111,20 +111,21 @@ written". Do not echo the findings in your response.
 | 21 | `three-state-ui` | Presence of `useAsyncData\|useFetch\|useLazyFetch\|\$fetch\|store\.\w+Action` in `<script>` WITHOUT loading/error handling in `<template>` | `*.vue` | Only flag if component has a `<template>`. Ignore components that delegate to parent wrapper. | No |
 | 22 | `file-length` | `wc -l` on source files, flag > 300 lines (configurable) | `*.ts, *.tsx, *.js, *.jsx, *.vue` | Exclude generated files, config files. Threshold configurable via `max_lines`. | No |
 | 23 | `missing-v-for-key` | Lines with `v-for=` but without `:key` on the same element | `*.vue` | Low false positives. Almost always a bug. | No |
+| 24 | `missing-subagent-type` | `(TeamCreate\|SendMessage\|Agent\()` without `subagent_type` in surrounding 20 lines | `skills/**/SKILL.md, skills/**/reference.md` | Exclude `_shared/` docs (they discuss the pattern, not spawn agents). Exclude commented-out code blocks. Severity: high (silent-failure risk per 2026-04-16 retrospective). | No |
 
 ### Tier 3: Deep Analysis (only with `--deep`)
 
 | # | Check ID | Detection Method | Preferred Tool | Fallback | Fixable |
 |---|----------|-----------------|---------------|----------|---------|
-| 24 | `orphaned-file` | Files not imported by any other file | `npx knip --include files --reporter json` | Grep all imports for each file's module path | No |
-| 25 | `dead-export` | Exported symbols not imported anywhere | `npx knip --include exports --reporter json` | Grep for import of each exported symbol | No |
-| 26 | `unused-dep` | Dependencies not imported in source | `npx knip --include dependencies --reporter json` | Grep source for each dependency name | Semi-auto |
-| 27 | `sample-data` | Arrays of 3+ inline objects with placeholder property values | Grep: `(?:const\|let)\s+\w+\s*(?::\s*\w+(?:\[\])?\s*)?=\s*\[` | Check for placeholder names: `John`, `Jane`, `example`, `sample`, `test`, `foo`, `bar` | No |
-| 28 | `unwired-store-actions` | Store action methods that lack `fetch\|\$fetch\|axios\|httpsCallable\|api\.\|service\.` calls | `stores/*.ts` | Ignore pure state mutations (`setLoading`, `resetState`). Check if action dispatches to another action. | No |
-| 29 | `sequential-await` | 2+ consecutive `await` on independent calls (second doesn't use first's result) | `*.ts, *.tsx, *.js, *.jsx` | Read context to verify independence. High false-positive risk. | No |
-| 30 | `n-plus-one` | `await` inside loop body (`forEach\|map\|for`) | `*.ts, *.tsx, *.js, *.jsx` | Multiline grep. Some loops intentionally await sequentially (rate limiting). | No |
-| 31 | `v-html-xss` | `v-html=` usage in Vue templates | `*.vue` | Flag all usages. High severity if bound to variable, medium for static strings. | No |
-| 32 | `nesting-depth` | Control flow nesting (`if\|for\|while\|switch`) > 4 levels deep | `*.ts, *.tsx, *.js, *.jsx, *.vue` | Approximate by tracking brace depth at control flow keywords. Threshold configurable. | No |
+| 25 | `orphaned-file` | Files not imported by any other file | `npx knip --include files --reporter json` | Grep all imports for each file's module path | No |
+| 26 | `dead-export` | Exported symbols not imported anywhere | `npx knip --include exports --reporter json` | Grep for import of each exported symbol | No |
+| 27 | `unused-dep` | Dependencies not imported in source | `npx knip --include dependencies --reporter json` | Grep source for each dependency name | Semi-auto |
+| 28 | `sample-data` | Arrays of 3+ inline objects with placeholder property values | Grep: `(?:const\|let)\s+\w+\s*(?::\s*\w+(?:\[\])?\s*)?=\s*\[` | Check for placeholder names: `John`, `Jane`, `example`, `sample`, `test`, `foo`, `bar` | No |
+| 29 | `unwired-store-actions` | Store action methods that lack `fetch\|\$fetch\|axios\|httpsCallable\|api\.\|service\.` calls | `stores/*.ts` | Ignore pure state mutations (`setLoading`, `resetState`). Check if action dispatches to another action. | No |
+| 30 | `sequential-await` | 2+ consecutive `await` on independent calls (second doesn't use first's result) | `*.ts, *.tsx, *.js, *.jsx` | Read context to verify independence. High false-positive risk. | No |
+| 31 | `n-plus-one` | `await` inside loop body (`forEach\|map\|for`) | `*.ts, *.tsx, *.js, *.jsx` | Multiline grep. Some loops intentionally await sequentially (rate limiting). | No |
+| 32 | `v-html-xss` | `v-html=` usage in Vue templates | `*.vue` | Flag all usages. High severity if bound to variable, medium for static strings. | No |
+| 33 | `nesting-depth` | Control flow nesting (`if\|for\|while\|switch`) > 4 levels deep | `*.ts, *.tsx, *.js, *.jsx, *.vue` | Approximate by tracking brace depth at control flow keywords. Threshold configurable. | No |
 
 ---
 
