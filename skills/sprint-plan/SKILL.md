@@ -16,6 +16,7 @@ compatibility: ">=2.1.71"
 - For checkpoint awareness, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
 - For the carry-forward registry (read in Phase 0, written in Phase 4.1), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
 - For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
+- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 All generated stories must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder acceptance criteria.
 

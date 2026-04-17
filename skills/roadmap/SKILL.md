@@ -14,6 +14,7 @@ argument-hint: "[full | refresh | extend | status]"
 ## Additional Resources
 - For capability schema, document classification, and Phases 5-8 procedures, see [reference.md](reference.md)
 - For the carry-forward registry (written in Phase 1 from research doc scope: blocks; re-scanned in refresh mode), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
+- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 All generated epics and roadmap artifacts must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder descriptions.
 

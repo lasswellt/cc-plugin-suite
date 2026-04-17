@@ -10,6 +10,9 @@ argument-hint: "<type: project|feature|package> <name>"
 ## Project Context
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
+## Additional Resources
+- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
+
 ---
 
 # Project Bootstrap

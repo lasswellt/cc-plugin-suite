@@ -17,6 +17,7 @@ compatibility: ">=2.1.71"
 - For handling reviewer agent escalations, see [deviation-protocol.md](/_shared/deviation-protocol.md)
 - For the carry-forward registry enforced by Phase 3.5 (hard gate), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
 - For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
+- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 All auto-fix code must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder implementations.
 

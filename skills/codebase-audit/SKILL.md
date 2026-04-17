@@ -14,6 +14,7 @@ compatibility: ">=2.1.71"
 - For agent prompt templates, pillar checklists, severity schema, and report templates, see [reference.md](reference.md)
 - For context window hygiene (10 parallel agents), see [context-management.md](/_shared/context-management.md)
 - For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
+- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 ---
 

@@ -365,6 +365,17 @@
       "uses_sessions": true,
       "dependencies": [],
       "maturity": "beta"
+    },
+    {
+      "name": "compress",
+      "category": "meta",
+      "description": "Rewrites a markdown or text file into terse form per the Terse Output Protocol. Preserves code, URLs, paths, headings, tables, YAML/JSON verbatim. Writes .original backup and runs structural validator. Author-time input-token reduction, ~25% on prose-heavy files.",
+      "model": "sonnet",
+      "modifies_code": true,
+      "uses_agents": false,
+      "uses_sessions": true,
+      "dependencies": [],
+      "maturity": "beta"
     }
   ],
   "categories": {

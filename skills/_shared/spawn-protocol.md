@@ -304,12 +304,37 @@ Absence of any item is a BLOCKER, not a suggestion.
 
 ---
 
+## 7. Output Style (Terse Output Protocol)
+
+Every agent spawn MUST inject the terse-output directive into the prompt so agent-to-orchestrator reports and summaries stay compressed. This reduces cumulative output-token cost 20–40% across a sprint without affecting structured artifacts.
+
+**Mandatory prompt snippet** — append to every Agent() prompt template:
+
+```
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles,
+fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code,
+URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows,
+error codes, dates, version numbers. No preamble. No trailing summary of work
+already evident in the diff or tool output. Format: fragments OK.
+```
+
+See [/_shared/terse-output.md](terse-output.md) for the full protocol, intensity levels (`lite`/`full`/`ultra`), auto-pause conditions, and examples.
+
+**Exception classes that auto-drop terse mode:**
+- Security warnings, credential risks, irreversible-action confirmations
+- Root-cause explanations where compressed prose would lose the reasoning chain
+- User has explicitly requested normal-style output in this session
+
+Sprint-review flags the absence of this snippet from an Agent prompt template as a WARNING (not BLOCKER) since behavior is non-breaking but savings are unrealized.
+
+---
+
 ## How to Reference This Doc
 
 Every blitz skill that spawns subagents should add to its Additional Resources block:
 
 ```markdown
-- For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
+- For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves, output style), see [spawn-protocol.md](/_shared/spawn-protocol.md)
 ```
 
 ---

@@ -12,6 +12,7 @@ argument-hint: "<scope: path or 'all'>"
 
 ## Additional Resources
 - For grep patterns, severity rules, and output schemas, see [reference.md](reference.md)
+- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 ---
 

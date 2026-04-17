@@ -12,6 +12,7 @@ argument-hint: "<file-path>"
 
 ## Additional Resources
 - For Vitest/Jest patterns, Vue component testing, and Firestore rules testing, see [reference.md](reference.md)
+- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 ---
 

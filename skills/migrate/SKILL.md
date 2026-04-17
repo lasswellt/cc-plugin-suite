@@ -12,6 +12,7 @@ argument-hint: "<target: e.g. 'vue 3.5', 'vitest', 'eslint 9', 'pinia 3'>"
 
 ## Additional Resources
 - For codemod registry, risk assessment matrix, and rollback procedures, see [reference.md](reference.md)
+- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 ---
 

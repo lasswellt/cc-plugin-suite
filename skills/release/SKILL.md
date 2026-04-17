@@ -12,6 +12,7 @@ argument-hint: "<mode: prepare|verify|publish|rollback> [version]"
 
 ## Additional Resources
 - For conventional commit patterns, changelog templates, and rollback procedures, see [reference.md](reference.md)
+- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 ---
 

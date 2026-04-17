@@ -12,6 +12,7 @@ argument-hint: "<mode: audit|upgrade|report>"
 
 ## Additional Resources
 - For package manager commands, license tables, and report templates, see [reference.md](reference.md)
+- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 ---
 

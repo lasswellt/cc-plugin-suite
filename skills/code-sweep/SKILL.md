@@ -13,6 +13,9 @@ argument-hint: "<scope> | --fix | --scan-only | --fix-all | --deep | --loop | --
 ## Reference Material
 All grep patterns, auto-fix strategies, severity rules, state schemas, and convention discovery details are in `reference.md` (same directory as this file). **Read it on-demand** — only load the specific section you need for the current phase. Do NOT read the entire file at once.
 
+## Additional Resources
+- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
+
 ---
 
 # Code Sweep Skill

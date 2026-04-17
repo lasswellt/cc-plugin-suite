@@ -12,6 +12,7 @@ argument-hint: "(no arguments — runs analysis automatically)"
 
 ## Additional Resources
 - For pattern taxonomy, proposal templates, and safety classification rules, see [reference.md](reference.md)
+- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 ---
 

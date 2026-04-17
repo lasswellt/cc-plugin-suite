@@ -14,6 +14,7 @@ argument-hint: "[--fix | --check | --scope <global|project|all>]"
 - For conflict catalog schema and detailed pattern list, see [reference.md](reference.md)
 - For session protocol, see [session-protocol.md](/_shared/session-protocol.md)
 - For the research driving this skill, see `docs/_research/2026-04-16_plugin-agent-strategy.md`
+- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 ---
 

@@ -18,6 +18,7 @@ You are an automated browser tester, site crawler, and visual design analyst. Yo
 
 ## Additional Resources
 - For error classification taxonomy, fix templates, interaction safety rules, crawl state schemas, URL normalization rules, visual analysis methods, and cross-page comparison techniques, see [reference.md](reference.md)
+- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 ---
 

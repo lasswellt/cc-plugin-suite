@@ -17,6 +17,7 @@ You build production-grade Vue 3 UI that feels native to any project. Follow the
 
 ## Additional Resources
 - For UX design principles, wireframe templates, and accessibility checklist, see [reference.md](reference.md)
+- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 ---
 

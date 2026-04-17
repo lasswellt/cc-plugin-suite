@@ -12,6 +12,7 @@ argument-hint: "<mode: bundle|runtime|lighthouse|full>"
 
 ## Additional Resources
 - For bundle analysis commands, runtime anti-pattern catalog, and Lighthouse thresholds, see [reference.md](reference.md)
+- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 ---
 

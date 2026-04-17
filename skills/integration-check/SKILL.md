@@ -12,6 +12,7 @@ argument-hint: "[scope: all | routes | exports | auth | stores]"
 
 ## Additional Resources
 - For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
+- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 ---
 
