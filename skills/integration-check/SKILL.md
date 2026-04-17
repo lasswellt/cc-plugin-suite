@@ -1,20 +1,24 @@
 ---
 name: integration-check
 description: "Validates cross-module wiring: export-to-import tracing, route coverage, auth guard coverage, store-to-component wiring. Read-only analysis."
-allowed-tools: Read, Bash, Glob, Grep
-model: sonnet
-compatibility: ">=2.1.50"
+allowed-tools: Read, Write, Bash, Glob, Grep, Agent
+model: opus
+compatibility: ">=2.1.71"
 argument-hint: "[scope: all | routes | exports | auth | stores]"
 ---
 
 ## Project Context
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
+## Additional Resources
+- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
+- For agent workload sizing (check agents are Medium class), see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
+
 ---
 
 # Integration Checker
 
-Validate that modules are properly wired together after multi-module development work. Checks that exports have consumers, routes have navigation entries, auth guards are in place, and stores are connected to components.
+Validate cross-module wiring by spawning parallel check agents grouped into 3 logical domains. Each domain agent runs its checks and writes findings JSON; the orchestrator merges and reports.
 
 **This skill is read-only. It does NOT modify any code.**
 
@@ -26,215 +30,152 @@ All findings follow the [Definition of Done](/_shared/definition-of-done.md) sta
 
 ### 0.0 Register Session
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol.
+Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate `SESSION_ID`, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, log `skill_start`.
 
 ### 0.1 Parse Scope
 
-| Argument | Checks Run |
+| Argument | Agents Spawned |
 |---|---|
-| `all` (default) | All 5 check categories |
-| `routes` | Route coverage only |
-| `exports` | Export-to-import tracing only |
-| `auth` | Auth guard coverage only |
-| `stores` | Store-to-component wiring only |
+| `all` (default) | 3 agents (wiring, auth, ui) |
+| `routes` | wiring agent only (skip auth + ui) |
+| `exports` | wiring agent only |
+| `auth` | auth agent only |
+| `stores` | wiring agent only |
 
-### 0.2 Build File Inventory
+### 0.2 Build Shared File Inventory
 
 ```bash
-find . -name '*.ts' -o -name '*.vue' -o -name '*.js' | grep -v node_modules | grep -v .git | sort
+mkdir -p "${SESSION_TMP_DIR}"
+find . \( -name '*.ts' -o -name '*.vue' -o -name '*.js' -o -name '*.tsx' \) \
+  -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/dist/*' \
+  | sort > "${SESSION_TMP_DIR}/source-files.txt"
 ```
 
 ---
 
-## Phase 1: EXPORT-TO-IMPORT TRACING
+## Phase 1: SPAWN CHECK AGENTS — Parallel Analysis
 
-For each source file that exports functions, types, or components:
+Spawn the active agents in **a single assistant message** so they run concurrently.
 
-1. **Find all exports:**
-   ```bash
-   grep -rn "^export " --include="*.ts" --include="*.vue" . | grep -v node_modules | grep -v test | grep -v spec
-   ```
+### 1.1 Agent Grouping
 
-2. **For each export, find importers:**
-   ```bash
-   grep -rn "from.*<module-path>" --include="*.ts" --include="*.vue" . | grep -v node_modules
-   ```
+The 7 original check categories are grouped into 3 parallel agents by concern domain:
 
-3. **Flag orphaned exports** — exports with zero importers (excluding index/barrel files and entry points).
+| Agent | Checks Covered | Output File |
+|---|---|---|
+| `check-wiring` | Export-to-import, store-to-component, API-to-store, state-to-render | `${SESSION_TMP_DIR}/check-wiring.json` |
+| `check-auth` | Auth guard coverage, protected endpoints | `${SESSION_TMP_DIR}/check-auth.json` |
+| `check-ui` | Route coverage, form-to-handler wiring | `${SESSION_TMP_DIR}/check-ui.json` |
 
-**Output:** List of orphaned exports with file paths.
+Grouping rationale: wiring-related checks share a common grep+trace pattern (inventory → exports → importers). Auth is a distinct concern with a different data flow. UI-facing checks (routes + forms) share template-parsing logic.
 
----
+### 1.2 Spawn Parameters
 
-## Phase 2: ROUTE COVERAGE
+For each active agent, call the `Agent` tool with:
 
-1. **Find all route definitions** (Vue Router, Nuxt pages, or file-based routing):
-   ```bash
-   # Vue Router
-   grep -rn "path:" --include="*.ts" --include="*.js" . | grep -i "route" | grep -v node_modules
-   # Nuxt file-based
-   ls pages/**/*.vue 2>/dev/null
-   ```
+- `subagent_type: general-purpose` (agents must Write findings JSON — never `Explore`)
+- `model: sonnet` (explicit — prevents `[1m]` inheritance from Opus orchestrator)
+- `description: integration-check <domain>`
+- `prompt`: the check-agent prompt template (see `reference.md` section "Check Agent Prompt Template")
+- `run_in_background: false`
 
-2. **Find navigation entries** — links, router-link, navigateTo calls:
-   ```bash
-   grep -rn "router-link\|navigateTo\|router.push\|<NuxtLink" --include="*.vue" --include="*.ts" . | grep -v node_modules
-   ```
+**Weight class**: Medium (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). Each agent prompt declares: max 12 file reads, max 20 tool calls, 5-min wall-clock, stub-then-append JSON output.
 
-3. **Flag unreachable routes** — routes with no navigation entry pointing to them.
+### 1.3 Inputs Each Agent Receives
 
-**Output:** List of unreachable routes.
+1. Agent domain (wiring / auth / ui).
+2. Path to shared inventory: `${SESSION_TMP_DIR}/source-files.txt`.
+3. Output file path (from roster).
+4. Domain-specific check definitions (see `reference.md`).
+5. Output JSON schema.
 
 ---
 
-## Phase 3: AUTH GUARD COVERAGE
+## Phase 2: COLLECT AND VALIDATE
 
-1. **Identify protected routes** — routes that should require authentication:
-   ```bash
-   # Routes with meta.auth or middleware
-   grep -rn "auth\|middleware\|requiresAuth\|meta:" --include="*.ts" --include="*.js" . | grep -i "route" | grep -v node_modules
-   ```
+**Before reading any file, validate output presence**:
 
-2. **Identify sensitive API endpoints** — server functions handling user data:
-   ```bash
-   grep -rn "defineEventHandler\|onCall\|onRequest" --include="*.ts" . | grep -v node_modules
-   ```
+```bash
+MISSING_COUNT=0
+EXPECTED_FILES=()
+# Build EXPECTED_FILES based on which agents were spawned for the scope.
+# Example for scope=all:
+EXPECTED_FILES+=("${SESSION_TMP_DIR}/check-wiring.json")
+EXPECTED_FILES+=("${SESSION_TMP_DIR}/check-auth.json")
+EXPECTED_FILES+=("${SESSION_TMP_DIR}/check-ui.json")
 
-3. **Check each sensitive endpoint has auth verification:**
-   ```bash
-   # For each endpoint file, check for auth check patterns
-   grep -l "verifyIdToken\|requireAuth\|auth\.currentUser\|getAuth" --include="*.ts" . | grep -v node_modules
-   ```
+for f in "${EXPECTED_FILES[@]}"; do
+  if [ ! -s "$f" ]; then
+    echo "MISSING: $f" >&2
+    MISSING_COUNT=$((MISSING_COUNT+1))
+  fi
+done
+```
 
-4. **Flag unprotected endpoints** — sensitive operations without auth checks.
-
-**Output:** List of unprotected routes and endpoints.
-
----
-
-## Phase 4: STORE-TO-COMPONENT WIRING
-
-1. **Find all stores/composables:**
-   ```bash
-   grep -rn "defineStore\|export function use" --include="*.ts" . | grep -v node_modules | grep -v test
-   ```
-
-2. **For each store, find consuming components:**
-   ```bash
-   grep -rn "use<StoreName>\|import.*from.*stores" --include="*.vue" --include="*.ts" . | grep -v node_modules
-   ```
-
-3. **Flag orphaned stores** — stores with no consuming components.
-
-4. **Check API wiring** — store actions that should call API/service functions:
-   ```bash
-   # Find store actions that only set local state without API calls
-   ```
-
-**Output:** List of orphaned stores and unwired actions.
+**Gate**: If all expected agents failed, ABORT. If 1 agent failed, retry once with narrower scope. If still failed, emit a placeholder finding in the final report noting the missing domain.
 
 ---
 
-## Phase 5: API-TO-STORE WIRING
+## Phase 3: MERGE FINDINGS
 
-1. **Find all API/service functions:**
-   ```bash
-   grep -rn "export.*async function\|export const.*= async" --include="*.ts" . | grep -E "api|service|server" | grep -v node_modules
-   ```
-
-2. **For each API function, check if a store action calls it.**
-
-3. **Flag orphaned API functions** — API functions with no store consumers.
-
-**Output:** List of orphaned API functions.
+Read all domain JSON files, concatenate findings arrays, deduplicate by `id` (format: `<check_id>-<file>-<line>-<hash>`).
 
 ---
 
-## Phase 5.5: FORM-TO-HANDLER WIRING
-
-Verify that forms are connected to their submission handlers and that handlers reach API endpoints.
-
-1. **Find all forms:**
-   ```bash
-   grep -rn "<form\|<q-form\|<v-form\|@submit\|handleSubmit\|onSubmit" --include="*.vue" . | grep -v node_modules
-   ```
-
-2. **For each form, trace the submit handler:**
-   - Find the `@submit` or `@submit.prevent` binding
-   - Trace the handler function to verify it calls a store action or API function
-   - Verify the API function exists and is implemented (not a stub)
-
-3. **Flag disconnected forms:**
-   - Forms with no `@submit` handler → **High** severity
-   - Forms with a handler that doesn't call any API/store action → **Medium** severity
-   - Forms whose handler calls a stub or placeholder function → **High** severity
-
-**Output:** List of disconnected or partially-wired forms.
-
----
-
-## Phase 5.7: STATE-TO-RENDER WIRING
-
-Verify that reactive state declarations are actually rendered in templates.
-
-1. **Find reactive state declarations:**
-   ```bash
-   grep -rn "ref<\|reactive<\|computed<\|defineStore" --include="*.ts" --include="*.vue" . | grep -v node_modules | grep -v test
-   ```
-
-2. **For each state variable in a component or composable:**
-   - Check if it appears in a `<template>` section (directly or via a computed property)
-   - Check if it is returned from a composable's return statement
-   - Check if it is used in a `watch` or `watchEffect`
-
-3. **Flag orphaned state:**
-   - State declared but never rendered, watched, or returned → **Medium** severity
-   - Store state with no consuming component (already covered in Phase 4, cross-reference here)
-
-**Output:** List of orphaned reactive state variables.
-
----
-
-## Phase 6: REPORT
+## Phase 4: REPORT
 
 Print a structured findings report:
 
 ```
 Integration Check Report
 ========================
-Scope: all
+Scope: <scope>
+Agents: <N>/<M> succeeded
 Files analyzed: N
 
 Export-to-Import Tracing:
   ✓ N exports have consumers
   ⚠ M orphaned exports (no importers):
-    - src/utils/legacy-helper.ts → formatDate()
-    - src/schemas/deprecated-schema.ts → OldSchema
+    - <file>:<line> → <export-name>
 
 Route Coverage:
   ✓ N routes reachable via navigation
-  ⚠ M unreachable routes:
-    - /admin/debug (no nav entry)
+  ⚠ M unreachable routes
 
 Auth Guard Coverage:
   ✓ N endpoints protected
-  ⚠ M unprotected sensitive endpoints:
-    - src/server/api/users/delete.ts (no auth check)
+  ⚠ M unprotected sensitive endpoints
 
 Store Wiring:
   ✓ N stores have consumers
-  ⚠ M orphaned stores:
-    - useDeprecatedStore (no component imports it)
+  ⚠ M orphaned stores
 
 API Wiring:
   ✓ N API functions called by stores
-  ⚠ M orphaned API functions:
-    - fetchLegacyData (no store calls it)
+  ⚠ M orphaned API functions
+
+Form Wiring:
+  ✓ N forms connected to handlers
+  ⚠ M disconnected forms
+
+State-to-Render:
+  ✓ N state vars rendered
+  ⚠ M orphaned state vars
 
 Overall: N findings (H high, M medium, L low)
 ```
 
-Classify severity:
-- **High:** Unprotected auth endpoints, orphaned API functions that suggest missing features
-- **Medium:** Unreachable routes, orphaned stores
-- **Low:** Orphaned exports (may be intentionally public API)
+Severity classification (used by agents and report):
+- **High**: Unprotected auth endpoints, orphaned API functions suggesting missing features, disconnected forms
+- **Medium**: Unreachable routes, orphaned stores, orphaned state
+- **Low**: Orphaned exports (may be intentionally public API)
+
+Log `skill_complete` to activity feed. Clean up `${SESSION_TMP_DIR}/check-*.json`.
+
+---
+
+## Error Recovery
+
+- **All agents failed**: Abort with clear error message pointing user to `.cc-sessions/activity-feed.jsonl` for diagnostics.
+- **1 agent failed after retry**: Emit placeholder section in report marking that domain as "⚠ not checked — agent failed".
+- **No source files**: Exit early with "No source files found in scope".

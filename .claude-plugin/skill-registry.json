@@ -1,6 +1,6 @@
 {
-  "version": "0.5.2",
-  "updated": "2026-03-19T00:00:00Z",
+  "version": "1.3.0",
+  "updated": "2026-04-16T00:00:00Z",
   "description": "Registry of all skills in blitz with metadata for discovery, routing, and status tracking.",
   "skills": [
     {
@@ -215,10 +215,10 @@
     {
       "name": "quality-metrics",
       "category": "quality",
-      "description": "Collects, stores, and visualizes code quality metrics over time",
-      "model": "sonnet",
+      "description": "Collects, stores, and visualizes code quality metrics over time. Spawns 5 parallel collector agents.",
+      "model": "opus",
       "modifies_code": false,
-      "uses_agents": false,
+      "uses_agents": true,
       "uses_sessions": true,
       "dependencies": [],
       "maturity": "stable"
@@ -325,10 +325,10 @@
     {
       "name": "codebase-map",
       "category": "core-dev",
-      "description": "Analyzes existing codebase across Technology, Architecture, Quality, and Concerns dimensions",
-      "model": "sonnet",
+      "description": "Analyzes existing codebase across Technology, Architecture, Quality, and Concerns dimensions via 4 parallel agents.",
+      "model": "opus",
       "modifies_code": true,
-      "uses_agents": false,
+      "uses_agents": true,
       "uses_sessions": true,
       "dependencies": [],
       "maturity": "stable"
@@ -348,12 +348,23 @@
       "name": "integration-check",
       "category": "quality",
       "description": "Validates cross-module wiring: export-to-import tracing, route coverage, auth guards, store wiring",
+      "model": "opus",
+      "modifies_code": false,
+      "uses_agents": true,
+      "uses_sessions": true,
+      "dependencies": [],
+      "maturity": "stable"
+    },
+    {
+      "name": "setup",
+      "category": "meta",
+      "description": "Detects conflicts between user CLAUDE.md rules and blitz skill behaviors. Regex-based scan against a known-conflict catalog.",
       "model": "sonnet",
       "modifies_code": false,
       "uses_agents": false,
       "uses_sessions": true,
       "dependencies": [],
-      "maturity": "stable"
+      "maturity": "beta"
     }
   ],
   "categories": {

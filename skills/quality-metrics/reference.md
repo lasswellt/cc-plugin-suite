@@ -4,6 +4,56 @@ Schemas, templates, thresholds, and calculation details used by the quality-metr
 
 ---
 
+## Collector Agent Prompt Template
+
+Used in Phase 1 when spawning metric collectors. The main skill fills in `{{…}}` placeholders.
+
+```
+You are a quality-metrics collector agent for the {{TOOL}} metric.
+
+You are a general-purpose agent with Write access. Your task is INCOMPLETE
+if {{OUTPUT_PATH}} does not exist when you finish.
+
+BUDGET (Light class — see skills/_shared/agent-workload-sizing.md):
+- Max bash commands: 1 (the tool invocation itself)
+- Max file reads: 5 (for parsing output if needed)
+- Max tool calls: 8
+- Max output: JSON (see schema below)
+- Wall-clock: 3 minutes ({{EXTENDED_TIMEOUT_NOTE}})
+
+TASK:
+1. Run: {{TOOL_COMMAND}}
+2. Parse the output per these rules: {{PARSE_RULES}}
+3. Apply the score formula: {{SCORE_FORMULA}}
+4. Write {{OUTPUT_PATH}} with the JSON result below.
+
+OUTPUT JSON SCHEMA:
+{
+  "tool": "{{TOOL}}",
+  "score": <number 0-100 or null>,
+  "details": {
+    // Tool-specific fields — see PARSE_RULES
+  },
+  "error": "<only if tool failed; describe the failure>"
+}
+
+FALLBACK: If the tool is not installed OR the command fails with non-zero exit:
+  Write the file with `"score": null` and an `"error"` string describing what
+  happened. Do NOT treat tool absence as a task failure.
+
+CONFIRMATION: Emit one line: "{{TOOL}}: score=<N or null>"
+```
+
+**Per-collector parameter fills:**
+
+- `collect-typescript`: TOOL=typescript, COMMAND=`npx tsc --noEmit 2>&1 | tail -5`, PARSE=`extract error count from compiler output`, FORMULA=`0 errors → 100; N errors → max(0, 100 - N * 2)`, EXTENDED_TIMEOUT=5 min.
+- `collect-lint`: TOOL=lint, COMMAND=`npx eslint . --format json 2>&1`, PARSE=`sum errors and warnings from JSON`, FORMULA=`max(0, 100 - errors*5 - warnings)`, EXTENDED_TIMEOUT=3 min.
+- `collect-tests`: TOOL=tests, COMMAND=`npx vitest run --reporter=json 2>&1` (fallback `npx jest --json`), PARSE=`extract total/passed/failed/skipped`, FORMULA=`(passed / total) * 100; null if total == 0`, EXTENDED_TIMEOUT=5 min.
+- `collect-build`: TOOL=build, COMMAND=`npm run build 2>&1`, PARSE=`check exit code`, FORMULA=`exit 0 → 100; else → 0`, EXTENDED_TIMEOUT=5 min.
+- `collect-completeness`: TOOL=completeness, COMMAND=`ls -t docs/metrics/*.json 2>/dev/null | head -1 | xargs jq -r '.scores.completeness // "null"'`, PARSE=`parse JSON score field`, FORMULA=`pass-through from existing snapshot; null if none`, EXTENDED_TIMEOUT=3 min.
+
+---
+
 ## JSON Schema for Metric Snapshots
 
 Every snapshot written to `docs/metrics/YYYY-MM-DD.json` must conform to this schema.

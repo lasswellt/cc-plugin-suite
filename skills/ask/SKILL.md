@@ -48,6 +48,7 @@ Match the user's request against this routing table:
 | "todo", "note", "remember to", "add todo" | todo           | —                                |
 | "check integration", "wiring check", "are modules connected" | integration-check | —                   |
 | "fix gaps", "close gaps", "gap closure"   | sprint (--gaps) | —                               |
+| "setup", "doctor", "claude.md conflict", "check config" | setup | —                       |
 
 If the request does not clearly match any row, ask the user to clarify before
 proceeding.

@@ -1,20 +1,24 @@
 ---
 name: codebase-map
 description: "Analyzes an existing codebase across 4 dimensions: Technology, Architecture, Quality, and Concerns. Produces a CODEBASE-MAP.md for brownfield project onboarding."
-allowed-tools: Read, Bash, Glob, Grep
-model: sonnet
-compatibility: ">=2.1.50"
+allowed-tools: Read, Write, Bash, Glob, Grep, Agent
+model: opus
+compatibility: ">=2.1.71"
 argument-hint: "(no arguments — analyzes the current project)"
 ---
 
 ## Project Context
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
+## Additional Resources
+- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
+- For agent workload sizing (dimension agents are Medium class), see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
+
 ---
 
 # Codebase Mapper
 
-Produce a comprehensive, prescriptive analysis of an existing codebase. The output helps developers understand the project before planning sprints, refactoring, or onboarding new team members. Execute every phase in order. Do NOT skip phases.
+Produce a comprehensive, prescriptive analysis of an existing codebase by spawning 4 parallel dimension agents (Technology, Architecture, Quality, Concerns) and synthesizing their findings into a single `CODEBASE-MAP.md`. Output helps developers understand the project before planning sprints, refactoring, or onboarding new team members. Execute every phase in order. Do NOT skip phases.
 
 **This skill is read-only. It does NOT modify any code.**
 
@@ -24,144 +28,143 @@ Produce a comprehensive, prescriptive analysis of an existing codebase. The outp
 
 ### 0.0 Register Session
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol.
+Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate `SESSION_ID`, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, log `skill_start` to activity feed.
 
 ### 0.1 Build File Inventory
 
+The orchestrator builds a shared inventory that all dimension agents consume. Keep this bash work in the orchestrator so we don't pay 4× the token cost of re-running the same greps.
+
 ```bash
-# Count files by type
-find . -not -path '*/node_modules/*' -not -path '*/.git/*' -name '*.ts' -o -name '*.tsx' -o -name '*.vue' -o -name '*.js' -o -name '*.jsx' -o -name '*.json' -o -name '*.css' -o -name '*.scss' | wc -l
+mkdir -p "${SESSION_TMP_DIR}"
+
+# Source file count by type
+find . \( -name '*.ts' -o -name '*.tsx' -o -name '*.vue' -o -name '*.js' -o -name '*.jsx' \) \
+  -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/dist/*' \
+  > "${SESSION_TMP_DIR}/source-files.txt"
 
 # Directory structure (top 3 levels)
-find . -maxdepth 3 -type d -not -path '*/node_modules/*' -not -path '*/.git/*' | sort
+find . -maxdepth 3 -type d -not -path '*/node_modules/*' -not -path '*/.git/*' | sort \
+  > "${SESSION_TMP_DIR}/dir-tree.txt"
+
+# Package configuration
+for f in package.json pnpm-workspace.yaml lerna.json nx.json turbo.json tsconfig.json; do
+  [ -f "$f" ] && cat "$f" > "${SESSION_TMP_DIR}/config-${f//\//-}.json" 2>/dev/null
+done
 ```
 
-### 0.2 Read Package Configuration
+---
 
-Read `package.json`, workspace configs, and any framework config files.
+## Phase 1: SPAWN DIMENSION AGENTS — Parallel Analysis
+
+Spawn 4 agents in **a single assistant message** so they execute concurrently. Each agent writes its findings to a dedicated file; the orchestrator merges in Phase 3.
+
+### 1.1 Agent Roster
+
+| Agent | Dimension | Output File | File Cap |
+|---|---|---|---|
+| `map-technology` | Stack, frameworks, dependencies, runtime | `${SESSION_TMP_DIR}/map-technology.md` | 12 |
+| `map-architecture` | Module boundaries, data flow, integration | `${SESSION_TMP_DIR}/map-architecture.md` | 15 |
+| `map-quality` | TypeScript strictness, test coverage, TODOs, complexity | `${SESSION_TMP_DIR}/map-quality.md` | 10 |
+| `map-concerns` | Fragile areas, security, dependency risks, docs gaps | `${SESSION_TMP_DIR}/map-concerns.md` | 10 |
+
+### 1.2 Spawn Parameters
+
+For each agent, call the `Agent` tool with:
+
+- `subagent_type: general-purpose` (agents must Write findings files — never `Explore`)
+- `model: sonnet` (explicit — prevents `[1m]` inheritance from Opus orchestrator)
+- `description: codebase-map <dimension> analysis`
+- `prompt`: the dimension-agent prompt template (see `reference.md` section "Dimension Agent Prompt Template")
+- `run_in_background: false` (orchestrator waits on all 4 synchronously)
+
+**Weight class**: Medium (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). The prompt MUST declare: file cap from the roster, max 25 tool calls, max 250-line output, 5-min wall-clock, stub-then-append write pattern.
+
+### 1.3 Inputs Each Agent Receives
+
+1. Its dimension name (Technology / Architecture / Quality / Concerns).
+2. Absolute path to the shared inventory dir: `${SESSION_TMP_DIR}/`.
+3. Its output file path (from the roster).
+4. The dimension-specific checklist (see `reference.md`).
+5. The stack profile from Phase 0.
 
 ---
 
-## Phase 1: TECHNOLOGY — Stack Profile
+## Phase 2: COLLECT AND VALIDATE — Gather All Findings
 
-Analyze and document:
+**Before reading any file, validate output presence**:
 
-1. **Framework & runtime**: Vue/Nuxt/React/Next, Node version, TypeScript config
-2. **Package manager**: npm/pnpm/yarn, workspace structure
-3. **UI framework**: Tailwind/Quasar/Vuetify/MUI, design tokens
-4. **State management**: Pinia/Vuex/Redux, store patterns
-5. **Backend**: API framework, database, ORM, serverless functions
-6. **Testing**: Test runner, coverage setup, test patterns
-7. **Build & deploy**: Bundler, CI/CD, hosting, environment config
-8. **Key dependencies**: Major libraries with version notes
+```bash
+MISSING_COUNT=0
+EXPECTED_FILES=(
+  "${SESSION_TMP_DIR}/map-technology.md"
+  "${SESSION_TMP_DIR}/map-architecture.md"
+  "${SESSION_TMP_DIR}/map-quality.md"
+  "${SESSION_TMP_DIR}/map-concerns.md"
+)
+for f in "${EXPECTED_FILES[@]}"; do
+  if [ ! -s "$f" ]; then
+    echo "MISSING: $f" >&2
+    MISSING_COUNT=$((MISSING_COUNT+1))
+    # Log to .cc-sessions/activity-feed.jsonl
+  fi
+done
+```
 
-Output: Technology section of CODEBASE-MAP.md
+**Gate**: If `MISSING_COUNT >= 2`, ABORT and report to user — a 2-dimension codebase map would be misleading. If `MISSING_COUNT == 1`, retry that dimension once with a narrower file cap. If still failed, emit a placeholder section in the final map flagging the missing dimension.
 
----
-
-## Phase 2: ARCHITECTURE — Structure Analysis
-
-Analyze and document:
-
-1. **Module boundaries**: Which directories are self-contained modules vs shared
-2. **Entry points**: Main app entry, route definitions, API entry points
-3. **Data flow**: How data moves from backend → store → component
-4. **Shared utilities**: Composables, helpers, utilities — what exists and where
-5. **Integration points**: Where modules connect to each other
-6. **Configuration layers**: Environment, feature flags, runtime config
-
-For each module, note:
-- File count, approximate LOC
-- Exports consumed by other modules
-- External dependencies
-
-Output: Architecture section of CODEBASE-MAP.md
+**Check for `PARTIAL: true` markers** in successful files — treat PARTIAL sections as known-incomplete and surface `MISSING` items in the final report.
 
 ---
 
-## Phase 3: QUALITY — Health Assessment
+## Phase 3: SYNTHESIZE — Generate CODEBASE-MAP.md
 
-Analyze and document:
-
-1. **TypeScript strictness**: Read tsconfig, count `any` usage, check strict flags
-   ```bash
-   grep -r ":\s*any" --include="*.ts" --include="*.vue" -l . | grep -v node_modules | wc -l
-   ```
-2. **Test coverage**: Test file count vs source file count, coverage config
-   ```bash
-   find . -name "*.test.*" -o -name "*.spec.*" | grep -v node_modules | wc -l
-   ```
-3. **TODO/FIXME hotspots**: Count and locate
-   ```bash
-   grep -rn "TODO\|FIXME\|HACK\|XXX" --include="*.ts" --include="*.vue" --include="*.js" . | grep -v node_modules | head -30
-   ```
-4. **Large files** (potential complexity hotspots):
-   ```bash
-   find . -name "*.ts" -o -name "*.vue" | grep -v node_modules | xargs wc -l 2>/dev/null | sort -rn | head -20
-   ```
-5. **Empty/stub functions**: Potential incomplete implementations
-   ```bash
-   grep -rn "return {}\|return \[\]\|throw.*not implemented" --include="*.ts" --include="*.vue" . | grep -v node_modules | head -20
-   ```
-
-Output: Quality section of CODEBASE-MAP.md
-
----
-
-## Phase 4: CONCERNS — Risk Areas
-
-Analyze and document:
-
-1. **Fragile areas**: Files with high churn (many recent commits), large files, deeply nested logic
-   ```bash
-   git log --oneline --name-only -100 | grep -E '\.(ts|vue|js)$' | sort | uniq -c | sort -rn | head -20
-   ```
-2. **Missing error handling**: Async operations without try/catch
-3. **Security concerns**: Hardcoded secrets, missing auth checks, exposed endpoints
-4. **Dependency risks**: Outdated major versions, deprecated packages, known vulnerabilities
-   ```bash
-   npm audit --json 2>/dev/null | head -50
-   ```
-5. **Documentation gaps**: Undocumented APIs, missing README sections
-6. **Accessibility gaps**: Missing ARIA attributes, keyboard navigation issues (for UI projects)
-
-Output: Concerns section of CODEBASE-MAP.md
-
----
-
-## Phase 5: OUTPUT — Generate CODEBASE-MAP.md
-
-Write a comprehensive `CODEBASE-MAP.md` at the project root with all 4 sections. Format:
+Read all 4 dimension files. Assemble into a single `CODEBASE-MAP.md` at the project root:
 
 ```markdown
 # Codebase Map — <project-name>
 
 Generated: <ISO-8601>
-Analyzed by: blitz codebase-map
+Analyzed by: blitz codebase-map (v<plugin-version>)
 
 ## Technology
-<from Phase 1>
+<contents of map-technology.md>
 
 ## Architecture
-<from Phase 2>
+<contents of map-architecture.md>
 
 ## Quality
-<from Phase 3>
+<contents of map-quality.md>
 
 ## Concerns
-<from Phase 4>
+<contents of map-concerns.md>
 
 ## Recommendations
-- <prioritized list of suggested improvements, each with file paths>
+<orchestrator-synthesized cross-dimensional recommendations>
 ```
+
+The `Recommendations` section is the orchestrator's cross-cutting synthesis — e.g., a quality concern that compounds with an architectural gap. This is the one place the orchestrator adds value beyond concatenation.
+
+---
+
+## Phase 4: REPORT — Summary
 
 Print a summary to the user:
 
 ```
 [codebase-map] Complete ✓
-  Files analyzed: N
-  Modules identified: N
-  Quality score: N/100
-  Concerns flagged: N
+  Dimensions analyzed: N/4
+  Files analyzed: N (from shared inventory)
+  Quality score: N/100 (from map-quality.md)
+  Concerns flagged: N (from map-concerns.md)
   Output: CODEBASE-MAP.md
 ```
+
+Log `skill_complete` to the activity feed. Clean up `${SESSION_TMP_DIR}/map-*.md` files (keep the inventory for future runs).
+
+---
+
+## Error Recovery
+
+- **No source files found**: Inform user the directory looks empty; skip to Phase 3 with a minimal map noting the empty repo.
+- **2+ dimensions failed**: Abort per Phase 2 gate. Do not ship a half-map silently.
+- **1 dimension failed (after retry)**: Emit a placeholder section with explicit "⚠ not analyzed — dimension agent failed" text. Never silently omit.

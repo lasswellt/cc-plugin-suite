@@ -1,9 +1,9 @@
 ---
 name: quality-metrics
 description: "Collects, stores, and visualizes code quality metrics over time. Supports collect, dashboard, trend, and compare modes."
-allowed-tools: Read, Write, Bash, Glob, Grep
-model: sonnet
-compatibility: ">=2.1.50"
+allowed-tools: Read, Write, Bash, Glob, Grep, Agent
+model: opus
+compatibility: ">=2.1.71"
 argument-hint: "<mode: collect|dashboard|trend|compare <date1> <date2>>"
 ---
 
@@ -13,6 +13,8 @@ argument-hint: "<mode: collect|dashboard|trend|compare <date1> <date2>>"
 ## Additional Resources
 - For metric snapshot schema, dashboard templates, trend thresholds, and score calculation details, see:
 !cat skills/quality-metrics/reference.md
+- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
+- For agent workload sizing (collector agents are Light class), see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
 
 ---
 
@@ -41,84 +43,80 @@ Extract mode from `$ARGUMENTS`. Default to `collect` if not specified.
 
 ---
 
-## Phase 1: COLLECT — Gather Metrics
+## Phase 1: COLLECT — Parallel Metric Collectors
 
-Run each metric collector. If a tool is not available or the command fails, set that metric's score to `null` and continue with the remaining collectors.
+Metric collection is delegated to 5 parallel collector agents, each running one independent tool. Spawn all 5 in **a single assistant message** so they execute concurrently. Wall-clock drops from 2-3 min sequential to ~45 sec parallel.
 
-### 1.1 TypeScript Strictness
+### 1.1 Agent Roster
+
+| Agent | Tool | Output File | Score Formula |
+|---|---|---|---|
+| `collect-typescript` | `npx tsc --noEmit` | `${SESSION_TMP_DIR}/metric-typescript.json` | `max(0, 100 - errors * 2)` |
+| `collect-lint` | `npx eslint . --format json` | `${SESSION_TMP_DIR}/metric-lint.json` | `max(0, 100 - errors * 5 - warnings)` |
+| `collect-tests` | `npx vitest run --reporter=json` (fallback: jest) | `${SESSION_TMP_DIR}/metric-tests.json` | `(passed / total) * 100`; null if no runner |
+| `collect-build` | `npm run build` | `${SESSION_TMP_DIR}/metric-build.json` | 100 on exit 0, else 0 |
+| `collect-completeness` | inline completeness-gate lookup | `${SESSION_TMP_DIR}/metric-completeness.json` | from latest completeness snapshot; null if none |
+
+The 2 lightweight metrics (codebase size, dependency count) stay in the orchestrator — they're simple file reads that don't warrant agent overhead.
+
+### 1.2 Spawn Parameters
+
+For each collector, call the `Agent` tool with:
+
+- `subagent_type: general-purpose` (must Write JSON output — never `Explore`)
+- `model: sonnet` (explicit)
+- `description: quality-metrics <tool> collector`
+- `prompt`: the collector prompt template from `reference.md`
+- `run_in_background: false`
+
+**Weight class**: Light (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). Each collector prompt declares: max 1 bash command, max 5 file reads (for parsing output), max 8 tool calls, 3-min wall-clock (typescript/tests/build may be slow on large projects — bump to 5 min for those specifically), output-file existence check.
+
+### 1.3 Inputs Each Collector Receives
+
+1. Tool command to run.
+2. Parse instructions for the tool's output format.
+3. Score formula.
+4. Output JSON path.
+5. Fallback policy: on tool missing or error, write `{"score": null, "error": "..."}`.
+
+### 1.4 Validate Outputs
+
+**Before Phase 2, verify all collector outputs**:
 
 ```bash
-npx tsc --noEmit 2>&1 | tail -5
+MISSING_COUNT=0
+for tool in typescript lint tests build completeness; do
+  f="${SESSION_TMP_DIR}/metric-${tool}.json"
+  if [ ! -s "$f" ]; then
+    echo "MISSING: $f" >&2
+    MISSING_COUNT=$((MISSING_COUNT+1))
+  fi
+done
 ```
 
-Extract the error count from compiler output. Score calculation:
-- 0 errors: score = 100
-- N errors: score = max(0, 100 - N * 2)
+A missing collector file is treated as `score: null` in Phase 2 (not an abort condition — we want the snapshot written even with partial coverage). Log each missing collector to the activity feed for user visibility.
 
-### 1.2 Lint Score
+### 1.5 Orchestrator-Side Lightweight Metrics
 
-```bash
-npx eslint . --format json 2>&1
-```
+While collectors run, the orchestrator computes these in parallel (they're pure file reads):
 
-Extract error and warning counts from JSON output. Score calculation:
-- score = max(0, 100 - errors * 5 - warnings * 1)
-
-### 1.3 Test Results
-
-```bash
-npx vitest run --reporter=json 2>&1
-```
-
-If Vitest is not available, try the Jest equivalent:
-```bash
-npx jest --json 2>&1
-```
-
-Extract: total, passed, failed, skipped. Score calculation:
-- score = (passed / total) * 100
-- If total = 0, score = null
-
-### 1.4 Build Status
-
-```bash
-npm run build 2>&1
-```
-
-Score:
-- Exit code 0: score = 100
-- Exit code non-zero: score = 0
-
-### 1.5 Completeness Score
-
-Check if the completeness-gate skill has been run recently:
-```bash
-ls -t docs/metrics/*.json 2>/dev/null | head -1
-```
-
-If a recent snapshot exists and contains a `completeness` field, use that score. Otherwise, set score = null.
-
-### 1.6 Codebase Size
-
-Count source files, lines, test files, and test lines:
-
+**Codebase size:**
 ```bash
 # Source files and lines
-find src/ -name '*.ts' -o -name '*.vue' | grep -v '.test.' | grep -v '.spec.' | wc -l
-find src/ -name '*.ts' -o -name '*.vue' | grep -v '.test.' | grep -v '.spec.' | xargs cat 2>/dev/null | wc -l
+find src/ \( -name '*.ts' -o -name '*.vue' \) -not -name '*.test.*' -not -name '*.spec.*' \
+  > "${SESSION_TMP_DIR}/source-files.txt"
+wc -l $(cat "${SESSION_TMP_DIR}/source-files.txt") 2>/dev/null | tail -1 > "${SESSION_TMP_DIR}/source-lines.txt"
 
 # Test files and lines
-find src/ -name '*.test.*' -o -name '*.spec.*' | wc -l
-find src/ -name '*.test.*' -o -name '*.spec.*' | xargs cat 2>/dev/null | wc -l
+find src/ \( -name '*.test.*' -o -name '*.spec.*' \) \
+  > "${SESSION_TMP_DIR}/test-files.txt"
+wc -l $(cat "${SESSION_TMP_DIR}/test-files.txt") 2>/dev/null | tail -1 > "${SESSION_TMP_DIR}/test-lines.txt"
 ```
 
 Calculate test-to-code ratio = test_lines / source_lines.
 
-### 1.7 Dependency Count
-
-Read `package.json` and count:
-- Production dependencies: keys in `dependencies`
-- Dev dependencies: keys in `devDependencies`
+**Dependency count:**
+Read `package.json` and count keys in `dependencies` (production) and `devDependencies` (dev).
 
 ---
 
