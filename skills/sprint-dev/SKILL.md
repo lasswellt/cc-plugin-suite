@@ -16,6 +16,9 @@ compatibility: ">=2.1.71"
 - For agent deviation handling, see [deviation-protocol.md](/_shared/deviation-protocol.md)
 - For context window hygiene, see [context-management.md](/_shared/context-management.md)
 - For the carry-forward registry (written on story completion in Phase 3.2), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
+- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
+- For agent workload sizing (dev agents are Heavy class), see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
+- For wave execution protocol, see [waves.md](/_shared/waves.md)
 
 ---
 
@@ -201,9 +204,21 @@ Agent(
 
 **Note:** The `isolation: "worktree"` parameter replaces manual `git worktree add` commands. Each agent gets its own branch and working directory automatically. Worktrees with no changes are auto-cleaned on agent completion; worktrees with changes are preserved for merging.
 
+**Weight class**: Heavy (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). Dev agents implement multiple stories with reads+writes+verify per story.
+
+**Per-wave story cap (CRITICAL)**: distribute at most **4 stories per agent per wave**. If a single wave assigns more than 4 stories to any one agent, split the excess to the next wave — even if this creates an otherwise-empty wave. A 6-story agent needs ~54 tool calls (5 reads + 3 writes + 1 verify × 6), well past the ~20/turn server cap.
+
 Include in the agent prompt:
 1. Agent role and responsibilities (see reference.md for prompt templates).
-2. List of assigned stories in dependency order, with their `verify` and `done` fields.
+2. List of assigned stories in dependency order, with their `verify` and `done` fields. Capped at 4 stories per wave per agent.
+3. **Budget declaration** (add verbatim to prompt):
+   ```
+   BUDGET:
+   - Max stories this wave: 4 (already enforced by orchestrator)
+   - Max file reads per story: 6
+   - Max tool calls total: 40 (if you hit 30, finish current story and stop)
+   - Wall-clock: 8 min
+   ```
 4. Project conventions (detected stack, coding patterns, naming conventions).
 5. Commit message format: `feat(sprint-${N}/<role>): S${N}-XXX <description>`.
 6. Project conventions guide from Phase 0.5 (full text, not a file reference).
@@ -212,6 +227,20 @@ Include in the agent prompt:
 9. Deviation handling rules — Follow the [Deviation Handling Protocol](/_shared/deviation-protocol.md). Auto-fix small issues, report deviations, escalate architectural changes.
 10. Wave assignment — Tell each agent which wave their stories belong to, so they understand the execution order context.
 11. Context management rules — Follow the [Context Management Protocol](/_shared/context-management.md). Self-contained DONE summaries, reference files by path not memory, compact verification output, prune context between stories.
+12. **HEARTBEAT + PARTIAL protocol** (add verbatim to prompt):
+    ```
+    HEARTBEAT: After each story DONE, write a file ${SESSION_TMP_DIR}/agent-<role>-progress.md
+    appending: HEARTBEAT: S${N}-XXX done at <ISO-timestamp>. Use date -u +%Y-%m-%dT%H:%M:%SZ.
+
+    PARTIAL: If you have fewer than 3 tool calls remaining, STOP before starting
+    a new story. Append to your progress file:
+      PARTIAL: true
+      COMPLETED: [list of story ids finished]
+      REMAINING: [list of story ids unstarted]
+      CONFIDENCE: low|medium|high
+    Send PARTIAL: <N> done, <M> remaining to orchestrator via the DONE/BLOCKED
+    protocol and end.
+    ```
 
 ### 2.5 Create Tasks with Dependency Ordering
 
@@ -370,6 +399,21 @@ If integration-check finds high-severity issues, address them before the UI pass
 After all `frontend-dev` stories are complete (or in parallel with final frontend stories), spawn or reuse an agent for integration work:
 
 Agent: `frontend-dev` (reuse) or `ui-integrator` (new)
+
+**Weight class**: Medium (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)).
+
+**Spawn parameters**:
+- `subagent_type: blitz:frontend-dev` (has Write + Edit — required for integration edits)
+- `isolation: "worktree"` on a dedicated `sprint-${N}/integration` branch
+- Budget declared in prompt: max 15 file reads, 25 tool calls, 5-min wall-clock
+- Write-as-you-go: append a progress line to `${SESSION_TMP_DIR}/agent-ui-integrator-progress.md` after each checklist item completed
+- HEARTBEAT protocol (same snippet as Phase 2.3 dev agents — 12th bullet)
+
+**Fallback if agent fails**:
+- If the integration agent exits without completing the Integration Checklist, the orchestrator MUST:
+  1. Read the progress file to identify which checklist items completed.
+  2. For remaining items: either re-spawn with narrower scope (single checklist item) OR complete inline from the orchestrator if the remaining work is <3 checklist items.
+  3. Do NOT proceed to Phase 3.5.3 Integration Commit until every checklist item is confirmed done (either by agent or orchestrator) — a silent half-integration shipped to main has been the most common sprint-dev failure pattern.
 
 ### 3.5.2 Integration Checklist
 

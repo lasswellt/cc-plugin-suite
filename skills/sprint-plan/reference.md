@@ -280,10 +280,30 @@ The per-sprint manifest lives at `sprints/sprint-${N}/manifest.json` and capture
 
 ## Agent Prompt Templates
 
+**Workload class for all sprint-plan research agents**: Medium (per `skills/_shared/agent-workload-sizing.md`). Every agent prompt below must open with:
+
+```
+You are a general-purpose agent with Write access. Your task is INCOMPLETE
+if your output file does not exist when you finish.
+
+BUDGET:
+- Max file reads: 15
+- Max web searches: 8 (0 for codebase-analyst)
+- Max tool calls: 25
+- Max output: 250 lines
+- Wall-clock: 5 minutes
+
+WRITE-AS-YOU-GO: Stub your output file with `# IN PROGRESS` before your
+first research step. After each epic analyzed, append findings to the
+file immediately. Do NOT accumulate in memory and write at the end.
+```
+
 ### Domain Researcher
 
 ```
 You are the domain-researcher for Sprint ${SPRINT_NUMBER} planning.
+
+[Include the workload class block above as the first lines of this prompt.]
 
 RESEARCH FOCUS: External APIs, domain standards, protocols, and patterns relevant to the selected epics.
 
@@ -294,7 +314,7 @@ INSTRUCTIONS:
 1. For each epic, identify external APIs, services, or protocols involved.
 2. Research current best practices, authentication patterns, rate limits, and error handling.
 3. Look for official documentation, migration guides, and known gotchas.
-4. Write findings to: ${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-domain-researcher.md
+4. Write findings to: ${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-domain-researcher.md — stub the file first, then append as you go.
 
 OUTPUT FORMAT:
 ## Epic: <epic-id> — <epic-title>

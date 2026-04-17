@@ -13,6 +13,8 @@ argument-hint: "<mode: api|components|architecture|changelog|full>"
 ## Additional Resources
 - For documentation templates, Vue SFC parsing patterns, and Mermaid diagram examples, see:
 !cat skills/doc-gen/reference.md
+- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
+- For agent workload sizing (doc agents are Medium class), see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
 
 ---
 
@@ -190,7 +192,9 @@ If mode is `full`, create a team and spawn agents for parallel documentation gen
 
 Use `TeamCreate` to create a team named `doc-gen-<TIMESTAMP>`.
 
-Spawn 4 agents using `SendMessage`, each with `model: "sonnet"`, `mode: "auto"`, `run_in_background: true`:
+Spawn 4 agents using `SendMessage`, each with `model: "sonnet"`, `mode: "auto"`, `run_in_background: true`, **`subagent_type: general-purpose`**:
+
+> **Subagent type**: doc agents must Write their output files. Never use `Explore` or rely on SDK heuristics. See [subagent-types.md](/_shared/subagent-types.md).
 
 | Agent | Mode | Output File | Description |
 |-------|------|-------------|-------------|
@@ -199,12 +203,31 @@ Spawn 4 agents using `SendMessage`, each with `model: "sonnet"`, `mode: "auto"`,
 | `doc-architecture` | architecture | `docs/generated/architecture.md` | Architecture overview |
 | `doc-changelog` | changelog | `docs/generated/changelog.md` | Changelog |
 
+**Weight class**: Medium (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). Each agent prompt MUST declare:
+- Max 20 file reads (of source files to document)
+- Max 25 tool calls
+- Max 400-line output (doc-api, doc-components, doc-architecture) / 100-line (doc-changelog)
+- 5-minute wall-clock budget
+
 Each agent receives:
 1. The file inventory from Phase 1 (relevant subset for its mode).
 2. The stack profile from Phase 0.
 3. The appropriate template from `reference.md`.
 4. Its output file path.
-5. Instructions to write the full document, not incremental findings.
+5. **Incremental-write instructions** (replaces the previously banned "write the full document" rule): Stub the output file at start with `# IN PROGRESS`, then append each section as you complete it. If you time out or hit a budget ceiling, at least a partial document with completed sections is on disk rather than nothing.
+6. **HEARTBEAT + PARTIAL protocol** (add verbatim to prompt):
+   ```
+   HEARTBEAT: At the start of each section, append to your output file:
+     HEARTBEAT: <section-name> at <ISO-timestamp>
+
+   PARTIAL: If you have fewer than 3 tool calls remaining, STOP and append:
+     ---
+     PARTIAL: true
+     COMPLETED: [list of sections written]
+     MISSING: [list of sections skipped]
+     CONFIDENCE: low|medium|high
+     ---
+   ```
 
 ### 3.3 Single Mode — Direct Generation
 
@@ -217,12 +240,29 @@ Write to `docs/generated/<mode>.md`.
 Poll for agent completion by checking output files:
 
 ```bash
+MISSING_COUNT=0
+PARTIAL_COUNT=0
 for f in docs/generated/api.md docs/generated/components.md docs/generated/architecture.md docs/generated/changelog.md; do
-  [ -s "$f" ] && echo "DONE: $f" || echo "PENDING: $f"
+  if [ ! -s "$f" ]; then
+    echo "MISSING: $f" >&2
+    MISSING_COUNT=$((MISSING_COUNT+1))
+  elif grep -q '^PARTIAL: true' "$f"; then
+    echo "PARTIAL: $f" >&2
+    PARTIAL_COUNT=$((PARTIAL_COUNT+1))
+  else
+    echo "DONE: $f"
+  fi
 done
 ```
 
-Timeout after 5 minutes per agent. Proceed with whatever output is available.
+Timeout after 5 minutes per agent.
+
+**Handling outcomes**:
+- **Missing files**: retry the failed agent(s) once with a narrowed scope (single section only). If still failed, write a placeholder `# TBD — agent failed` to the missing file so Phase 4 assembly doesn't crash.
+- **PARTIAL files**: keep the partial content. In Phase 4 TOC, mark the partial documents with a `(PARTIAL)` suffix so the reader knows coverage is incomplete. Read the `MISSING:` list from the PARTIAL block and log to the activity feed.
+- **All DONE**: proceed normally.
+
+Do NOT silently produce a "complete" index that includes missing or partial docs without flagging them.
 
 ---
 
