@@ -1,6 +1,6 @@
 # Dependency Health — Reference Material
 
-Package manager command variants, license classification, health score formula, report templates for dep-health skill.
+Package manager command variants, license classification tables, health score formula, and report templates for the dep-health skill.
 
 ---
 
@@ -57,7 +57,7 @@ Package manager command variants, license classification, health score formula, 
 {"type":"auditAdvisory","data":{"advisory":{"module_name":"package-name","severity":"high","title":"Prototype Pollution","url":"...","patched_versions":">=1.2.3"}}}
 ```
 
-Parse per detected package manager.
+Parse accordingly based on the detected package manager.
 
 ---
 
@@ -67,46 +67,46 @@ Parse per detected package manager.
 
 | License | SPDX ID | Notes |
 |---------|---------|-------|
-| MIT License | `MIT` | Most common OSS license. No restrictions. |
-| Apache License 2.0 | `Apache-2.0` | Patent grant. Requires attribution, notice of changes. |
+| MIT License | `MIT` | Most common open-source license. No restrictions for any use. |
+| Apache License 2.0 | `Apache-2.0` | Includes patent grant. Requires attribution and notice of changes. |
 | BSD 2-Clause | `BSD-2-Clause` | Minimal restrictions. Attribution required. |
-| BSD 3-Clause | `BSD-3-Clause` | 2-Clause plus non-endorsement clause. |
-| ISC License | `ISC` | Equivalent to MIT. |
-| Zero-Clause BSD | `0BSD` | No requirements. |
+| BSD 3-Clause | `BSD-3-Clause` | Like 2-Clause plus non-endorsement clause. |
+| ISC License | `ISC` | Functionally equivalent to MIT. |
+| Zero-Clause BSD | `0BSD` | No requirements at all. |
 | The Unlicense | `Unlicense` | Public domain dedication. |
 | CC0 1.0 | `CC0-1.0` | Public domain dedication (Creative Commons). |
 | WTFPL | `WTFPL` | Permissive, no restrictions. |
-| Zlib License | `Zlib` | Permissive, MIT-like. |
+| Zlib License | `Zlib` | Permissive, similar to MIT. |
 
 ### Weak Copyleft Licenses (Review Required)
 
 | License | SPDX ID | Notes |
 |---------|---------|-------|
-| LGPL 2.1 | `LGPL-2.1` | Copyleft on modifications to library; not on consuming code. Safe for as-is npm use. |
-| LGPL 3.0 | `LGPL-3.0` | Like LGPL-2.1 with additions. Safe for unmodified npm use. |
-| Mozilla Public License 2.0 | `MPL-2.0` | File-level copyleft. MPL file mods must be shared; your files unaffected. |
-| Eclipse Public License 1.0 | `EPL-1.0` | MPL-like. Module-level copyleft. |
+| LGPL 2.1 | `LGPL-2.1` | Copyleft applies to modifications of the library itself, not to code that uses it. Generally safe for npm dependencies used as-is. |
+| LGPL 3.0 | `LGPL-3.0` | Same as LGPL-2.1 with additional provisions. Safe for unmodified npm dependency use. |
+| Mozilla Public License 2.0 | `MPL-2.0` | File-level copyleft. Modifications to MPL files must be shared, but your own files are unaffected. |
+| Eclipse Public License 1.0 | `EPL-1.0` | Similar to MPL. Module-level copyleft. |
 | Eclipse Public License 2.0 | `EPL-2.0` | Updated EPL with secondary license option. |
-| Common Development and Distribution License | `CDDL-1.0` | File-level copyleft, MPL-like. |
+| Common Development and Distribution License | `CDDL-1.0` | File-level copyleft similar to MPL. |
 
 ### Strong Copyleft Licenses (Flag for Legal Review)
 
 | License | SPDX ID | Risk | Notes |
 |---------|---------|------|-------|
-| GPL 2.0 | `GPL-2.0` | High | Derivatives must be GPL. Dependency use may trigger copyleft per linking. |
-| GPL 3.0 | `GPL-3.0` | High | GPL-2.0 plus anti-tivoization, patent grants. |
-| AGPL 3.0 | `AGPL-3.0` | Very High | Network use triggers copyleft. Network-accessible app using AGPL lib may require source release. |
-| Server Side Public License | `SSPL-1.0` | Very High | MongoDB's license. Broad copyleft for SaaS offerings. |
-| European Union Public License | `EUPL-1.1` | High | Strong copyleft, broad scope. |
+| GPL 2.0 | `GPL-2.0` | High | Derivative works must also be GPL. Using as a dependency may trigger copyleft obligations depending on linking. |
+| GPL 3.0 | `GPL-3.0` | High | Same as GPL-2.0 with additional provisions (anti-tivoization, patent grants). |
+| AGPL 3.0 | `AGPL-3.0` | Very High | Network use triggers copyleft. If your application uses an AGPL library and is accessible over a network, you may need to release your source code. |
+| Server Side Public License | `SSPL-1.0` | Very High | MongoDB's license. Extremely broad copyleft for offering as a service. |
+| European Union Public License | `EUPL-1.1` | High | Strong copyleft with broad scope. |
 
 ### Special Cases
 
 | License | SPDX ID | Action |
 |---------|---------|--------|
-| No license detected | `UNKNOWN` | Flag — may be proprietary. Check repo for LICENSE file. |
-| `UNLICENSED` | `UNLICENSED` | Flag — explicitly proprietary. Do not use without separate agreement. |
-| Dual license | `(MIT OR GPL-3.0)` | Use more permissive option (MIT here). |
-| Custom license | N/A | Flag for manual review. Read license text in package. |
+| No license detected | `UNKNOWN` | Flag — may be proprietary. Check the package's repository for a LICENSE file. |
+| `UNLICENSED` | `UNLICENSED` | Flag — explicitly proprietary. Should not be used unless you have a separate agreement. |
+| Dual license | `(MIT OR GPL-3.0)` | Use the more permissive option (MIT in this case). |
+| Custom license | N/A | Flag for manual review. Read the license text in the package. |
 
 ---
 
@@ -131,10 +131,10 @@ score = clamp(score, 0, 100)
 
 | Score Range | Grade | Interpretation |
 |-------------|-------|---------------|
-| 90-100 | A | Excellent — deps well-maintained, secure |
-| 80-89 | B | Good — minor issues; address next maintenance window |
-| 70-79 | C | Fair — notable issues; address soon |
-| 60-69 | D | Poor — significant security/compliance risks |
+| 90-100 | A | Excellent — dependencies are well-maintained and secure |
+| 80-89 | B | Good — minor issues to address in next maintenance window |
+| 70-79 | C | Fair — notable issues that should be addressed soon |
+| 60-69 | D | Poor — significant security or compliance risks |
 | 0-59 | F | Critical — immediate action required |
 
 ### Worked Examples
@@ -180,7 +180,7 @@ Final score: 100 - 23 = 77 (Grade: C)
 
 ## Report Template
 
-Template for full dependency health report written to `${SESSION_TMP_DIR}/dep-health-report.md`:
+Use this template for the full dependency health report written to `${SESSION_TMP_DIR}/dep-health-report.md`:
 
 ```markdown
 # Dependency Health Report
@@ -234,7 +234,7 @@ Template for full dependency health report written to `${SESSION_TMP_DIR}/dep-he
 |---------|-------------|-----|---------------|-------------------|
 | <pkg> | <title> | <CVE-ID> | Yes/No | <version> |
 
-> If none: "No known vulnerabilities detected."
+> If no vulnerabilities: "No known vulnerabilities detected."
 
 ---
 
@@ -258,7 +258,7 @@ Template for full dependency health report written to `${SESSION_TMP_DIR}/dep-he
 |---------|---------|--------|------|---------|
 | <pkg> | <current> | <latest> | production/dev | Yes/No |
 
-> If all current: "All dependencies are up to date."
+> If all up to date: "All dependencies are up to date."
 
 ---
 
@@ -289,7 +289,7 @@ Template for full dependency health report written to `${SESSION_TMP_DIR}/dep-he
 
 ## Recommended Actions
 
-Prioritized actions to improve dependency health:
+Prioritized list of actions to improve dependency health:
 
 1. **[CRITICAL]** <action> — <rationale>
 2. **[HIGH]** <action> — <rationale>
@@ -300,7 +300,7 @@ Prioritized actions to improve dependency health:
 
 ## Upgrade Log
 
-> Included only when mode=upgrade used.
+> Section included only when mode=upgrade was used.
 
 | Package | From | To | Type | Tests | Build | Status |
 |---------|------|----|------|-------|-------|--------|

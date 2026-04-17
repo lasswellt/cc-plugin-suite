@@ -1,28 +1,28 @@
 # Refactor — Reference Material
 
-Safe refactoring patterns, verification strategies, incremental migration patterns.
+Safe refactoring patterns, verification strategies, and incremental migration patterns.
 
 ---
 
 ## Safe Refactoring Patterns
 
 ### Extract Function
-**When:** Code block repeated or function exceeds 50 lines with distinct logical sections.
+**When:** A code block is repeated or a function exceeds 50 lines with distinct logical sections.
 **Steps:**
-1. Identify extractable block and its inputs/outputs
-2. Create new function with proper TypeScript signature
-3. Replace original block with call to new function
+1. Identify the extractable block and its inputs/outputs
+2. Create the new function with proper TypeScript signature
+3. Replace the original block with a call to the new function
 4. Verify: type-check, run related tests
 5. Commit
 
 **Risk:** Low — purely structural change.
 
 ### Extract Component (Vue)
-**When:** Vue component exceeds 300 lines or has reusable section.
+**When:** A Vue component exceeds 300 lines or has a reusable section.
 **Steps:**
-1. Identify extractable template section and required props/emits
-2. Create new `.vue` file with proper prop/emit interfaces
-3. Replace original section with new component
+1. Identify the extractable template section and its required props/emits
+2. Create a new `.vue` file with proper prop/emit interfaces
+3. Replace the original section with the new component
 4. Pass required data as props, connect emits to parent handlers
 5. Verify: type-check, mount test, visual inspection
 6. Commit
@@ -30,10 +30,10 @@ Safe refactoring patterns, verification strategies, incremental migration patter
 **Risk:** Low-Medium — may break slot or event chains.
 
 ### Rename/Move
-**When:** File, function, or variable has misleading name or wrong location.
+**When:** A file, function, or variable has a misleading name or wrong location.
 **Steps:**
 1. Find all references (imports, usages, tests)
-2. Rename/move source
+2. Rename/move the source
 3. Update all import paths
 4. Update barrel file exports
 5. Verify: type-check (catches missed references), run full test suite
@@ -42,35 +42,35 @@ Safe refactoring patterns, verification strategies, incremental migration patter
 **Risk:** Medium — missed references cause runtime errors.
 
 ### Extract Type/Interface
-**When:** Inline type definitions repeated across files.
+**When:** Inline type definitions are repeated across files.
 **Steps:**
-1. Identify repeated type pattern
-2. Create shared type file in `types/`
-3. Export type
+1. Identify the repeated type pattern
+2. Create a shared type file in `types/`
+3. Export the type
 4. Replace inline definitions with imports
 5. Verify: type-check
 6. Commit
 
-**Risk:** Low — types compile-time only.
+**Risk:** Low — types are compile-time only.
 
 ### Inline / Remove Dead Code
-**When:** Function, variable, or file unused.
+**When:** A function, variable, or file is unused.
 **Steps:**
 1. Verify no references exist (grep for imports, usages)
-2. Check git history — recently added? (may be in-progress work)
-3. Remove code
-4. Remove now-empty barrel exports
+2. Check git history — was it recently added? (may be in-progress work)
+3. Remove the code
+4. Remove any now-empty barrel exports
 5. Verify: type-check, build
 6. Commit
 
-**Risk:** Medium — may remove code dynamically referenced.
+**Risk:** Medium — may remove code that's dynamically referenced.
 
 ### Replace Conditional with Strategy/Map
-**When:** Long if/else or switch statement maps inputs to behaviors.
+**When:** A long if/else or switch statement maps inputs to behaviors.
 **Steps:**
-1. Identify mapping pattern
-2. Create lookup object or Map
-3. Replace conditional with lookup
+1. Identify the mapping pattern
+2. Create a lookup object or Map
+3. Replace the conditional with a lookup
 4. Verify: all branches still covered by tests
 5. Commit
 
@@ -98,7 +98,7 @@ Safe refactoring patterns, verification strategies, incremental migration patter
 ## Incremental Migration Patterns
 
 ### Strangler Fig
-Replace module gradually by routing new calls to replacement while keeping old module functional.
+Replace a module gradually by routing new calls to the replacement while keeping the old module functional.
 
 ```
 Phase 1: Create new module alongside old
@@ -108,7 +108,7 @@ Phase 4: Remove old module when no callers remain
 ```
 
 ### Branch by Abstraction
-Introduce abstraction layer to swap implementations.
+Introduce an abstraction layer to swap implementations.
 
 ```
 Phase 1: Create interface/type for the behavior
@@ -142,13 +142,13 @@ refactor(<scope>): <what was changed>
 - All tests pass
 ```
 
-**Never combine** refactoring commit with feature or bug fix commit. Allows safe revert of individual steps if something breaks downstream.
+**Never combine** a refactoring commit with a feature or bug fix commit. This allows safe revert of individual steps if something breaks downstream.
 
 ---
 
 ## Risk Assessment
 
-Before starting, assess refactoring risk:
+Before starting, assess the refactoring risk:
 
 | Factor | Low Risk | High Risk |
 |--------|----------|-----------|
@@ -158,7 +158,7 @@ Before starting, assess refactoring risk:
 | Public API | Internal module only | Exported/consumed by external code |
 | Timing | Before a sprint, no deadline | During active sprint, tight deadline |
 
-If risk high, consider:
+If risk is high, consider:
 1. Writing tests first (increase coverage to >80%)
-2. Breaking refactoring into smaller, independently verifiable steps
-3. Using feature flags to enable/disable refactored code
+2. Breaking the refactoring into smaller, independently verifiable steps
+3. Using feature flags to enable/disable the refactored code

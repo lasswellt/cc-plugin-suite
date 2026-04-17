@@ -1,6 +1,6 @@
 # Test Generation — Reference Material
 
-Test patterns per framework/scenario.
+Test pattern examples for different frameworks and testing scenarios.
 
 ---
 
@@ -446,8 +446,8 @@ it('should display admin badge for admin users', () => {
 
 Every test follows Arrange-Act-Assert:
 
-- **Arrange**: test data, mocks, env, initial state.
-- **Act**: call function, trigger event, mount component.
-- **Assert**: return values, mock calls, state changes.
+- **Arrange**: Create test data, set up mocks, configure environment, initialize state.
+- **Act**: Call the function, trigger the event, mount the component.
+- **Assert**: Check return values, verify mock calls, validate state changes.
 
-Separate sections via blank lines or comments. Simple tests: inline OK. Complex tests: use explicit `// Arrange`, `// Act`, `// Assert` comments.
+Keep sections separated with blank lines or comments. For simple tests, inline is fine. For complex tests, use explicit `// Arrange`, `// Act`, `// Assert` comments.

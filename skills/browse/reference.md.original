@@ -391,16 +391,16 @@ Tracks pages discovered but not yet visited, plus URL pattern dedup.
 ```
 
 **Fields:**
-- `base_url`: Dev server origin (e.g., `http://localhost:3000`)
-- `queue[]`: Ordered pages to visit. Sorted by `priority` descending at read time.
+- `base_url`: The dev server origin (e.g., `http://localhost:3000`)
+- `queue[]`: Ordered list of pages to visit. Sorted by `priority` descending at read time.
 - `queue[].url`: Relative path (e.g., `/dashboard/analytics`)
-- `queue[].parent`: Page URL where link was discovered
-- `queue[].nav_context`: Where link found: `root`, `nav`, `sidebar`, `content`, `footer`
+- `queue[].parent`: The page URL where this link was discovered
+- `queue[].nav_context`: Where the link was found: `root`, `nav`, `sidebar`, `content`, `footer`
 - `queue[].priority`: Computed score: `(10 - depth) × context_multiplier`
-- `queue[].depth`: Clicks from root to reach page
-- `queue[].discovered_tick`: Tick that found link
+- `queue[].depth`: Number of clicks from root to reach this page
+- `queue[].discovered_tick`: Which tick found this link
 - `url_patterns_seen[]`: Normalized URL patterns for dedup (e.g., `/users/:id`)
-- `tick_count`: Total ticks executed
+- `tick_count`: Total ticks executed so far
 - `started_at`: ISO-8601 timestamp of first tick
 
 ### `docs/crawls/crawl-visited.json`
@@ -442,7 +442,7 @@ Tracks pages already crawled and their status.
 
 ### `docs/crawls/hierarchy.json`
 
-Navigational graph as adjacency list. Each node = one page. Web is directed graph, not tree — `/settings` may be linked from global nav and `/dashboard/preferences`. `discovered_from` determines display tree position; `also_linked_from` preserves full link graph.
+Navigational graph stored as an adjacency list. Each node represents one page. The web is a directed graph, not a tree — a page like `/settings` may be linked from both the global nav and from `/dashboard/preferences`. The `discovered_from` field determines the display tree position; `also_linked_from` preserves the full link graph.
 
 ```json
 {
@@ -473,11 +473,11 @@ Navigational graph as adjacency list. Each node = one page. Web is directed grap
 - `nodes{}`: Keyed by relative URL path
 - `title`: Page title from `<title>` or first `<h1>`
 - `depth`: Distance from root (0 for `/`). Based on `discovered_from` chain, not shortest path.
-- `discovered_from`: URL of page that first linked here (null for root). Determines position in display tree.
-- `also_linked_from[]`: Other pages that also link here. Preserves full link graph for navigation analysis.
-- `children[]`: Internal URLs discovered on this page
-- `nav_context`: Where this page's link appeared on parent
-- `external_links[]`: External URLs found (informational only)
+- `discovered_from`: URL of the page that first linked here (null for root). Determines position in the display tree.
+- `also_linked_from[]`: Other pages that also link to this page. Preserves the full link graph for navigation analysis.
+- `children[]`: URLs discovered on this page that are internal
+- `nav_context`: Where this page's link appeared on its parent
+- `external_links[]`: External URLs found on this page (informational only)
 
 ### `docs/crawls/crawl-ledger.jsonl`
 
@@ -490,15 +490,15 @@ Append-only JSONL findings log. One finding per line.
 
 **Fields:**
 - `id`: Dedup key: `{type}-{page}-{short_hash}`
-- `page`: Route where issue was found
+- `page`: Route where the issue was found
 - `type`: `console_error`, `console_warning`, `network_failure`, `content_quality`, `render_issue`
 - `severity`: `critical`, `error`, `warning`, `info`
-- `category`: From Error Classification Taxonomy (above)
+- `category`: From the Error Classification Taxonomy (above)
 - `message`: Full error message
 - `source_file`: Source file:line if identifiable
 - `status`: `found`, `fixed`, `needs-human`, `wontfix`, `noise`
-- `found_tick`: Tick when discovered
-- `fixed_tick`: Tick when fixed (null if not fixed)
+- `found_tick`: Tick number when discovered
+- `fixed_tick`: Tick number when fixed (null if not fixed)
 
 ### `docs/crawls/fix-log.jsonl`
 
@@ -543,7 +543,7 @@ Snapshot of the most recent tick for quick status checks.
 
 ### Dynamic Segment Patterns
 
-When new URL found, normalize to pattern for dedup:
+When a new URL is found, normalize it to a pattern for dedup:
 
 | Pattern | Regex | Replacement | Example |
 |---------|-------|-------------|---------|
@@ -558,11 +558,11 @@ When new URL found, normalize to pattern for dedup:
 1. Parse URL, resolve relative paths against `BASE_URL`
 2. Decode percent-encoded characters (`%20` → space, `%C3%A9` → `é`) before comparison
 3. Extract pathname only (discard origin, query, fragment)
-4. **Hash routing check**: if app uses hash-based routing (`/#/page`), treat hash as pathname. Detect if `BASE_URL` contains `/#/` or root page has `#/` in links.
+4. **Hash routing check**: if the app uses hash-based routing (`/#/page`), treat the hash as the pathname. Detect by checking if `BASE_URL` contains `/#/` or if root page has `#/` in its links.
 5. Remove trailing slash (except for root `/`)
 6. Apply dynamic segment patterns to each path segment
 7. Compare normalized pattern against `url_patterns_seen[]`
-8. If pattern seen → skip. If new → add to `url_patterns_seen[]` and enqueue.
+8. If pattern already seen → skip. If new → add to `url_patterns_seen[]` and enqueue.
 
 ### Edge Cases
 
@@ -595,11 +595,11 @@ When new URL found, normalize to pattern for dedup:
 
 ## Loop Mode — Navigation Context Classification
 
-When extracting links, classify each by DOM context to prioritize navigation-critical pages.
+When extracting links, classify each by its DOM context to prioritize navigation-critical pages.
 
 ### Detection Method
 
-For each `<a>` element, check ancestor chain:
+For each `<a>` element, check its ancestor chain:
 
 | Context | Detection | Priority Multiplier |
 |---------|-----------|-------------------|
@@ -610,7 +610,7 @@ For each `<a>` element, check ancestor chain:
 
 **Priority formula**: `(10 - depth) × context_multiplier`
 
-Where `depth` = current page's depth + 1 (new link is one level deeper).
+Where `depth` is the current page's depth + 1 (the new link will be one level deeper).
 
 ### Examples
 
@@ -644,18 +644,18 @@ Target: < 2 minutes per tick.
 
 ## Loop Mode — Completion Criteria
 
-Crawl is **complete** when ALL true:
+The crawl is **complete** when ALL of these are true:
 
-1. `crawl-queue.json` queue empty (no more pages to visit)
-2. All pages in `crawl-visited.json` re-verified (status `clean`, `fixed`, or `re-verified`)
+1. `crawl-queue.json` queue is empty (no more pages to visit)
+2. All pages in `crawl-visited.json` have been re-verified (status is `clean`, `fixed`, or `re-verified`)
 3. OR: 3 consecutive ticks discovered zero new links and queue remains empty
 
 After completion:
 - Run cross-page visual audit (Phase 7.4)
 - Set `latest-tick.json` status to `"complete"`
-- Print full site map tree
-- Generate final report summarizing findings, fixes, visual audit, hierarchy
-- Subsequent ticks detect `complete` status and exit with: `[browse] Crawl already complete. To re-crawl, delete docs/crawls/ and re-run.`
+- Print the full site map tree
+- Generate a final report summarizing all findings, fixes, visual audit, and the hierarchy
+- Subsequent ticks will detect `complete` status and exit with: `[browse] Crawl already complete. To re-crawl, delete docs/crawls/ and re-run.`
 
 ---
 
@@ -663,7 +663,7 @@ After completion:
 
 ### Structural Metadata Schema
 
-Extracted from accessibility snapshot every tick. Stored in `crawl-visited.json` under each page's `"structure"` field.
+Extracted from the accessibility snapshot on every tick. Stored in `crawl-visited.json` under each page's `"structure"` field.
 
 ```json
 {
@@ -717,18 +717,18 @@ Visual findings use `type: "visual"` in the crawl ledger. Subcategories:
 
 ### Screenshot Safety Rules
 
-Screenshots are powerful but expensive. Follow strictly:
+Screenshots are a powerful but expensive tool. Follow these rules strictly:
 
-1. **Resize browser to 1280×720** before every screenshot — prevents oversized images that crash session
-2. **Viewport-only screenshots** — NEVER full-page. Long pages can exceed 8000px height, causing unrecoverable API errors
-3. **One screenshot per tick maximum** — each costs ~1,600 tokens; multiple fill context rapidly
+1. **Resize browser to 1280×720** before every screenshot — prevents oversized images that crash the session
+2. **Viewport-only screenshots** — NEVER full-page. Long pages can produce images exceeding 8000px height, causing unrecoverable API errors
+3. **One screenshot per tick maximum** — each costs ~1,600 tokens; multiple screenshots fill context rapidly
 4. **PNG format preferred** — lossless, sharper text for analysis
-5. **Conditional triggers only** — do NOT screenshot every page. Only when structural analysis flags anomaly or every 10th tick.
-6. **Disable animations before capture** — inject CSS `* { animation: none !important; transition: none !important; }` via `browser_evaluate` before screenshot to avoid partial animation frames
+5. **Conditional triggers only** — do NOT screenshot every page. Only when structural analysis flags an anomaly or on every 10th tick.
+6. **Disable animations before capture** — inject CSS `* { animation: none !important; transition: none !important; }` via `browser_evaluate` before taking screenshot to avoid partial animation frames
 
 ### Cross-Page Comparison: Anomaly Detection
 
-After 10+ pages visited, structural metadata enables pattern-based anomaly detection without screenshots:
+After 10+ pages have been visited, structural metadata enables pattern-based anomaly detection without screenshots:
 
 **Global element detection** (identify elements present on 80%+ of pages):
 ```
@@ -817,20 +817,20 @@ For each issue found, return:
 
 **When mode is `--loop`, Phases 0–2 still execute normally (session registration, prerequisites, auth check), then skip Phases 3–6 and execute these loop-specific phases instead.**
 
-Loop mode designed for `/loop 5m /blitz:browse --loop`. Each tick visits one page, discovers links, fixes issues, exits. Over many ticks, builds complete navigational hierarchy of site.
+Loop mode is designed for `/loop 5m /blitz:browse --loop`. Each tick visits one page, discovers links, fixes issues, and exits. Over many ticks, this builds a complete navigational hierarchy of the site.
 
 **Tick lifecycle**: `SEED → CRAWL → CRAWL → ... → RE-VERIFY → COMPLETE`
 
-**Tick budget**: < 2 minutes per tick (hard timeout: 100 seconds). 5-minute loop interval provides buffer. If any phase exceeds remaining time, skip to Phase 7-LOOP (Save State) and exit gracefully.
+**Tick budget**: < 2 minutes per tick (hard timeout: 100 seconds). The 5-minute loop interval provides buffer. If any phase exceeds remaining time, skip to Phase 7-LOOP (Save State) and exit gracefully.
 
 **Autonomy**: Full. Auto-approve all, auto-commit+push, no user prompts.
 
 **Crawl limits** (prevent crawler traps):
-- **Max depth**: 8 levels from root. Deeper pages not enqueued.
+- **Max depth**: 8 levels from root. Pages deeper than this are not enqueued.
 - **Max pages**: 500 total. Override with `docs/crawls/.crawl-config.json` → `{ "max_pages": 1000 }`.
-- **Max ticks**: 300 (25 hours at 5-min intervals). After, complete regardless of queue.
+- **Max ticks**: 300 (25 hours at 5-min intervals). After this, complete regardless of queue.
 
-**Browser lifecycle**: Playwright MCP browser may or may not persist between ticks — each tick must NOT assume browser state from previous tick. Always start with `browser_navigate` to target page. Auth state (cookies, localStorage) managed by MCP server; if auth lost, recovery procedure handles it.
+**Browser lifecycle**: The Playwright MCP browser may or may not persist between ticks — each tick must NOT assume browser state from the previous tick. Always start with `browser_navigate` to the target page. Auth state (cookies, localStorage) is managed by the MCP server; if auth is lost, the recovery procedure handles it.
 
 ---
 
@@ -839,16 +839,16 @@ Loop mode designed for `/loop 5m /blitz:browse --loop`. Each tick visits one pag
 #### 3.0 Tick Overlap Guard
 Before loading state, check for concurrent ticks:
 1. Read `docs/crawls/latest-tick.json` (if exists)
-2. If `updated_at` less than 2 minutes ago → another tick likely still running. Exit with: `[browse] Tick overlap detected. Previous tick updated ${seconds}s ago. Skipping.`
+2. If `updated_at` is less than 2 minutes ago → another tick is likely still running. Exit with: `[browse] Tick overlap detected. Previous tick updated ${seconds}s ago. Skipping.`
 3. If `status` is `"auth_lost"` → exit with: `[browse] Auth lost. Please re-authenticate and delete docs/crawls/latest-tick.json to resume.`
 4. If `status` is `"complete"` → exit with: `[browse] Crawl complete. To re-crawl, delete docs/crawls/ and re-run.`
 5. If `status` is `"server_down"` → proceed (will retry server connection)
 
 #### 3.1 Load or Initialize State
 1. Check if `docs/crawls/crawl-queue.json` exists.
-2. **If NOT exists** (first tick / SEED):
+2. **If it does NOT exist** (first tick / SEED):
    - Create `docs/crawls/` directory
-   - Initialize `crawl-queue.json` with root URL `/` as only entry:
+   - Initialize `crawl-queue.json` with the root URL `/` as the only entry:
      ```json
      {
        "base_url": "<BASE_URL>",
@@ -861,16 +861,16 @@ Before loading state, check for concurrent ticks:
      }
      ```
    - Initialize empty `crawl-visited.json`, `hierarchy.json`, `crawl-ledger.jsonl`, `fix-log.jsonl`, `latest-tick.json`
-3. **If exists** (subsequent tick):
+3. **If it exists** (subsequent tick):
    - Load all state files from `docs/crawls/`
-   - If any JSON fails to parse: rename to `.bak`, log warning, attempt reconstruction from `crawl-ledger.jsonl` (append-only, most reliable). If reconstruction fails, re-seed from scratch.
+   - If any JSON file fails to parse: rename it to `.bak`, log warning, attempt to reconstruct from `crawl-ledger.jsonl` (append-only, most reliable). If reconstruction fails, re-seed from scratch.
    - Increment `tick_count`
    - Check crawl limits: if `tick_count > max_ticks` or visited pages > `max_pages`, set tick type to COMPLETE.
 4. **Determine tick type**:
-   - `SEED` — first tick, queue just initialized
+   - `SEED` — first tick, queue was just initialized
    - `CRAWL` — queue has entries
-   - `RE-VERIFY` — queue empty, but `crawl-visited.json` has pages with `status: "has_issues"` not yet re-verified
-   - `COMPLETE` — queue empty AND all pages clean or re-verified. Print final site map and exit.
+   - `RE-VERIFY` — queue is empty, but `crawl-visited.json` has pages with `status: "has_issues"` that haven't been re-verified
+   - `COMPLETE` — queue is empty AND all pages are clean or re-verified. Print final site map and exit.
 
 See reference.md for full state file schemas.
 
@@ -881,16 +881,16 @@ See reference.md for full state file schemas.
 #### 4.1 Pop Next Page
 - Sort queue by `priority` (descending)
 - Pop the highest-priority entry
-- In RE-VERIFY mode: instead pop first page with `status: "has_issues"` from `crawl-visited.json`
+- In RE-VERIFY mode: instead pop the first page with `status: "has_issues"` from `crawl-visited.json`
 
 #### 4.2 Navigate
 - Navigate to `BASE_URL + page.url`
-- **Wait for full page load** — critical, page must be fully rendered:
+- **Wait for full page load** — this is critical, the page must be fully rendered:
   1. Wait for network idle (no pending requests for 2 seconds)
   2. Wait for content landmarks (heading, main content area, or data table visible)
   3. Wait for loading indicators to disappear (spinners, skeletons, progress bars, `[aria-busy="true"]`)
-  4. Maximum wait: 15 seconds, then proceed with whatever loaded
-  5. After wait, pause additional 2 seconds for deferred rendering (lazy-loaded images, intersection observers)
+  4. Maximum wait: 15 seconds, then proceed with whatever is loaded
+  5. After the wait, pause an additional 2 seconds for any deferred rendering (lazy-loaded images, intersection observers)
 
 #### 4.3 Capture Console Errors
 - Read all console messages since navigation
@@ -904,29 +904,29 @@ See reference.md for full state file schemas.
 - Ignore known noise: favicon.ico 404, browser extension requests, analytics failures
 
 #### 4.5 Snapshot, Content Quality, and Structural Metadata
-- Take accessibility snapshot
+- Take an accessibility snapshot
 - **Content quality checks:**
   - **Mock/placeholder data**: Text containing "Lorem ipsum", "TODO", "FIXME", "example.com", "John Doe", "Jane Doe"
   - **Broken images**: Images with error state or empty `src`
   - **Dead links**: Links with `href="#"` or `href="javascript:void(0)"`
   - **Empty containers**: Visible sections with no content (missing empty state)
 
-- **Extract structural metadata** from snapshot (see reference.md for full schema). Record for each page:
+- **Extract structural metadata** from the snapshot (see reference.md for full schema). Record for each page:
   - `has_breadcrumbs`, `has_pagination`, `has_sidebar`, `has_search`, `has_footer`
   - `card_count`, `table_row_count`, `image_count`, `broken_image_count`
-  - `heading_levels` (which h1-h6 present)
-  - `nav_item_count` (items in primary nav)
+  - `heading_levels` (which h1-h6 are present)
+  - `nav_item_count` (how many items in primary nav)
   - `loading_indicators_present` (spinners, skeletons, `[aria-busy="true"]` still visible)
   - `empty_containers` (sections with no content and no empty-state message)
   - `content_density` — rough estimate: `low` (mostly whitespace), `medium`, `high`
 
-  Store metadata in `crawl-visited.json` under page entry as `"structure": {...}`. Enables cross-page comparison after enough pages visited (see Phase 5.6).
+  Store this metadata in `crawl-visited.json` under the page entry as `"structure": {...}`. This enables cross-page comparison after enough pages are visited (see Phase 5.6).
 
 #### 4.6 Safe Interactions
 Same rules as Phase 3.5 in non-loop mode. Interact ONLY with:
 - **Tabs**: Click each tab, snapshot after switch
 - **Pagination**: Click "next page" if available, snapshot
-- **Sort headers**: Click table column header, snapshot
+- **Sort headers**: Click a table column header, snapshot
 - **Accordions/Expanders**: Click to expand, snapshot
 
 After each interaction:
@@ -934,27 +934,27 @@ After each interaction:
 - Check for new console errors and network failures
 - **Re-snapshot** — interactions (especially tabs) often reveal new content with new links. Collect links from each post-interaction snapshot for Phase 5-LOOP.
 
-**NEVER interact with**: buttons (except tabs), form inputs, toggles, checkboxes, links that navigate away, anything inside modal/dialog.
+**NEVER interact with**: buttons (except tabs), form inputs, toggles, checkboxes, links that navigate away, anything inside a modal/dialog.
 
 #### 4.7 Extract Page Title
-- Read page `<title>` or first `<h1>` from snapshot
-- Store as page's display name in hierarchy
+- Read the page `<title>` or the first `<h1>` from the snapshot
+- Store as the page's display name in the hierarchy
 
 #### 4.8 Visual Analysis (Conditional Screenshot)
 
-**This step is NOT taken on every tick.** Take screenshot and perform visual analysis ONLY when one or more triggers met:
+**This step is NOT taken on every tick.** Take a screenshot and perform visual analysis ONLY when one or more of these triggers are met:
 
-1. **Empty container detected** — content area blank with no empty-state message
+1. **Empty container detected** — a content area is blank with no empty-state message
 2. **Loading indicators still present** — spinners, skeletons, or `[aria-busy]` visible after full wait
-3. **Structural anomaly** — page missing pattern that 80%+ of visited pages have (e.g., no breadcrumbs when most pages have them). Requires 10+ pages visited.
-4. **Content density outlier** — page has significantly less content than sibling pages at same hierarchy depth
+3. **Structural anomaly** — page is missing a pattern that 80%+ of visited pages have (e.g., no breadcrumbs when most pages have them). Requires 10+ pages visited.
+4. **Content density outlier** — page has significantly less content than sibling pages at the same hierarchy depth
 5. **Every 10th tick** — periodic visual check regardless of triggers
 
 **When triggered:**
 
 1. **Resize browser** to 1280×720 (prevents oversized screenshot issues)
-2. Take **viewport-only screenshot** (never full-page — long pages can exceed 8000px and crash session)
-3. Analyze screenshot for:
+2. Take a **viewport-only screenshot** (never full-page — long pages can exceed 8000px and crash the session)
+3. Analyze the screenshot for:
 
    **Data completeness:**
    - Tables with headers but no rows
@@ -977,11 +977,11 @@ After each interaction:
 
    **Design consistency** (requires 10+ pages visited — compare against accumulated structural metadata):
    - Typography inconsistencies (different heading sizes for same-level content)
-   - Color usage not matching established palette
+   - Color usage that doesn't match the established palette
    - Component variants used inconsistently (e.g., primary buttons where siblings use secondary)
    - Missing UI patterns present on sibling pages (pagination, search, filters)
 
-4. Record visual findings in ledger with `type: "visual"` and subcategory:
+4. Record visual findings in the ledger with `type: "visual"` and a subcategory:
    - `visual_data_missing` — page appears to have incomplete or missing data
    - `visual_loading_stuck` — loading state that didn't resolve
    - `visual_layout_broken` — layout/overflow/overlap issue
@@ -995,11 +995,11 @@ After each interaction:
 ### Phase 5-LOOP: Extract Links & Build Hierarchy
 
 #### 5.1 Extract Links
-Combine links from ALL snapshots taken during Phase 4 — initial page snapshot AND every post-interaction snapshot (tabs, pagination, accordions may reveal new links). Deduplicate by href.
+Combine links from ALL snapshots taken during Phase 4 — the initial page snapshot AND every post-interaction snapshot (tabs, pagination, accordions may reveal new links). Deduplicate by href.
 
-Use `browser_snapshot` to find all link elements. Accessibility tree returns refs for clickable elements including links with text and href.
+Use `browser_snapshot` to find all link elements. The accessibility tree returns refs for clickable elements including links with their text and href.
 
-**Fallback**: If snapshot doesn't expose hrefs, use `browser_evaluate` with:
+**Fallback**: If the snapshot doesn't expose hrefs, use `browser_evaluate` with:
 ```javascript
 JSON.stringify(
   Array.from(document.querySelectorAll('a[href]')).map(a => ({
@@ -1013,9 +1013,9 @@ JSON.stringify(
 ```
 
 #### 5.2 Normalize & Filter URLs
-For each extracted link, apply normalization rules from reference.md:
+For each extracted link, apply the normalization rules from reference.md:
 
-1. Parse URL. If relative, resolve against `BASE_URL`.
+1. Parse the URL. If relative, resolve against `BASE_URL`.
 2. **Skip if**:
    - External origin (different host than `BASE_URL`)
    - `mailto:`, `tel:`, `javascript:`, `data:` scheme
@@ -1026,18 +1026,18 @@ For each extracted link, apply normalization rules from reference.md:
 3. Strip hash fragments (`#section` → removed)
 4. Strip query parameters (visit base URL only)
 5. Normalize trailing slashes (remove trailing `/`)
-6. **Dynamic segment dedup**: Normalize URL to pattern:
+6. **Dynamic segment dedup**: Normalize the URL to a pattern:
    - UUID segments: `/[0-9a-f]{8}-[0-9a-f]{4}-...` → `:uuid`
    - Numeric IDs: `/\d+` (path segment that is all digits) → `:id`
    - Date strings: `/\d{4}-\d{2}-\d{2}` → `:date`
    - Firestore-style IDs: `/[A-Za-z0-9]{20,}` → `:docid`
-   - Check if normalized pattern exists in `url_patterns_seen[]`. If so, skip.
-   - If not, add pattern to `url_patterns_seen[]`.
+   - Check if the normalized pattern exists in `url_patterns_seen[]`. If so, skip.
+   - If not, add the pattern to `url_patterns_seen[]`.
 
 #### 5.3 Classify & Enqueue
-For each link passing filtering:
+For each link that passes filtering:
 1. Classify navigation context:
-   - **nav**: Inside `<nav>`, `<header>`, or `role="navigation"` → priority multiplier ×2.0
+   - **nav**: Link is inside `<nav>`, `<header>`, or `role="navigation"` → priority multiplier ×2.0
    - **sidebar**: Inside `<aside>`, `role="complementary"`, or `.sidebar` → multiplier ×1.5
    - **content**: In main content area → multiplier ×1.0
    - **footer**: Inside `<footer>` → multiplier ×0.5
@@ -1049,16 +1049,16 @@ For each link passing filtering:
    ```
 
 #### 5.4 Update Hierarchy
-1. Add current page as node in `hierarchy.json` (if not already present):
+1. Add current page as a node in `hierarchy.json` (if not already present):
    ```json
    { "title": "Page Title", "depth": 1, "discovered_from": "/", "also_linked_from": [], "children": [], "nav_context": "nav", "external_links": [] }
    ```
-   - `discovered_from` = page that first linked here (determines tree position)
-   - `also_linked_from` captures additional pages linking here (preserves full link graph)
-2. If page already exists in hierarchy but discovered again from different parent, append to `also_linked_from[]`
-3. Add newly discovered internal links as children of current node
-4. Record any external links in node's `external_links[]` array
-5. If current page's `discovered_from` node exists, ensure this page is in its `children[]`
+   - `discovered_from` is the page that first linked here (determines tree position)
+   - `also_linked_from` captures additional pages that link here (preserves full link graph)
+2. If the page already exists in the hierarchy but is discovered again from a different parent, append to `also_linked_from[]`
+3. Add newly discovered internal links as children of the current node
+4. Record any external links in the node's `external_links[]` array
+5. If the current page's `discovered_from` node exists, ensure this page is in its `children[]`
 
 #### 5.5 Update Visited Map
 Add/update the current page in `crawl-visited.json`:
@@ -1092,22 +1092,22 @@ Add/update the current page in `crawl-visited.json`:
 
 #### 5.6 Cross-Page Structural Comparison
 
-**Run only after 10+ pages visited.** Compare current page's structural metadata against accumulated patterns:
+**Run only after 10+ pages have been visited.** Compare the current page's structural metadata against accumulated patterns:
 
 1. **Compute pattern baselines** from all visited pages:
    - What percentage have breadcrumbs? Pagination? Sidebar? Search?
-   - Median card count, table row count, image count per page?
-   - Typical nav item count?
+   - What is the median card count, table row count, image count per page?
+   - What is the typical nav item count?
 
-2. **Flag anomalies** when current page deviates:
+2. **Flag anomalies** when the current page deviates:
    - **Missing common element**: If 80%+ of pages have breadcrumbs but this page doesn't → finding: `visual_design_inconsistency`
    - **Structural outlier**: If sibling pages (same hierarchy depth or same parent section) have 10+ table rows but this page has 0 → finding: `visual_data_missing`
-   - **Nav count mismatch**: If nav item count differs from mode → possible conditional nav rendering issue
-   - **Content density outlier**: If page is `low` density but siblings are `medium`/`high` → finding: `visual_data_missing`
+   - **Nav count mismatch**: If nav item count differs from the mode → possible conditional nav rendering issue
+   - **Content density outlier**: If this page is `low` density but siblings are `medium`/`high` → finding: `visual_data_missing`
 
-3. Record structural comparison findings in ledger with `type: "visual"` and relevant subcategory.
+3. Record structural comparison findings in the ledger with `type: "visual"` and relevant subcategory.
 
-4. **Print anomalies** in tick summary when found:
+4. **Print anomalies** in the tick summary when found:
    ```
    [browse] Tick #22 — /projects
      ├─ ...
@@ -1119,42 +1119,42 @@ Add/update the current page in `crawl-visited.json`:
 
 ### Phase 6-LOOP: Auto-Fix
 
-For each Critical and Error finding on current page (max 2 fixes per tick):
+For each Critical and Error finding on the current page (max 2 fixes per tick):
 
 #### 6.1 Trace to Source
-1. Read error message and stack trace (if available)
-2. Identify source file and line number
-3. Read source file to understand context
-4. Identify root cause
+1. Read the error message and stack trace (if available)
+2. Identify the source file and line number
+3. Read the source file to understand context
+4. Identify the root cause
 
 **Tracing by finding type:**
-- **Console errors with stack trace**: Follow stack trace directly to source file and line
-- **Network 404**: Grep codebase for failing endpoint URL (e.g., search for `/api/users`). Check both API definition and calling component.
+- **Console errors with stack trace**: Follow the stack trace directly to the source file and line
+- **Network 404**: Grep the codebase for the failing endpoint URL (e.g., search for `/api/users`). Check both the API definition and the calling component.
 - **Network 401/403**: Likely auth config — check middleware, route guards, or API client headers. Often not auto-fixable.
-- **Content quality (placeholder text)**: Grep for exact text ("Lorem ipsum", "TODO") in source files under page's component tree
-- **Broken images**: Grep for image filename or `src` attribute in templates
-- **Dead links (`href="#"`)**: Grep for `href="#"` in page's component and children
+- **Content quality (placeholder text)**: Grep for the exact text ("Lorem ipsum", "TODO") in source files under the page's component tree
+- **Broken images**: Grep for the image filename or `src` attribute in templates
+- **Dead links (`href="#"`)**: Grep for `href="#"` in the page's component and its children
 
 #### 6.2 Apply Minimal Fix
-- Fix ONLY specific error — do not refactor surrounding code
-- Use same fix templates as Phase 5 (non-loop mode) — see reference.md
+- Fix ONLY the specific error — do not refactor surrounding code
+- Use the same fix templates as Phase 5 (non-loop mode) — see reference.md
 - Common fixes: optional chaining, missing imports, wrong API endpoints, missing error states
 
 #### 6.3 Verify
 1. Run verify command (typecheck + lint, auto-detected)
 2. **If pass**: commit with message `browse-fix(<page_path>): <description>`
-3. **Wait 3 seconds** after commit — dev server needs time to process file change and complete HMR. Navigating too early hits partially-rebuilt state.
+3. **Wait 3 seconds** after commit — the dev server needs time to process the file change and complete HMR. Navigating too early hits a partially-rebuilt state.
 4. **If fail**: revert ALL changes, mark finding as `needs-human` in ledger. If revert also fails (file not writable), log error and exit tick immediately.
 
 #### 6.4 Fix Limits & Circuit Breaker
 - **Max 2 fixes per tick** — keeps within time budget
-- **Max 1 fix per file per tick** — prevents cascading failures from multiple edits to same file
+- **Max 1 fix per file per tick** — prevents cascading failures from multiple edits to the same file
 - **Circuit breaker state** (tracked in `latest-tick.json`):
   - `consecutive_fix_failures`: incremented on each failed fix, reset to 0 on any successful fix
   - `circuit_breaker_cooldown`: when `consecutive_fix_failures >= 3`, set to `current_tick + 3`
   - During cooldown (`tick < circuit_breaker_cooldown`): skip Phase 6 entirely, only crawl
   - After cooldown expires: resume fixing, counter stays at 0
-- **Cascading invalidation**: if fix modifies shared file (composable, utility, store), mark all visited pages importing that file as `status: "needs_re_verify"` in `crawl-visited.json`. These pages rejoin RE-VERIFY queue.
+- **Cascading invalidation**: if a fix modifies a shared file (composable, utility, store), mark all visited pages that import that file as `status: "needs_re_verify"` in `crawl-visited.json`. These pages rejoin the RE-VERIFY queue.
 
 #### 6.5 Fix Quality Gate
 Same rules as Phase 5.5 (non-loop mode):
@@ -1166,7 +1166,7 @@ Same rules as Phase 5.5 (non-loop mode):
 
 #### 7.1 Save State (Atomic Writes)
 
-State files have interdependencies — crash mid-write can leave inconsistent state. Use this write order (JSONL appends first, then JSON overwrites):
+State files have interdependencies — a crash mid-write can leave inconsistent state. Use this write order (JSONL appends first, then JSON overwrites):
 
 1. **Append** to `crawl-ledger.jsonl` — new findings (append-only, crash-safe)
 2. **Append** to `fix-log.jsonl` — fix attempts (append-only, crash-safe)
@@ -1175,7 +1175,7 @@ State files have interdependencies — crash mid-write can leave inconsistent st
 5. **Write** `crawl-visited.json` — updated visited map
 6. **Write** `hierarchy.json` — updated hierarchy
 
-For JSON files (steps 3-6): write to `.tmp` file first, then rename to final path. Ensures each file is either fully old or fully new, never partially written.
+For JSON files (steps 3-6): write to a `.tmp` file first, then rename to final path. This ensures each file is either fully old or fully new, never partially written.
 
 `latest-tick.json` snapshot:
 ```json
@@ -1207,7 +1207,7 @@ For JSON files (steps 3-6): write to `.tmp` file first, then rename to final pat
 ```
 
 #### 7.3 Site Map (every 10th tick)
-Every 10 ticks, print navigational hierarchy as tree:
+Every 10 ticks, print the navigational hierarchy as a tree:
 ```
 [browse] Site Map (14 pages visited, 23 queued):
 / (Home) ✓
@@ -1225,10 +1225,10 @@ Legend: `✓` = visited clean, `⚠` = has issues, `✗` = has unfixed issues, `
 
 #### 7.4 Cross-Page Visual Audit (on COMPLETE tick only)
 
-When crawl transitions to `COMPLETE` status, run final design consistency audit before final report:
+When the crawl transitions to `COMPLETE` status, run a final design consistency audit before the final report:
 
-1. **Group pages by section** — pages sharing same first path segment (e.g., all `/dashboard/*`, all `/settings/*`)
-2. **For each group of 3+ pages**, take viewport screenshots of up to 5 pages and pass to model simultaneously:
+1. **Group pages by section** — pages sharing the same first path segment (e.g., all `/dashboard/*`, all `/settings/*`)
+2. **For each group of 3+ pages**, take viewport screenshots of up to 5 pages and pass them to the model simultaneously:
 
    > "These [N] screenshots are from the [section] section of a [framework] application. Analyze them together for:
    > 1. Design consistency: Do they share the same layout, spacing, typography, and color usage?
@@ -1238,11 +1238,11 @@ When crawl transitions to `COMPLETE` status, run final design consistency audit 
    > Return findings as a list with page URL, issue type, and description."
 
 3. **Compare structural metadata** across all groups to find global patterns:
-   - Which UI elements truly global (present on 90%+ pages)? Flag pages missing them.
-   - Heading hierarchies consistent? (e.g., all pages use h1 for title, h2 for sections)
-   - Card/table rendering consistent across similar page types?
+   - Which UI elements are truly global (present on 90%+ pages)? Flag pages missing them.
+   - Are heading hierarchies consistent? (e.g., all pages use h1 for title, h2 for sections)
+   - Is card/table rendering consistent across similar page types?
 
-4. Record all findings as `type: "visual"` in ledger. Not auto-fixable but valuable for report.
+4. Record all findings as `type: "visual"` in the ledger. These are not auto-fixable but valuable for the report.
 
 5. **Write visual audit summary** to `docs/crawls/visual-audit.md`:
    ```markdown
@@ -1275,7 +1275,7 @@ When `status` is `COMPLETE`:
   ├─ Visual audit: docs/crawls/visual-audit.md
   └─ Full site map: docs/crawls/hierarchy.json
 ```
-Print full site map tree. Skill will no-op on subsequent ticks (check `latest-tick.json` status).
+Print the full site map tree. The skill will no-op on subsequent ticks (check `latest-tick.json` status).
 
 #### 7.6 Session Cleanup
 - Log to activity feed: `skill_complete` or `phase_complete` (per tick)
@@ -1301,13 +1301,13 @@ Print full site map tree. Skill will no-op on subsequent ticks (check `latest-ti
 **Authentication lost (redirect to login or 401 responses):**
 1. Record as Critical in ledger
 2. Set `latest-tick.json` status to `"auth_lost"`
-3. Print message: "Authentication lost. Please re-authenticate in browser, then delete `docs/crawls/latest-tick.json` or set its status to `crawling` to resume."
-4. Exit tick. Subsequent ticks detect `auth_lost` status and exit immediately until user intervenes.
+3. Print message: "Authentication lost. Please re-authenticate in the browser, then delete `docs/crawls/latest-tick.json` or set its status to `crawling` to resume."
+4. Exit tick. Subsequent ticks will detect `auth_lost` status and exit immediately until user intervenes.
 
 **Dev server unreachable:**
 1. Wait 5 seconds and retry once
 2. If still unreachable, set status to `"server_down"`, exit tick
-3. Next tick will retry automatically (server_down not a terminal state)
+3. Next tick will retry automatically (server_down is not a terminal state)
 
 **State file corruption:**
 1. Detect: JSON parse error when loading any state file
@@ -1317,14 +1317,14 @@ Print full site map tree. Skill will no-op on subsequent ticks (check `latest-ti
 5. If reconstruction fails: log error, re-seed from scratch (delete all state, restart crawl)
 
 **Fix revert failure:**
-1. If fix fails verification AND revert also fails
+1. If a fix fails verification AND the revert also fails
 2. Log both errors to `fix-log.jsonl`
 3. Mark finding as `needs-human`
 4. Exit tick immediately — do not attempt further fixes or state writes
-5. Next tick will detect dirty state via `git status` and warn
+5. Next tick will detect the dirty state via `git status` and warn
 
 **Tick timeout exceeded:**
 1. If elapsed time > 100 seconds at any phase boundary
 2. Skip remaining phases, jump directly to Phase 7-LOOP (Save State)
 3. Log warning: `[browse] Tick #N exceeded time budget at Phase X. Saving state and exiting.`
-4. Unfinished work (links not extracted, fixes not attempted) handled on next tick
+4. Any unfinished work (links not extracted, fixes not attempted) will be handled on next tick

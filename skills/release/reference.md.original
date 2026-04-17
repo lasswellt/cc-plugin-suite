@@ -1,12 +1,12 @@
 # Release Management — Reference Material
 
-Templates, patterns, procedures for release skill.
+This file provides templates, patterns, and procedures used by the release skill.
 
 ---
 
 ## Conventional Commit Regex Patterns
 
-Parse commit messages:
+Use these patterns to parse commit messages:
 
 ### Type Extraction
 
@@ -15,16 +15,16 @@ Parse commit messages:
 ```
 
 Groups:
-- `type`: commit type (feat, fix, etc.)
-- `scope`: optional scope in parentheses (e.g., `(auth)`)
-- `breaking`: optional `!` for breaking change
-- `description`: commit description
+- `type`: The commit type (feat, fix, etc.)
+- `scope`: Optional scope in parentheses (e.g., `(auth)`)
+- `breaking`: Optional `!` indicating a breaking change
+- `description`: The commit description
 
 ### Breaking Change Detection
 
 Check two locations:
-1. **Header**: `!` after type/scope (e.g., `feat!: remove login endpoint`)
-2. **Body**: line starting with `BREAKING CHANGE:` or `BREAKING-CHANGE:`
+1. **In the header**: The `!` after type/scope (e.g., `feat!: remove login endpoint`)
+2. **In the body**: A line starting with `BREAKING CHANGE:` or `BREAKING-CHANGE:`
 
 ```regex
 # Header detection
@@ -117,22 +117,22 @@ Sections MUST appear in this order (omit empty sections):
 
 ### Description Formatting Rules
 
-1. Strip conventional commit prefix: `feat(auth): add login` becomes `Add login`
-2. Capitalize first letter
-3. Remove trailing period
+1. Strip the conventional commit prefix: `feat(auth): add login` becomes `Add login`
+2. Capitalize the first letter
+3. Remove trailing period if present
 4. Keep descriptions concise (under 80 characters)
-5. Include short commit hash (first 7 chars) linked to commit URL
+5. Include the short commit hash (first 7 characters) linked to the commit URL
 
 ### Commit Hash Links
 
-If GitHub remote detected:
+If a GitHub remote is detected:
 ```bash
 REMOTE_URL=$(git remote get-url origin 2>/dev/null | sed 's/\.git$//' | sed 's|git@github.com:|https://github.com/|')
 ```
 
 Link format: `([hash](REMOTE_URL/commit/FULL_HASH))`
 
-No remote: plain hash `(hash)`.
+If no remote, use plain hash: `(hash)`
 
 ---
 
@@ -160,7 +160,7 @@ No remote: plain hash `(hash)`.
 
 Format: `vX.Y.Z`
 
-Pre-releases: `vX.Y.Z-beta.N` or `vX.Y.Z-rc.N`
+For pre-releases: `vX.Y.Z-beta.N` or `vX.Y.Z-rc.N`
 
 ---
 
@@ -175,16 +175,16 @@ Pre-releases: `vX.Y.Z-beta.N` or `vX.Y.Z-rc.N`
 
 ### Pre-1.0.0 Special Rules
 
-Current version below 1.0.0:
+When the current version is below 1.0.0:
 - Breaking changes bump minor (0.1.0 -> 0.2.0) instead of major
 - Features bump patch (0.1.0 -> 0.1.1) instead of minor
-- Follows semver convention for pre-stable software
+- This follows semver convention for pre-stable software
 
 ---
 
 ## Rollback Procedure (Manual)
 
-When automated rollback fails, follow manual steps:
+When automated rollback fails, follow these manual steps:
 
 ### Step 1: Identify Release Artifacts
 
@@ -256,7 +256,7 @@ echo "=== Done ==="
 
 ### Version Sync Strategy
 
-Monorepos using workspaces:
+For monorepos using workspaces:
 
 1. **Detect workspace packages**:
    ```bash
@@ -270,13 +270,13 @@ Monorepos using workspaces:
    ```
 
 2. **Version sync approaches**:
-   - **Lockstep**: all packages share same version. Bump all together.
-   - **Independent**: each package has own version. Bump only changed packages.
-   - Detection: if `lerna.json` exists with `"version": "independent"`, use independent mode. Otherwise lockstep.
+   - **Lockstep**: All packages share the same version. Bump all together.
+   - **Independent**: Each package has its own version. Bump only changed packages.
+   - Detection: If `lerna.json` exists with `"version": "independent"`, use independent mode. Otherwise, use lockstep.
 
 ### Publish Order for Monorepos
 
-Publish in dependency order (leaves first):
+Publish packages in dependency order (leaves first):
 
 1. Build dependency graph from workspace `package.json` files
 2. Topological sort (packages with no internal deps first)
@@ -293,9 +293,9 @@ Example order:
 
 ### Cross-Reference Updates
 
-Bumping versions in monorepo:
-1. Update package's own `version` field
-2. Update internal `dependencies` or `devDependencies` referencing sibling packages
+When bumping versions in a monorepo:
+1. Update the package's own `version` field
+2. Update any internal `dependencies` or `devDependencies` that reference sibling packages
 3. Run `pnpm install` or `npm install` to update lockfiles
 
 ---
@@ -309,16 +309,16 @@ Bumping versions in monorepo:
 | Tests | Exit code 0, all pass | No test failures |
 | Build | Exit code 0 | Clean production build |
 | Completeness | Score >= 70 (C grade) | Optional — skip if not available |
-| Version sync | All files match | All version files contain new version |
+| Version sync | All files match | All version files contain the new version |
 
 ### Skip Conditions
 
-Gate marked SKIPPED (not FAIL) only if:
-- Corresponding npm script does not exist in `package.json`
-- Tool not installed (e.g., `tsc` not found)
-- Gate explicitly optional (completeness gate)
+A gate can be marked SKIPPED (not FAIL) only if:
+- The corresponding npm script does not exist in `package.json`
+- The tool is not installed (e.g., `tsc` not found)
+- The gate is explicitly optional (completeness gate)
 
-SKIPPED gates do not block release.
+SKIPPED gates do not block the release.
 
 ---
 
@@ -332,10 +332,10 @@ SKIPPED gates do not block release.
 
 ### Version Comparison
 
-New version must be greater than current:
+New version must be greater than current version:
 - Compare major first, then minor, then patch
-- Pre-release versions lower than release counterpart (1.0.0-beta.1 < 1.0.0)
+- Pre-release versions are lower than their release counterpart (1.0.0-beta.1 < 1.0.0)
 
 ### Tag Format
 
-Tags use `v` prefix: `v1.2.3`, `v2.0.0-beta.1`
+Tags use the `v` prefix: `v1.2.3`, `v2.0.0-beta.1`

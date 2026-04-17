@@ -1,12 +1,12 @@
 # Retrospective — Reference Material
 
-Pattern taxonomy, proposal templates, safety classification rules, metrics templates for retrospective skill.
+Pattern taxonomy, proposal templates, safety classification rules, and metrics templates used by the retrospective skill.
 
 ---
 
 ## Pattern Taxonomy
 
-Pattern categories identified during retrospective analysis.
+Categories of patterns to identify during retrospective analysis.
 
 ### Failure Patterns
 
@@ -55,7 +55,7 @@ Pattern categories identified during retrospective analysis.
 
 ## Developer Profile Schema
 
-Developer profile (`.cc-sessions/developer-profile.json`) generated/updated by retrospective skill Phase 2.5. Other skills read at session registration (step 6b) to adapt behavior.
+The developer profile (`.cc-sessions/developer-profile.json`) is generated/updated by the retrospective skill's Phase 2.5. Other skills read it at session registration (step 6b) to adapt behavior.
 
 ```json
 {
@@ -111,7 +111,7 @@ Developer profile (`.cc-sessions/developer-profile.json`) generated/updated by r
 
 ## Proposal Template
 
-Full template for documenting retrospective proposal.
+Full template for documenting a retrospective proposal.
 
 ```markdown
 ### Proposal <ID>: <Title>
@@ -143,56 +143,56 @@ Full template for documenting retrospective proposal.
 
 ## Safety Classification Rules
 
-Rules for classifying proposals. When in doubt, classify at MORE restrictive level.
+Detailed rules for classifying proposals. When in doubt, classify at the MORE restrictive level.
 
 ### Safe — Auto-Applicable
 
-Proposal is "safe" if ALL true:
+A proposal is "safe" if ALL of the following are true:
 
-1. **Additive only**: Change adds content without removing or modifying existing content.
-2. **Reference material only**: Change in `reference.md` file, template, or non-executable section.
-3. **No behavioral impact**: Change does not alter how any skill executes its phases.
-4. **No safety rule interaction**: Change does not touch, reference, or affect any safety rule.
-5. **Easily reversible**: Change revertable via single `git checkout -- <file>`.
+1. **Additive only**: The change adds content without removing or modifying existing content.
+2. **Reference material only**: The change is in a `reference.md` file, a template, or a non-executable section.
+3. **No behavioral impact**: The change does not alter how any skill executes its phases.
+4. **No safety rule interaction**: The change does not touch, reference, or affect any safety rule.
+5. **Easily reversible**: The change can be reverted with a single `git checkout -- <file>`.
 
 **Examples of safe proposals:**
-- Adding new codemod entry to `skills/migrate/reference.md`
-- Adding new pattern to checklist in `skills/codebase-audit/reference.md`
-- Fixing typo in skill description
-- Adding new routing row to `skills/ask/SKILL.md`
-- Adding new entry to pattern taxonomy in this file
+- Adding a new codemod entry to `skills/migrate/reference.md`
+- Adding a new pattern to a checklist in `skills/codebase-audit/reference.md`
+- Fixing a typo in a skill description
+- Adding a new routing row to `skills/ask/SKILL.md`
+- Adding a new entry to the pattern taxonomy in this file
 - Updating version compatibility tables
 
 ### Review — Needs User Confirmation
 
-Proposal requires "review" if ANY true:
+A proposal requires "review" if ANY of the following are true:
 
-1. **Modifies execution flow**: Changes skill's phase structure, step ordering, or conditional logic.
-2. **Changes verification behavior**: Alters what is checked, when checked, or how results interpreted.
-3. **Modifies agent instructions**: Changes prompts, scopes, or capabilities given to spawned agents.
-4. **Adds new safety rules**: Even adding safety rules needs review to ensure no conflicts.
-5. **Changes model assignments**: Switching skill from opus to sonnet or vice versa.
+1. **Modifies execution flow**: Changes a skill's phase structure, step ordering, or conditional logic.
+2. **Changes verification behavior**: Alters what is checked, when it is checked, or how results are interpreted.
+3. **Modifies agent instructions**: Changes the prompts, scopes, or capabilities given to spawned agents.
+4. **Adds new safety rules**: Even adding safety rules needs review to ensure they don't conflict.
+5. **Changes model assignments**: Switching a skill from opus to sonnet or vice versa.
 6. **Modifies shared protocols**: Changes to session protocol, lock behavior, or conflict matrix.
-7. **Removes content**: Deletes any section, step, or instruction from skill file.
+7. **Removes content**: Deletes any section, step, or instruction from a skill file.
 
 **Examples of review proposals:**
-- Adding new pre-flight check to skill's Phase 0
-- Changing file cap for audit agent
-- Restructuring skill's phase numbering
-- Adding new agent to multi-agent skill
-- Changing timeout for lock acquisition
+- Adding a new pre-flight check to a skill's Phase 0
+- Changing the file cap for an audit agent
+- Restructuring a skill's phase numbering
+- Adding a new agent to a multi-agent skill
+- Changing the timeout for lock acquisition
 
 ### Never Auto-Apply
 
-Proposal is "never-auto-apply" if ANY true:
+A proposal is "never-auto-apply" if ANY of the following are true:
 
-1. **Removes or weakens safety rule**: Any change making safety rule less restrictive.
-2. **Reduces verification gates**: Removing type-check, test run, build step, or validation.
-3. **Changes session protocol**: Session protocol is shared infrastructure; changes cascade.
-4. **Modifies conflict matrix**: Incorrect conflict classification could cause data corruption.
+1. **Removes or weakens a safety rule**: Any change that makes a safety rule less restrictive.
+2. **Reduces verification gates**: Removing a type-check, test run, build step, or validation.
+3. **Changes the session protocol**: The session protocol is shared infrastructure; changes cascade.
+4. **Modifies the conflict matrix**: Incorrectly classifying a conflict could cause data corruption.
 5. **Changes lock behavior**: Lock timing, stale detection, or retry logic changes.
-6. **Removes skill entirely**: Skills should not be auto-deleted.
-7. **Changes Definition of Done**: Quality bar should not be lowered automatically.
+6. **Removes a skill entirely**: Skills should not be auto-deleted.
+7. **Changes the Definition of Done**: The quality bar should not be lowered automatically.
 
 **Examples of never-auto-apply proposals:**
 - "Remove the 3-consecutive-failure abort rule — it's too conservative"
@@ -204,7 +204,7 @@ Proposal is "never-auto-apply" if ANY true:
 
 ## Before/After Metrics Template
 
-Template for tracking improvement after applying retrospective proposals.
+Use this template to track improvement after applying retrospective proposals.
 
 ```markdown
 ## Improvement Metrics — YYYY-MM-DD
@@ -276,8 +276,8 @@ Expected format of session JSON files for parsing.
 ```
 
 Fields used by retrospective analysis:
-- `skill`: Grouping sessions by skill type
-- `started` / `ended`: Duration calculation and timeline
-- `status`: Failure rate calculation
-- `working_on`: Understanding what was attempted
-- `errors`: Failure pattern identification (if populated)
+- `skill`: For grouping sessions by skill type
+- `started` / `ended`: For duration calculation and timeline
+- `status`: For failure rate calculation
+- `working_on`: For understanding what was attempted
+- `errors`: For failure pattern identification (if populated)

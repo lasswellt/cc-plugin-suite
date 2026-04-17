@@ -1,12 +1,12 @@
 # Research — Reference Material
 
-Templates, research types, section guidelines for research skill.
+Supporting templates, research types, and section guidelines for the research skill.
 
 ---
 
 ## Research Document Template
 
-Template for final synthesized research document. All sections required.
+Use this template for the final synthesized research document. All sections are required.
 
 ```markdown
 # Research: <Topic Title>
@@ -153,7 +153,7 @@ reading further.>
 
 ### Library Evaluation
 
-**When to use**: User evaluating specific library or choosing between libraries.
+**When to use**: User wants to evaluate a specific library or choose between libraries.
 
 **Focus areas**:
 - API surface and developer experience
@@ -164,33 +164,33 @@ reading further.>
 - Migration path from current implementation (if any)
 
 **Key questions to generate**:
-- How does this integrate with detected framework?
-- Bundle size impact?
-- Actively maintained?
+- How does this integrate with the detected framework?
+- What is the bundle size impact?
+- Is it actively maintained?
 - What do real users report as pain points?
 - How does it compare to alternatives?
 
 ### Architecture Decision
 
-**When to use**: User needs to decide architectural approach (state management, API design, data flow pattern, etc.).
+**When to use**: User needs to decide on an architectural approach (state management strategy, API design, data flow pattern, etc.).
 
 **Focus areas**:
 - Trade-offs between approaches
-- How approach scales with project growth
+- How the approach scales with project growth
 - Impact on testing and maintainability
 - Alignment with team experience and project conventions
 - Precedent in similar projects
 
 **Key questions to generate**:
-- Concrete trade-offs?
+- What are the concrete trade-offs?
 - How does this affect testing?
-- Migration path?
+- What does the migration path look like?
 - How does this scale?
-- What patterns does existing codebase follow?
+- What patterns does the existing codebase already follow?
 
 ### Feature Investigation
 
-**When to use**: User needs to implement specific feature (auth, payments, real-time sync, etc.).
+**When to use**: User needs to understand how to implement a specific feature (auth, payments, real-time sync, etc.).
 
 **Focus areas**:
 - Available approaches and services
@@ -200,15 +200,15 @@ reading further.>
 - Existing code that can be reused
 
 **Key questions to generate**:
-- Available approaches?
-- Security requirements?
-- Impact on UX?
-- Infrastructure changes needed?
-- Cost model at scale?
+- What are the available approaches?
+- What are the security requirements?
+- How does this affect the user experience?
+- What infrastructure changes are needed?
+- What is the cost model at scale?
 
 ### Comparison
 
-**When to use**: User wants head-to-head comparison of options (frameworks, services, patterns).
+**When to use**: User wants a head-to-head comparison of options (frameworks, services, patterns).
 
 **Focus areas**:
 - Feature parity matrix
@@ -218,43 +218,43 @@ reading further.>
 - Total cost of ownership
 
 **Key questions to generate**:
-- Criteria that matter most for this project?
+- What criteria matter most for this project?
 - How do options compare on each criterion?
-- Deal-breakers?
-- Switching cost if choice proves wrong?
-- Which option aligns best with team's strengths?
+- What are the deal-breakers?
+- What is the switching cost if the choice proves wrong?
+- Which option aligns best with the team's strengths?
 
 ---
 
 ## Implementation Sketch Guidelines
 
-Implementation Sketch section must adapt to detected stack. Guidelines:
+The Implementation Sketch section must be adapted to whatever stack was detected. Follow these guidelines:
 
 ### General Rules
-- Reference actual project file paths (e.g., "add to existing `src/composables/` directory")
-- Use project's detected package manager for install commands
-- Follow project's detected coding patterns (Composition API vs Options API, etc.)
-- Show configuration changes for detected build system
-- Include type definitions if project uses TypeScript
+- Reference actual project file paths (e.g., "add to your existing `src/composables/` directory")
+- Use the project's detected package manager for install commands
+- Follow the project's detected coding patterns (Composition API vs Options API, etc.)
+- Show configuration changes for the detected build system
+- Include type definitions if the project uses TypeScript
 
 ### Stack-Specific Adaptation
 
-When detected stack includes specific frameworks/tools, adapt code examples:
+When the detected stack includes specific frameworks or tools, adapt code examples:
 
-- **Package installation**: Use detected package manager (`pnpm add`, `yarn add`, `npm install`)
-- **Import paths**: Follow project path alias conventions (`@/`, `~/`, relative)
-- **Component patterns**: Match project component style (SFC Composition API, Options API, etc.)
-- **State management**: Use detected state library (Pinia, Vuex, composables, Redux, Zustand, etc.)
-- **Testing**: Show test examples using detected test runner (Vitest, Jest, etc.)
-- **Configuration**: Show config changes for detected build system (Vite, Webpack, Nuxt config, etc.)
+- **Package installation**: Use the detected package manager (`pnpm add`, `yarn add`, `npm install`)
+- **Import paths**: Follow the project's path alias conventions (`@/`, `~/`, relative)
+- **Component patterns**: Match the project's component style (SFC Composition API, Options API, etc.)
+- **State management**: Use the detected state library (Pinia, Vuex, composables, Redux, Zustand, etc.)
+- **Testing**: Show test examples using the detected test runner (Vitest, Jest, etc.)
+- **Configuration**: Show config changes for the detected build system (Vite, Webpack, Nuxt config, etc.)
 
-If no specific stack detected, use generic Node.js/TypeScript patterns; note where user should adapt.
+If no specific stack is detected, use generic Node.js/TypeScript patterns and note where the user should adapt to their setup.
 
 ---
 
 ## Agent Output Format
 
-Each research agent writes findings using this structure:
+Each research agent must write findings using this structure:
 
 ```markdown
 # <Agent Name> — Research Findings
