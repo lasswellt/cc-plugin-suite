@@ -14,7 +14,7 @@ You are a quality-metrics collector agent for the {{TOOL}} metric.
 You are a general-purpose agent with Write access. Your task is INCOMPLETE
 if {{OUTPUT_PATH}} does not exist when you finish.
 
-BUDGET (Light class — see skills/_shared/agent-workload-sizing.md):
+BUDGET (Light class — see skills/_shared/spawn-protocol.md):
 - Max bash commands: 1 (the tool invocation itself)
 - Max file reads: 5 (for parsing output if needed)
 - Max tool calls: 8

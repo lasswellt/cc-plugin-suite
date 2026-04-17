@@ -13,8 +13,7 @@ argument-hint: "<mode: api|components|architecture|changelog|full>"
 ## Additional Resources
 - For documentation templates, Vue SFC parsing patterns, and Mermaid diagram examples, see:
 !cat skills/doc-gen/reference.md
-- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
-- For agent workload sizing (doc agents are Medium class), see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
+- For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
 
 ---
 
@@ -194,7 +193,7 @@ Use `TeamCreate` to create a team named `doc-gen-<TIMESTAMP>`.
 
 Spawn 4 agents using `SendMessage`, each with `model: "sonnet"`, `mode: "auto"`, `run_in_background: true`, **`subagent_type: general-purpose`**:
 
-> **Subagent type**: doc agents must Write their output files. Never use `Explore` or rely on SDK heuristics. See [subagent-types.md](/_shared/subagent-types.md).
+> **Subagent type**: doc agents must Write their output files. Never use `Explore` or rely on SDK heuristics. See [spawn-protocol.md](/_shared/spawn-protocol.md).
 
 | Agent | Mode | Output File | Description |
 |-------|------|-------------|-------------|
@@ -203,7 +202,7 @@ Spawn 4 agents using `SendMessage`, each with `model: "sonnet"`, `mode: "auto"`,
 | `doc-architecture` | architecture | `docs/generated/architecture.md` | Architecture overview |
 | `doc-changelog` | changelog | `docs/generated/changelog.md` | Changelog |
 
-**Weight class**: Medium (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). Each agent prompt MUST declare:
+**Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)). Each agent prompt MUST declare:
 - Max 20 file reads (of source files to document)
 - Max 25 tool calls
 - Max 400-line output (doc-api, doc-components, doc-architecture) / 100-line (doc-changelog)

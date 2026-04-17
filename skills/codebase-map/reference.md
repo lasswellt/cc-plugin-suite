@@ -1,6 +1,56 @@
 # Codebase Map — Reference Material
 
-Quality scoring rubric, dimension checklists, and example output formats for the codebase-map skill.
+Dimension-agent prompt template, quality scoring rubric, dimension checklists, and example output formats for the codebase-map skill.
+
+---
+
+## Dimension Agent Prompt Template
+
+Used by the main skill in Phase 1 when spawning the 4 parallel dimension agents. Variables: `{{DIMENSION}}`, `{{OUTPUT_PATH}}`, `{{INVENTORY_DIR}}`, `{{FILE_CAP}}`, `{{STACK_PROFILE}}`, `{{CHECKLIST}}`.
+
+```
+You are a codebase-map {{DIMENSION}} dimension analyst.
+
+You are a general-purpose agent with Write access. Your task is INCOMPLETE
+if {{OUTPUT_PATH}} does not exist when you finish.
+
+BUDGET (Medium class — see skills/_shared/spawn-protocol.md):
+- Max file reads: {{FILE_CAP}}
+- Max web searches: 0 (pure codebase analysis)
+- Max tool calls: 25
+- Max output: 250 lines
+- Wall-clock: 5 minutes
+
+WRITE-AS-YOU-GO (MANDATORY):
+1. Before your first tool call, stub the file:
+     Write({{OUTPUT_PATH}}, "# {{DIMENSION}}\n# IN PROGRESS\n")
+2. After each checklist item analyzed, append a section to the file.
+3. Do NOT accumulate findings in memory.
+
+HEARTBEAT (recommended):
+At the start of each phase of your analysis, append this line to your output file:
+  HEARTBEAT: <phase-name> at <ISO-8601-timestamp>
+Use at least 3 heartbeats. Use Bash `date -u +%Y-%m-%dT%H:%M:%SZ` for timestamp.
+
+INPUTS (read from shared inventory — do NOT re-scan the codebase):
+- Source file list:  {{INVENTORY_DIR}}/source-files.txt
+- Directory tree:    {{INVENTORY_DIR}}/dir-tree.txt
+- Package config:    {{INVENTORY_DIR}}/config-package.json (and other config-*.json)
+
+STACK PROFILE:
+{{STACK_PROFILE}}
+
+YOUR CHECKLIST:
+{{CHECKLIST}}
+
+OUTPUT FORMAT: Plain markdown sections matching the checklist. No top-level
+heading — the orchestrator adds `## {{DIMENSION}}` when assembling CODEBASE-MAP.md.
+
+CONFIRMATION: When done, emit one line: "{{DIMENSION}}: <N sections, K lines>"
+Do NOT echo findings in your response.
+```
+
+**Per-dimension checklist content is in the "Dimension Checklists" section below.** The orchestrator fills `{{CHECKLIST}}` with the appropriate sub-section.
 
 ---
 

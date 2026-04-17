@@ -203,19 +203,16 @@ estimated_stories: 0        # Rough story count for the cluster
 
 ### Phase 5: IMPLEMENTATION SPECS — Domain-Level Detail
 
-#### 5.1 Create Spec Team
+#### 5.1 Spawn Domain Agents via Agent Tool
 
-Use `TeamCreate` to create a team named `roadmap-specs`.
+For each domain, spawn an agent using the `Agent` tool (all in a single assistant message for parallelism):
+- `subagent_type: general-purpose` (must Write; `Explore` cannot)
+- `model: sonnet` (explicit — prevents `[1m]` inheritance)
+- `description: roadmap-spec <domain-slug>`
+- `prompt`: the spec-generation template with domain overview, capabilities, and stack profile
+- `run_in_background: true`
 
-#### 5.2 Spawn Domain Agents
-
-For each domain, spawn an agent with `model: "sonnet"`, `mode: "auto"`, `run_in_background: true`, **`subagent_type: general-purpose`**.
-
-> **Subagent type + workload**: Domain agents must Write their spec file.
-> Never use `Explore` or rely on SDK heuristics. Weight class: Medium
-> (max 15 file reads, 5-min wall-clock, write-as-you-go).
-> See [subagent-types.md](/_shared/subagent-types.md) and
-> [agent-workload-sizing.md](/_shared/agent-workload-sizing.md).
+**Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)) — max 15 file reads, 5-min wall-clock, stub-then-append write pattern. Previous `TeamCreate`+`SendMessage` spawn was removed in v1.4.0.
 
 Each agent receives:
 - The domain overview document
@@ -326,21 +323,18 @@ Write `docs/roadmap/cross-cutting/monitoring-spec.md`:
 
 ### Phase 7: EPIC GENERATION — Sprint-Ready Work Items
 
-#### 7.1 Create Epic Team
+#### 7.1 Spawn Phase Agents via Agent Tool
 
-Use `TeamCreate` to create a team named `roadmap-epics`.
+For each implementation phase (from Phase 4), spawn an agent using the `Agent` tool (all in a single assistant message for parallelism):
+- `subagent_type: general-purpose` (must Write epic files; `Explore` cannot)
+- `model: sonnet` (explicit — prevents `[1m]` inheritance)
+- `description: roadmap-epics phase-<N>`
+- `prompt`: the epic-generation template with phase plan, domain specs, cross-cutting specs, and codebase state
+- `run_in_background: true`
 
-#### 7.2 Spawn Phase Agents
+**Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)) — max 15 file reads, 5-min wall-clock, stub-then-append write pattern. Previous `TeamCreate`+`SendMessage` spawn was removed in v1.4.0.
 
-For each implementation phase (from Phase 4), spawn an agent with `model: "sonnet"`, `mode: "auto"`, `run_in_background: true`, **`subagent_type: general-purpose`**.
-
-> **Subagent type + workload**: Phase agents must Write epic files.
-> Never use `Explore` or rely on SDK heuristics. Weight class: Medium
-> (max 15 file reads, 5-min wall-clock, write-as-you-go).
-> After spawning, validate each expected phase's epic directory was created
-> and contains at least one epic file before proceeding to Phase 8.
-> See [subagent-types.md](/_shared/subagent-types.md) and
-> [agent-workload-sizing.md](/_shared/agent-workload-sizing.md).
+After spawning, validate each expected phase's epic directory was created and contains at least one epic file before proceeding to Phase 8.
 
 Each agent receives:
 - The phase plan (capabilities, domains, workstreams)

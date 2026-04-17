@@ -280,7 +280,7 @@ The per-sprint manifest lives at `sprints/sprint-${N}/manifest.json` and capture
 
 ## Agent Prompt Templates
 
-**Workload class for all sprint-plan research agents**: Medium (per `skills/_shared/agent-workload-sizing.md`). Every agent prompt below must open with:
+**Workload class for all sprint-plan research agents**: Medium (per `skills/_shared/spawn-protocol.md`). Every agent prompt below must open with:
 
 ```
 You are a general-purpose agent with Write access. Your task is INCOMPLETE
@@ -325,8 +325,6 @@ OUTPUT FORMAT:
 ### Risks & Gotchas
 - <issue>: <mitigation>
 
-CROSS-STEERING: If you discover findings relevant to library-researcher or codebase-analyst, send them a message:
-SendMessage to <agent>: STEER: <topic> — <summary>
 ```
 
 ### Library Researcher
@@ -359,7 +357,6 @@ OUTPUT FORMAT:
 ### Migration / Breaking Changes
 - <package>: <notes>
 
-CROSS-STEERING: If you find codebase patterns that need checking, steer to codebase-analyst.
 ```
 
 ### Codebase Analyst
@@ -393,7 +390,6 @@ OUTPUT FORMAT:
 ### Suggested File Locations
 - <new file path>: <rationale based on existing conventions>
 
-CROSS-STEERING: If you find external API usage patterns, steer to domain-researcher.
 ```
 
 ### Infrastructure Analyst (Optional)
@@ -424,5 +420,4 @@ OUTPUT FORMAT:
 ### Deployment Considerations
 - <consideration>: <details>
 
-CROSS-STEERING: If you find backend code that needs security review, steer to codebase-analyst.
 ```

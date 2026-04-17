@@ -11,8 +11,7 @@ argument-hint: "<issue-number>"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
-- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
-- For agent workload sizing and defensive patterns, see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
+- For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
 
 ---
 
@@ -155,7 +154,7 @@ TASKS:
 4. Write findings to ${SESSION_TMP_DIR}/issue-research.md — stub the file
    at start, append findings as you discover them.
 
-LIMITS (Light class, per agent-workload-sizing.md):
+LIMITS (Light class, per spawn-protocol.md):
 - Max 5 web searches
 - Max 8 file reads
 - Max 150-line output

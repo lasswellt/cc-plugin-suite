@@ -11,8 +11,7 @@ argument-hint: "[scope: all | routes | exports | auth | stores]"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
-- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
-- For agent workload sizing (check agents are Medium class), see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
+- For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
 
 ---
 
@@ -79,7 +78,7 @@ For each active agent, call the `Agent` tool with:
 - `prompt`: the check-agent prompt template (see `reference.md` section "Check Agent Prompt Template")
 - `run_in_background: false`
 
-**Weight class**: Medium (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). Each agent prompt declares: max 12 file reads, max 20 tool calls, 5-min wall-clock, stub-then-append JSON output.
+**Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)). Each agent prompt declares: max 12 file reads, max 20 tool calls, 5-min wall-clock, stub-then-append JSON output.
 
 ### 1.3 Inputs Each Agent Receives
 

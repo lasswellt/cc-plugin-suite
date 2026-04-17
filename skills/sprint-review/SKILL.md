@@ -1,7 +1,7 @@
 ---
 name: sprint-review
 description: Reviews sprint quality with automated checks and parallel reviewer agents. Runs type-check, lint, tests, build verification. Spawns security, backend, frontend, and pattern reviewers. Auto-fixes common failures. Use when user says "review sprint", "check quality", "run review".
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch, TeamCreate, SendMessage
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch, Agent
 disable-model-invocation: false
 model: opus
 compatibility: ">=2.1.71"
@@ -16,8 +16,7 @@ compatibility: ">=2.1.71"
 - For checkpoint awareness, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
 - For handling reviewer agent escalations, see [deviation-protocol.md](/_shared/deviation-protocol.md)
 - For the carry-forward registry enforced by Phase 3.5 (hard gate), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
-- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
-- For agent workload sizing and defensive patterns, see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
+- For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
 
 All auto-fix code must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder implementations.
 
@@ -189,17 +188,7 @@ Include integration-check findings in the Phase 2 review context so reviewer age
 
 ## Phase 2: CODE REVIEW — Parallel Reviewer Agents
 
-### 2.1 Create Review Team
-
-Use `TeamCreate` to create a team named `sprint-${SPRINT_NUMBER}-review`.
-
-> **Subagent type**: Reviewer agents must call `Write` to persist findings to
-> tmp files. Spawn each with `subagent_type: general-purpose` — include the
-> explicit line "You are a general-purpose agent with Write access — your task
-> is INCOMPLETE if your output file does not exist" in every `SendMessage` body.
-> Never rely on SDK heuristics. See [subagent-types.md](/_shared/subagent-types.md).
-
-### 2.2 Prepare Review Context
+### 2.1 Prepare Review Context
 
 Collect the diff for reviewers:
 ```bash
@@ -211,11 +200,18 @@ Also list all new and modified files with their sizes for assignment:
 git diff --stat ${SPRINT_BASE}..HEAD
 ```
 
-### 2.3 Spawn Reviewer Agents
+### 2.2 Spawn Reviewer Agents via Agent Tool
 
-Spawn 3-4 specialized reviewers. Each writes findings to session-scoped temp files.
+Spawn 3-4 specialized reviewers using the `Agent` tool, all in **a single assistant message** so they run concurrently. Each writes findings to session-scoped temp files.
 
-**Weight class**: Medium (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). Each reviewer prompt MUST include:
+Per-spawn parameters:
+- `subagent_type: general-purpose` (reviewers must Write; `Explore` cannot)
+- `model: sonnet` (explicit — prevents `[1m]` inheritance from Opus orchestrator)
+- `description: sprint-<N> <reviewer-role>`
+- `prompt`: reviewer prompt from reference.md with diff slice, story ACs, and Phase 1 gate results
+- `run_in_background: true`
+
+**Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)). Each reviewer prompt MUST include:
 - Diff slice bounded by domain (max 500 lines of diff per reviewer — slice the full diff by changed-file path prefix)
 - Max 15 file reads per reviewer
 - Max 25 tool calls per reviewer
@@ -238,21 +234,15 @@ Each reviewer receives:
 3. Quality gate results from Phase 1.
 4. Their specific review checklist (see reference.md).
 
-### 2.5 Cross-Finding Protocol
+### 2.5 Cross-Cutting Findings — Synthesized by Orchestrator
 
-Reviewers send cross-cutting findings to sibling reviewers via:
-```
-SendMessage to <sibling-reviewer>:
-CROSS-FINDING: <category> — <summary>
-File: <path>:<line>
-Severity: critical | major | minor | info
-Details: <description>
-```
+Reviewers write findings to their individual output files. The orchestrator synthesizes cross-cutting findings during Phase 3 report assembly by reading all reviewer files and cross-referencing:
 
-Examples:
-- Security reviewer finds unvalidated input -> sends CROSS-FINDING to backend-reviewer.
-- Pattern reviewer finds inconsistent component structure -> sends CROSS-FINDING to frontend-reviewer.
-- Backend reviewer finds missing error boundary -> sends CROSS-FINDING to frontend-reviewer.
+- Security findings with `unvalidated input` tags are propagated into the Backend Review section of the final report.
+- Pattern findings about component structure are propagated into the Frontend Review section.
+- Backend findings about error handling gaps are propagated into the Frontend Review section.
+
+The previous peer-to-peer `SendMessage CROSS-FINDING:` protocol was removed in v1.4.0 because it had no ack mechanism and findings could be silently truncated when the receiving reviewer was near its output budget. Synthesis-by-orchestrator is structurally safer.
 
 ### 2.6 Collect Review Findings
 

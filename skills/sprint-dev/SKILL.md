@@ -16,9 +16,7 @@ compatibility: ">=2.1.71"
 - For agent deviation handling, see [deviation-protocol.md](/_shared/deviation-protocol.md)
 - For context window hygiene, see [context-management.md](/_shared/context-management.md)
 - For the carry-forward registry (written on story completion in Phase 3.2), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
-- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
-- For agent workload sizing (dev agents are Heavy class), see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
-- For wave execution protocol, see [waves.md](/_shared/waves.md)
+- For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
 
 ---
 
@@ -204,7 +202,7 @@ Agent(
 
 **Note:** The `isolation: "worktree"` parameter replaces manual `git worktree add` commands. Each agent gets its own branch and working directory automatically. Worktrees with no changes are auto-cleaned on agent completion; worktrees with changes are preserved for merging.
 
-**Weight class**: Heavy (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). Dev agents implement multiple stories with reads+writes+verify per story.
+**Weight class**: Heavy (per [spawn-protocol.md](/_shared/spawn-protocol.md)). Dev agents implement multiple stories with reads+writes+verify per story.
 
 **Per-wave story cap (CRITICAL)**: distribute at most **4 stories per agent per wave**. If a single wave assigns more than 4 stories to any one agent, split the excess to the next wave — even if this creates an otherwise-empty wave. A 6-story agent needs ~54 tool calls (5 reads + 3 writes + 1 verify × 6), well past the ~20/turn server cap.
 
@@ -400,7 +398,7 @@ After all `frontend-dev` stories are complete (or in parallel with final fronten
 
 Agent: `frontend-dev` (reuse) or `ui-integrator` (new)
 
-**Weight class**: Medium (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)).
+**Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)).
 
 **Spawn parameters**:
 - `subagent_type: blitz:frontend-dev` (has Write + Edit — required for integration edits)

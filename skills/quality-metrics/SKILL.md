@@ -13,8 +13,7 @@ argument-hint: "<mode: collect|dashboard|trend|compare <date1> <date2>>"
 ## Additional Resources
 - For metric snapshot schema, dashboard templates, trend thresholds, and score calculation details, see:
 !cat skills/quality-metrics/reference.md
-- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
-- For agent workload sizing (collector agents are Light class), see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
+- For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
 
 ---
 
@@ -69,7 +68,7 @@ For each collector, call the `Agent` tool with:
 - `prompt`: the collector prompt template from `reference.md`
 - `run_in_background: false`
 
-**Weight class**: Light (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). Each collector prompt declares: max 1 bash command, max 5 file reads (for parsing output), max 8 tool calls, 3-min wall-clock (typescript/tests/build may be slow on large projects — bump to 5 min for those specifically), output-file existence check.
+**Weight class**: Light (per [spawn-protocol.md](/_shared/spawn-protocol.md)). Each collector prompt declares: max 1 bash command, max 5 file reads (for parsing output), max 8 tool calls, 3-min wall-clock (typescript/tests/build may be slow on large projects — bump to 5 min for those specifically), output-file existence check.
 
 ### 1.3 Inputs Each Collector Receives
 

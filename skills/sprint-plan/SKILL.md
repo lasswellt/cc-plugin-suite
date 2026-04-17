@@ -1,7 +1,7 @@
 ---
 name: sprint-plan
 description: Plans sprints from roadmap epics with research-backed stories. Reads the dependency graph, selects next unblocked epics, spawns research agents, generates implementation stories, creates GitHub issues. Use when user says "plan sprint", "generate stories", "plan next sprint".
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, TeamCreate, SendMessage
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, Agent
 disable-model-invocation: false
 model: opus
 compatibility: ">=2.1.71"
@@ -15,8 +15,7 @@ compatibility: ">=2.1.71"
 - For context window hygiene (research agents), see [context-management.md](/_shared/context-management.md)
 - For checkpoint awareness, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
 - For the carry-forward registry (read in Phase 0, written in Phase 4.1), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
-- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
-- For agent workload sizing and defensive patterns, see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
+- For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
 
 All generated stories must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder acceptance criteria.
 
@@ -145,21 +144,20 @@ If available, note the repo owner/name for later issue creation. If not, skip Gi
 
 ## Phase 2: RESEARCH — Parallel Agent Investigation
 
-### 2.1 Create Research Team
+### 2.1 Spawn Research Agents via Agent Tool
 
-Use `TeamCreate` to create a team named `sprint-${SPRINT_NUMBER}-research`.
+Spawn 3-4 named agents using the `Agent` tool, all in **a single assistant message** so they run concurrently. Each agent writes findings to `${SESSION_TMP_DIR}/` files incrementally.
 
-> **Subagent type**: All research agents must call `Write` to produce findings files.
-> Spawn each with `subagent_type: general-purpose`. Include the explicit line
-> "You are a general-purpose agent with Write access — your task is INCOMPLETE if
-> your output file does not exist" in every `SendMessage` body. Never rely on SDK
-> heuristics for write-required work. See [subagent-types.md](/_shared/subagent-types.md).
+Per-spawn parameters:
+- `subagent_type: general-purpose` (agents must Write findings files; `Explore` is read-only and silently fails the write)
+- `model: sonnet` (explicit — prevents `[1m]` inheritance from the Opus orchestrator)
+- `description: sprint-<N> <agent-role>`
+- `prompt`: the template from reference.md "Agent Prompt Templates" filled with epic list, stack profile, and output path
+- `run_in_background: true` (orchestrator polls output files in Phase 2.4)
 
-### 2.2 Spawn Research Agents
+Cross-cutting findings are synthesized by the orchestrator in Phase 2.4 from the written output files — the previous STEER: SendMessage cross-steering was removed in v1.4.0 because it was advisory-only with no ack mechanism. See [spawn-protocol.md](/_shared/spawn-protocol.md).
 
-Spawn 3-4 named agents using `SendMessage`. Each agent writes findings to `${SESSION_TMP_DIR}/` files as they go.
-
-**Weight class**: Medium (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). Each agent prompt MUST include: max 15 file reads, max 8 web searches (0 for codebase-analyst), max 250-line output, 5-minute wall-clock budget, write-as-you-go instruction.
+**Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)). Each agent prompt MUST include: max 15 file reads, max 8 web searches (0 for codebase-analyst), max 250-line output, 5-minute wall-clock budget, write-as-you-go instruction.
 
 **Required agents:**
 
@@ -175,19 +173,13 @@ Spawn 3-4 named agents using `SendMessage`. Each agent writes findings to `${SES
 |---|---|---|
 | `infra-analyst` | Infrastructure Analysis | Cloud config, security rules, deployment pipeline, environment setup |
 
-### 2.3 Agent Instructions
+### 2.2 Agent Prompt Content
 
-Send each agent a message with:
+Each agent prompt (filled from the template in reference.md) contains:
 1. The list of selected epics (IDs, titles, descriptions).
-2. Their specific research focus (see reference.md for prompt templates).
-3. Output file path: `${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-<agent-name>.md`
-4. Instruction to use `SendMessage` with `STEER:` prefix to redirect cross-cutting findings to sibling agents.
-
-**Cross-steering protocol:**
-```
-SendMessage to <sibling-agent>:
-STEER: <topic> — Found relevant info for your area: <summary>. Details in ${SESSION_TMP_DIR}/sprint-N-research-<my-name>.md section <heading>.
-```
+2. The agent's specific research focus.
+3. Output file path: `${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-<agent-name>.md`.
+4. The Medium-class budget block (file reads, web searches, wall-clock) and stub-then-append write instructions.
 
 ### 2.4 Collect Research
 
@@ -217,7 +209,7 @@ If `MISSING_COUNT == 1`, retry the failed agent once with a narrower scope (sing
 
 If all files are present: copy into `${SPRINT_DIR}/research/`.
 
-**Also check for `PARTIAL: true` markers** in successful files (see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). Treat a PARTIAL research file as half-coverage; note MISSING sections in the sprint manifest.
+**Also check for `PARTIAL: true` markers** in successful files (see [spawn-protocol.md](/_shared/spawn-protocol.md)). Treat a PARTIAL research file as half-coverage; note MISSING sections in the sprint manifest.
 
 ---
 

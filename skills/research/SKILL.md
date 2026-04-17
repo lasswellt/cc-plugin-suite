@@ -1,7 +1,7 @@
 ---
 name: research
 description: Investigates libraries, APIs, cloud services, and architecture patterns. Produces structured research documents with findings, recommendations, and code examples. Use when user says "research X", "investigate", "compare options", "what's the best approach for".
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, TeamCreate, SendMessage
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, Agent
 model: opus
 compatibility: ">=2.1.71"
 ---
@@ -13,8 +13,7 @@ compatibility: ">=2.1.71"
 - For research document template, research types, and section guidelines, see [reference.md](reference.md)
 - For context window hygiene, see [context-management.md](/_shared/context-management.md)
 - For quantified scope → registry ingestion, see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
-- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
-- For agent workload sizing and defensive patterns, see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
+- For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
 
 All research output must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder sections.
 
@@ -74,19 +73,7 @@ rm -rf "${RESEARCH_DIR}"
 mkdir -p "${RESEARCH_DIR}"
 ```
 
-### 1.2 Create Research Team
-
-Use `TeamCreate` to create a team named `research-${TOPIC_SLUG}`.
-
-> **Subagent type**: All research agents must call `Write` to produce findings files.
-> Spawn each with `subagent_type: general-purpose` — either via the `Agent` tool
-> (preferred, takes `subagent_type` directly) or by including the explicit line
-> "You are a general-purpose agent with Write access — your task is INCOMPLETE if
-> your output file does not exist" in every `SendMessage` body. Never rely on SDK
-> heuristics for write-required work — they can route to read-only `Explore`.
-> See [subagent-types.md](/_shared/subagent-types.md).
-
-### 1.3 Determine Required Agents
+### 1.2 Determine Required Agents
 
 Spawn 2-4 agents depending on the research type:
 
@@ -97,23 +84,25 @@ Spawn 2-4 agents depending on the research type:
 | `codebase-analyst` | Codebase Analysis | Yes | Existing patterns, integration points, migration impact, affected files, dependency graph |
 | `infra-analyst` | Infrastructure Analysis | If backend/cloud/infra detected | Cloud service docs, pricing, quotas, deployment implications, environment config |
 
-### 1.4 Agent Instructions
+### 1.3 Spawn Agents via Agent Tool
 
-Send each agent a message via `SendMessage` with:
+Spawn each agent in **a single assistant message** (so they run concurrently) using the `Agent` tool with:
+
+- `subagent_type: general-purpose` (agents must Write findings files; `Explore` is read-only and silently fails the write)
+- `model: sonnet` (explicit — prevents `[1m]` inheritance from the Opus orchestrator)
+- `description: research <agent-name>`
+- `prompt`: the agent prompt template from Section 1.5 below, filled with topic, questions, output path, and stack profile
+- `run_in_background: true` (orchestrator polls output files in Phase 1.7)
+
+Each agent prompt MUST include:
 
 1. **Research topic and questions** — Full context of what to investigate.
 2. **Detected stack profile** — So findings are relevant to the project.
 3. **Output file path** — `${SESSION_TMP_DIR}/research/<agent-name>.md`
 4. **Research limits** — See below.
-5. **Write-as-you-go rule** — "Write findings to your output file as you discover them. Do NOT accumulate in memory."
-6. **Cross-steering protocol** — Use `STEER:` prefix via `SendMessage` to redirect cross-cutting findings to sibling agents.
+5. **Write-as-you-go rule** — "Stub your output file with `# IN PROGRESS` before your first tool call. Append findings as you discover them. Do NOT accumulate in memory."
 
-**Cross-steering example:**
-```
-SendMessage to web-researcher:
-STEER: migration-complexity — The library's official docs mention a codemods tool for v2->v3 migration.
-Check community reports on how well it works in practice. Details in ${SESSION_TMP_DIR}/research/library-docs.md section "Migration".
-```
+Cross-cutting findings are NOT routed peer-to-peer. The orchestrator synthesizes cross-domain findings in Phase 2 from the written output files. (The previous STEER: SendMessage protocol was removed in v1.4.0 — it was advisory-only, had no ack mechanism, and findings could be silently truncated when the receiving agent was near its output budget.)
 
 ### 1.5 Research Limits Per Agent
 
@@ -145,7 +134,7 @@ TASKS:
 5. Find code examples that match the project's patterns.
 6. Document known issues and workarounds.
 
-Write findings immediately to your output file. Use STEER: to redirect findings relevant to other agents.
+Stub your output file with `# IN PROGRESS` before your first tool call. Append findings as you discover them.
 ```
 
 #### web-researcher
@@ -165,7 +154,7 @@ TASKS:
 5. Identify alternatives and how they compare.
 6. Note any "gotchas" or lessons learned from real-world usage.
 
-Write findings immediately to your output file. Use STEER: to redirect findings relevant to other agents.
+Stub your output file with `# IN PROGRESS` before your first tool call. Append findings as you discover them.
 ```
 
 #### codebase-analyst
@@ -205,7 +194,7 @@ TASKS:
 5. Check for compatibility with existing infrastructure setup.
 6. Note monitoring and observability considerations.
 
-Write findings immediately to your output file. Use STEER: to redirect findings relevant to other agents.
+Stub your output file with `# IN PROGRESS` before your first tool call. Append findings as you discover them.
 ```
 
 ### 1.7 Wait for Completion

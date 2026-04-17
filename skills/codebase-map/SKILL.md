@@ -11,8 +11,7 @@ argument-hint: "(no arguments — analyzes the current project)"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
-- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
-- For agent workload sizing (dimension agents are Medium class), see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
+- For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
 
 ---
 
@@ -77,7 +76,7 @@ For each agent, call the `Agent` tool with:
 - `prompt`: the dimension-agent prompt template (see `reference.md` section "Dimension Agent Prompt Template")
 - `run_in_background: false` (orchestrator waits on all 4 synchronously)
 
-**Weight class**: Medium (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). The prompt MUST declare: file cap from the roster, max 25 tool calls, max 250-line output, 5-min wall-clock, stub-then-append write pattern.
+**Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)). The prompt MUST declare: file cap from the roster, max 25 tool calls, max 250-line output, 5-min wall-clock, stub-then-append write pattern.
 
 ### 1.3 Inputs Each Agent Receives
 

@@ -1,6 +1,64 @@
 # Integration Check — Reference Material
 
-Grep patterns per check category, severity classification, and framework-specific wiring patterns.
+Check-agent prompt template, grep patterns per check category, severity classification, and framework-specific wiring patterns.
+
+---
+
+## Check Agent Prompt Template
+
+Used by the main skill in Phase 1 when spawning the 3 domain agents (check-wiring, check-auth, check-ui). Variables: `{{DOMAIN}}`, `{{OUTPUT_PATH}}`, `{{INVENTORY_PATH}}`, `{{CHECK_DEFS}}`.
+
+```
+You are an integration-check {{DOMAIN}} domain analyst.
+
+You are a general-purpose agent with Write access. Your task is INCOMPLETE
+if {{OUTPUT_PATH}} does not exist when you finish.
+
+BUDGET (Medium class — see skills/_shared/spawn-protocol.md):
+- Max file reads: 12
+- Max tool calls: 20
+- Max output: structured JSON (see schema below)
+- Wall-clock: 5 minutes
+
+WRITE-AS-YOU-GO (MANDATORY):
+1. Before your first tool call, stub the file with an empty findings array:
+     Write({{OUTPUT_PATH}}, '{"domain":"{{DOMAIN}}","findings":[]}')
+2. After each check category completes, rewrite the file with the
+   appended findings array.
+
+HEARTBEAT (recommended):
+At the start of each check category, append this line to your output file
+as a special finding with `"check": "_heartbeat"`:
+  {"check": "_heartbeat", "phase": "<category>", "ts": "<ISO-timestamp>"}
+Use Bash `date -u +%Y-%m-%dT%H:%M:%SZ` for timestamp.
+
+INPUT:
+- Source file list: {{INVENTORY_PATH}} — do NOT glob the codebase again.
+
+YOUR CHECK DEFINITIONS:
+{{CHECK_DEFS}}
+
+OUTPUT JSON SCHEMA:
+{
+  "domain": "{{DOMAIN}}",
+  "findings": [
+    {
+      "id": "<check_id>-<file>-<line>-<8-char-hash>",
+      "check": "<check_id>",
+      "file": "<path relative to repo root>",
+      "line": <integer>,
+      "symbol": "<matched snippet, trimmed to 80 chars>",
+      "severity": "high|medium|low",
+      "message": "<one-line finding description>"
+    }
+  ],
+  "coverage": "complete" | "incomplete",
+  "skipped": ["<check_id>", ...]
+}
+
+CONFIRMATION: Emit one line: "{{DOMAIN}}: <N findings, <severity-breakdown>>"
+Do NOT echo findings in your response.
+```
 
 ---
 

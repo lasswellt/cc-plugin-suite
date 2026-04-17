@@ -1,7 +1,7 @@
 ---
 name: codebase-audit
 description: Comprehensive 5-pillar code quality audit spanning Architecture, Performance, Security, Maintainability, and Robustness. Spawns 10 parallel agents (2 per pillar) for thorough analysis. Produces findings formatted for roadmap and sprint planning. Use when user says "audit codebase", "code quality review", "full audit".
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch, TeamCreate, SendMessage
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch, Agent
 disable-model-invocation: true
 model: opus
 compatibility: ">=2.1.71"
@@ -13,8 +13,7 @@ compatibility: ">=2.1.71"
 ## Additional Resources
 - For agent prompt templates, pillar checklists, severity schema, and report templates, see [reference.md](reference.md)
 - For context window hygiene (10 parallel agents), see [context-management.md](/_shared/context-management.md)
-- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
-- For agent workload sizing and defensive patterns, see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
+- For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
 
 ---
 
@@ -90,19 +89,20 @@ If found, note the date and key findings for comparison.
 
 ## Phase 1: SPAWN AUDIT AGENTS — Parallel Analysis
 
-### 1.1 Create Audit Team
+### 1.1 Spawn 10 Pillar Agents via Agent Tool
 
-Use `TeamCreate` to create a team named `codebase-audit-${TIMESTAMP}`.
+Spawn all 10 agents using the `Agent` tool, all in **a single assistant message** so they execute concurrently.
 
-### 1.2 Spawn 10 Agents
+Per-spawn parameters:
+- `subagent_type: general-purpose` (agents must Write findings files; `Explore` is read-only and silently fails)
+- `model: sonnet` (explicit — prevents `[1m]` inheritance from Opus orchestrator)
+- `description: codebase-audit <agent-name>`
+- `prompt`: the pillar prompt template from `reference.md`, filled per the roster below
+- `run_in_background: true`
 
-Spawn all 10 agents using `SendMessage`. Each agent runs with `model: "sonnet"`, `mode: "auto"`, `run_in_background: true`, **`subagent_type: general-purpose`**.
+The previous `TeamCreate`+`SendMessage` spawn mechanism was removed in v1.4.0 — agents no longer send peer-to-peer cross-findings. Cross-pillar patterns are synthesized by the orchestrator in Phase 2 from the individual findings files. See [spawn-protocol.md](/_shared/spawn-protocol.md).
 
-> **Subagent type rationale**: Audit agents must Write findings incrementally.
-> Never use `subagent_type: Explore` (read-only — cannot Write) or rely on SDK
-> heuristic defaults. See [subagent-types.md](/_shared/subagent-types.md).
-
-**Weight class**: Medium (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). File caps per pillar are already specified in the roster below. Each agent prompt must also include: max 250-line output per pillar, 5-minute wall-clock budget, mandatory write-as-you-go (already present in step 8 of prompt construction below).
+**Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)). File caps per pillar are specified in the roster below. Each agent prompt must also include: max 250-line output per pillar, 5-minute wall-clock budget, mandatory write-as-you-go (step 8 of prompt construction below).
 
 Every agent receives:
 1. The inventory JSON (inline, not a file path).
