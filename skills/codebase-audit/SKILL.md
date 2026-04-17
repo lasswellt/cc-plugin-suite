@@ -13,6 +13,8 @@ compatibility: ">=2.1.71"
 ## Additional Resources
 - For agent prompt templates, pillar checklists, severity schema, and report templates, see [reference.md](reference.md)
 - For context window hygiene (10 parallel agents), see [context-management.md](/_shared/context-management.md)
+- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
+- For agent workload sizing and defensive patterns, see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
 
 ---
 
@@ -94,7 +96,13 @@ Use `TeamCreate` to create a team named `codebase-audit-${TIMESTAMP}`.
 
 ### 1.2 Spawn 10 Agents
 
-Spawn all 10 agents using `SendMessage`. Each agent runs with `model: "sonnet"`, `mode: "auto"`, `run_in_background: true`.
+Spawn all 10 agents using `SendMessage`. Each agent runs with `model: "sonnet"`, `mode: "auto"`, `run_in_background: true`, **`subagent_type: general-purpose`**.
+
+> **Subagent type rationale**: Audit agents must Write findings incrementally.
+> Never use `subagent_type: Explore` (read-only — cannot Write) or rely on SDK
+> heuristic defaults. See [subagent-types.md](/_shared/subagent-types.md).
+
+**Weight class**: Medium (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). File caps per pillar are already specified in the roster below. Each agent prompt must also include: max 250-line output per pillar, 5-minute wall-clock budget, mandatory write-as-you-go (already present in step 8 of prompt construction below).
 
 Every agent receives:
 1. The inventory JSON (inline, not a file path).

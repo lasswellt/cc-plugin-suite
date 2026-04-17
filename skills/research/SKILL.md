@@ -13,6 +13,8 @@ compatibility: ">=2.1.71"
 - For research document template, research types, and section guidelines, see [reference.md](reference.md)
 - For context window hygiene, see [context-management.md](/_shared/context-management.md)
 - For quantified scope → registry ingestion, see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
+- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
+- For agent workload sizing and defensive patterns, see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
 
 All research output must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder sections.
 
@@ -75,6 +77,14 @@ mkdir -p "${RESEARCH_DIR}"
 ### 1.2 Create Research Team
 
 Use `TeamCreate` to create a team named `research-${TOPIC_SLUG}`.
+
+> **Subagent type**: All research agents must call `Write` to produce findings files.
+> Spawn each with `subagent_type: general-purpose` — either via the `Agent` tool
+> (preferred, takes `subagent_type` directly) or by including the explicit line
+> "You are a general-purpose agent with Write access — your task is INCOMPLETE if
+> your output file does not exist" in every `SendMessage` body. Never rely on SDK
+> heuristics for write-required work — they can route to read-only `Explore`.
+> See [subagent-types.md](/_shared/subagent-types.md).
 
 ### 1.3 Determine Required Agents
 

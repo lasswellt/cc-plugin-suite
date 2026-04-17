@@ -16,6 +16,8 @@ compatibility: ">=2.1.71"
 - For checkpoint awareness, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
 - For handling reviewer agent escalations, see [deviation-protocol.md](/_shared/deviation-protocol.md)
 - For the carry-forward registry enforced by Phase 3.5 (hard gate), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
+- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
+- For agent workload sizing and defensive patterns, see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
 
 All auto-fix code must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder implementations.
 
@@ -191,6 +193,12 @@ Include integration-check findings in the Phase 2 review context so reviewer age
 
 Use `TeamCreate` to create a team named `sprint-${SPRINT_NUMBER}-review`.
 
+> **Subagent type**: Reviewer agents must call `Write` to persist findings to
+> tmp files. Spawn each with `subagent_type: general-purpose` — include the
+> explicit line "You are a general-purpose agent with Write access — your task
+> is INCOMPLETE if your output file does not exist" in every `SendMessage` body.
+> Never rely on SDK heuristics. See [subagent-types.md](/_shared/subagent-types.md).
+
 ### 2.2 Prepare Review Context
 
 Collect the diff for reviewers:
@@ -206,6 +214,14 @@ git diff --stat ${SPRINT_BASE}..HEAD
 ### 2.3 Spawn Reviewer Agents
 
 Spawn 3-4 specialized reviewers. Each writes findings to session-scoped temp files.
+
+**Weight class**: Medium (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). Each reviewer prompt MUST include:
+- Diff slice bounded by domain (max 500 lines of diff per reviewer — slice the full diff by changed-file path prefix)
+- Max 15 file reads per reviewer
+- Max 25 tool calls per reviewer
+- Max 300-line output
+- 5-minute wall-clock budget
+- Write-as-you-go: "Append each finding to your output file immediately after identifying it"
 
 | Agent Name | Focus | Output File |
 |---|---|---|
@@ -240,7 +256,32 @@ Examples:
 
 ### 2.6 Collect Review Findings
 
-Wait for all reviewers to complete. Read their output files. Merge cross-findings (deduplicate by file+line).
+Wait for all reviewers to complete. **Before reading any file, validate output presence**:
+
+```bash
+MISSING_COUNT=0
+EXPECTED_FILES=(
+  "${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-review-security.md"
+  "${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-review-backend.md"
+  "${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-review-frontend.md"
+  "${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-review-patterns.md"
+)
+for f in "${EXPECTED_FILES[@]}"; do
+  if [ ! -s "$f" ]; then
+    echo "MISSING: $f" >&2
+    MISSING_COUNT=$((MISSING_COUNT+1))
+    # Log failure to .cc-sessions/activity-feed.jsonl
+  fi
+done
+```
+
+**Gate**: If `MISSING_COUNT >= 2` (half or more reviewers failed), ABORT Phase 2 and report to user. A security-domain miss is particularly dangerous — never silently ship a review with the security reviewer missing.
+
+If `MISSING_COUNT == 1`: retry the failed reviewer once with a narrower scope (one domain/file prefix). If still failed, the final report MUST explicitly state that domain X was not reviewed.
+
+**Also check for `PARTIAL: true` markers** in successful files. Treat PARTIAL reviewers as half-coverage; note MISSING sections in the final report.
+
+If all files are present and non-empty: read their output files. Merge cross-findings (deduplicate by file+line).
 
 Categorize all findings:
 - **Critical**: Security vulnerabilities, data loss risks, auth bypasses. MUST fix before merge.

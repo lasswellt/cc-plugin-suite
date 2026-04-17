@@ -209,7 +209,13 @@ Use `TeamCreate` to create a team named `roadmap-specs`.
 
 #### 5.2 Spawn Domain Agents
 
-For each domain, spawn an agent with `model: "sonnet"`, `mode: "auto"`, `run_in_background: true`.
+For each domain, spawn an agent with `model: "sonnet"`, `mode: "auto"`, `run_in_background: true`, **`subagent_type: general-purpose`**.
+
+> **Subagent type + workload**: Domain agents must Write their spec file.
+> Never use `Explore` or rely on SDK heuristics. Weight class: Medium
+> (max 15 file reads, 5-min wall-clock, write-as-you-go).
+> See [subagent-types.md](/_shared/subagent-types.md) and
+> [agent-workload-sizing.md](/_shared/agent-workload-sizing.md).
 
 Each agent receives:
 - The domain overview document
@@ -249,6 +255,22 @@ Each agent produces `docs/roadmap/domains/<slug>/spec.md` containing:
    - E2E test targets (critical user journeys)
 
 #### 5.3 Collect and Validate Specs
+
+**Before reading any spec file, validate output presence**:
+
+```bash
+MISSING_COUNT=0
+for domain in <list-of-domains>; do
+  SPEC_FILE="docs/roadmap/domains/${domain}/spec.md"
+  if [ ! -s "$SPEC_FILE" ]; then
+    echo "MISSING: $SPEC_FILE" >&2
+    MISSING_COUNT=$((MISSING_COUNT+1))
+    # Log to .cc-sessions/activity-feed.jsonl
+  fi
+done
+```
+
+**Gate**: If any domain spec file is missing or empty, retry that domain's agent once with narrower scope (fewer capabilities). If still failed, write an explicit placeholder spec noting the domain was not analyzed, flag it in the final summary, and do NOT silently proceed.
 
 Read all generated spec files. Validate:
 - Every capability in the domain is covered
@@ -310,7 +332,15 @@ Use `TeamCreate` to create a team named `roadmap-epics`.
 
 #### 7.2 Spawn Phase Agents
 
-For each implementation phase (from Phase 4), spawn an agent with `model: "sonnet"`, `mode: "auto"`, `run_in_background: true`.
+For each implementation phase (from Phase 4), spawn an agent with `model: "sonnet"`, `mode: "auto"`, `run_in_background: true`, **`subagent_type: general-purpose`**.
+
+> **Subagent type + workload**: Phase agents must Write epic files.
+> Never use `Explore` or rely on SDK heuristics. Weight class: Medium
+> (max 15 file reads, 5-min wall-clock, write-as-you-go).
+> After spawning, validate each expected phase's epic directory was created
+> and contains at least one epic file before proceeding to Phase 8.
+> See [subagent-types.md](/_shared/subagent-types.md) and
+> [agent-workload-sizing.md](/_shared/agent-workload-sizing.md).
 
 Each agent receives:
 - The phase plan (capabilities, domains, workstreams)

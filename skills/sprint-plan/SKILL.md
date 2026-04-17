@@ -15,6 +15,8 @@ compatibility: ">=2.1.71"
 - For context window hygiene (research agents), see [context-management.md](/_shared/context-management.md)
 - For checkpoint awareness, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
 - For the carry-forward registry (read in Phase 0, written in Phase 4.1), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
+- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
+- For agent workload sizing and defensive patterns, see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
 
 All generated stories must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder acceptance criteria.
 
@@ -147,9 +149,17 @@ If available, note the repo owner/name for later issue creation. If not, skip Gi
 
 Use `TeamCreate` to create a team named `sprint-${SPRINT_NUMBER}-research`.
 
+> **Subagent type**: All research agents must call `Write` to produce findings files.
+> Spawn each with `subagent_type: general-purpose`. Include the explicit line
+> "You are a general-purpose agent with Write access — your task is INCOMPLETE if
+> your output file does not exist" in every `SendMessage` body. Never rely on SDK
+> heuristics for write-required work. See [subagent-types.md](/_shared/subagent-types.md).
+
 ### 2.2 Spawn Research Agents
 
 Spawn 3-4 named agents using `SendMessage`. Each agent writes findings to `${SESSION_TMP_DIR}/` files as they go.
+
+**Weight class**: Medium (per [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). Each agent prompt MUST include: max 15 file reads, max 8 web searches (0 for codebase-analyst), max 250-line output, 5-minute wall-clock budget, write-as-you-go instruction.
 
 **Required agents:**
 
@@ -181,17 +191,33 @@ STEER: <topic> — Found relevant info for your area: <summary>. Details in ${SE
 
 ### 2.4 Collect Research
 
-Wait for all agents to complete. Read their output files:
-```
-${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-domain-researcher.md
-${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-library-researcher.md
-${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-codebase-analyst.md
-${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-infra-analyst.md  (if spawned)
+Wait for all agents to complete. **Before reading any file, validate output presence**:
+
+```bash
+MISSING_COUNT=0
+EXPECTED_FILES=(
+  "${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-domain-researcher.md"
+  "${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-library-researcher.md"
+  "${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-codebase-analyst.md"
+)
+# Add infra-analyst.md to EXPECTED_FILES if it was spawned.
+
+for f in "${EXPECTED_FILES[@]}"; do
+  if [ ! -s "$f" ]; then
+    echo "MISSING: $f" >&2
+    MISSING_COUNT=$((MISSING_COUNT+1))
+    # Log failure to .cc-sessions/activity-feed.jsonl
+  fi
+done
 ```
 
-Copy research files into `${SPRINT_DIR}/research/`.
+**Gate**: If `MISSING_COUNT >= 2` (i.e., half or more of the research agents failed), ABORT Phase 2 and report to the user. Do not proceed to story generation on badly-degraded research.
 
-**Gate:** All research files must exist and contain substantive findings (not empty or error-only). If an agent failed, retry once. If still failed, proceed with available research and note the gap.
+If `MISSING_COUNT == 1`, retry the failed agent once with a narrower scope (single most-critical epic only). If still failed, proceed with a loud warning in the sprint manifest noting the missing domain.
+
+If all files are present: copy into `${SPRINT_DIR}/research/`.
+
+**Also check for `PARTIAL: true` markers** in successful files (see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)). Treat a PARTIAL research file as half-coverage; note MISSING sections in the sprint manifest.
 
 ---
 

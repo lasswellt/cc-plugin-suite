@@ -10,6 +10,10 @@ argument-hint: "<issue-number>"
 ## Project Context
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
+## Additional Resources
+- For subagent type selection, see [subagent-types.md](/_shared/subagent-types.md)
+- For agent workload sizing and defensive patterns, see [agent-workload-sizing.md](/_shared/agent-workload-sizing.md)
+
 ---
 
 # Fix Issue Skill
@@ -135,9 +139,10 @@ Research is **OPTIONAL** only when ALL are true:
 
 When skipping research, document **WHY** it was skipped.
 
-When research is needed, use `SendMessage` to spawn a research subagent:
+When research is needed, spawn a research subagent with `subagent_type: general-purpose` (the agent MUST Write the findings file — never use `Explore`). Weight class: Light.
 ```
-You are a research subagent investigating a bug.
+You are a general-purpose research subagent investigating a bug. You have
+Write access; your task is INCOMPLETE if the output file does not exist.
 
 ISSUE: <issue title and description>
 ERROR: <error message if available>
@@ -147,10 +152,33 @@ TASKS:
 1. Search for known issues with the library/API involved.
 2. Check if there are documented workarounds.
 3. Check for recent version changes that could cause this.
-4. Write findings to ${SESSION_TMP_DIR}/issue-research.md
+4. Write findings to ${SESSION_TMP_DIR}/issue-research.md — stub the file
+   at start, append findings as you discover them.
 
-LIMITS: Max 5 web searches. Focus on the specific error, not general background.
+LIMITS (Light class, per agent-workload-sizing.md):
+- Max 5 web searches
+- Max 8 file reads
+- Max 150-line output
+- 3-minute wall-clock budget
+
+Focus on the specific error, not general background.
 ```
+
+**Before reading issue-research.md for root cause analysis, validate output**:
+
+```bash
+RESEARCH_FILE="${SESSION_TMP_DIR}/issue-research.md"
+if [ ! -s "$RESEARCH_FILE" ]; then
+  echo "WARNING: research subagent did not produce output" >&2
+  # Log to .cc-sessions/activity-feed.jsonl
+  # Downgrade root cause confidence to Low and request user confirmation
+  # before proceeding to Phase 2 implementation.
+  CONFIDENCE="Low"
+  RESEARCH_SKIPPED=true
+fi
+```
+
+Do NOT proceed to Phase 2 implementation based on missing/empty research output. Either retry with narrower scope (one specific error), or ask the user to confirm the next step with reduced confidence.
 
 ### 1.5 Identify Root Cause
 
