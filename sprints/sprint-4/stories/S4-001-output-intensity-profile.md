@@ -4,7 +4,7 @@ title: Add output_intensity to developer-profile schema + BLITZ_OUTPUT_INTENSITY
 epic: E-005
 capability: CAP-005
 registry_id: cf-2026-04-18-output-intensity-profile
-status: planned
+status: done
 github_issue: 10
 priority: high
 points: 2

@@ -320,6 +320,15 @@ already evident in the diff or tool output. Format: fragments OK.
 
 See [/_shared/terse-output.md](terse-output.md) for the full protocol, intensity levels (`lite`/`full`/`ultra`), auto-pause conditions, and examples.
 
+**Active-intensity interpolation.** The literal word `terse-technical` in the snippet above is a convenience shorthand that resolves to the active intensity at spawn time. Resolution precedence (first hit wins):
+
+1. `BLITZ_OUTPUT_INTENSITY` env var (session-scoped override)
+2. `.cc-sessions/developer-profile.json` `output_intensity` (per-user/per-repo)
+3. SKILL.md frontmatter `output_intensity` or legacy `output_style` (per-skill)
+4. Default `lite`
+
+Orchestrator skills SHOULD substitute the resolved intensity explicitly when building the prompt — e.g. `OUTPUT STYLE: <resolved-intensity> per /_shared/terse-output.md. ...`. See `/_shared/terse-output.md` §Intensity override precedence.
+
 **Exception classes that auto-drop terse mode:**
 - Security warnings, credential risks, irreversible-action confirmations
 - Root-cause explanations where compressed prose would lose the reasoning chain

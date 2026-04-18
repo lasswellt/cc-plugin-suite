@@ -18,6 +18,8 @@ compatibility: ">=2.1.71"
 
 ---
 
+**Terse exemptions (LITE intensity):** security-pillar risk narratives. Full sentences + reasoning chain required in these sections. Resume terse on next section.
+
 # Codebase Audit Skill
 
 Run a comprehensive 5-pillar code quality audit by spawning 10 parallel agents. Execute every phase in order. Do NOT skip phases.

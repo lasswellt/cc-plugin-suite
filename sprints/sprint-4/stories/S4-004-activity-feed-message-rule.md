@@ -4,7 +4,7 @@ title: Add activity-feed message length rule to verbose-progress.md
 epic: E-005
 capability: CAP-005
 registry_id: cf-2026-04-18-activity-feed-message-rule
-status: planned
+status: done
 github_issue: 13
 priority: low
 points: 1

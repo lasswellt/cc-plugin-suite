@@ -133,7 +133,7 @@
     },
     {
       "number": 4,
-      "status": "planned",
+      "status": "review",
       "planned_date": "2026-04-18T11:35:00Z",
       "epics": [
         "E-005"
@@ -158,7 +158,13 @@
       "deferred_to_sprint_5": [
         "cf-agent-prompt-boilerplate",
         "cf-spawn-protocol-warning-upgrade"
-      ]
+      ],
+      "started_date": "2026-04-18T16:00:52Z",
+      "dev_session": "sprint-dev-ed044e02",
+      "completed_date": "2026-04-18T16:03:18Z",
+      "stories_completed": 4,
+      "stories_partial": 0,
+      "stories_blocked": 0
     }
   ]
 }

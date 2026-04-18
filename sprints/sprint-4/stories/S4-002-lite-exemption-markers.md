@@ -4,7 +4,7 @@ title: Add LITE-intensity exemption markers to 9 reasoning/safety-sensitive skil
 epic: E-005
 capability: CAP-005
 registry_id: cf-2026-04-18-lite-exemption-markers
-status: planned
+status: done
 github_issue: 11
 priority: high
 points: 2

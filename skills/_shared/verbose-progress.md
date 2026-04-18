@@ -145,6 +145,21 @@ Every skill MUST log these events to the activity feed:
 | `warning` | Non-fatal issue encountered | `{ "message": "<detail>" }` |
 | `error` | Fatal or significant error | `{ "message": "<detail>", "recoverable": true|false }` |
 
+### Message length (soft rule)
+
+The `message` field SHOULD be ≤200 characters. The JSONL envelope (all keys except `message`) is a preservation boundary — parsers depend on its shape — but the `message` string is compression-eligible prose.
+
+If the message would exceed 200 chars, move detail into the `detail` object. Keep the `message` a one-line human-readable summary.
+
+**Sprint-review grep audit** (non-BLOCKER warning):
+
+```bash
+# Flag any message field over 300 chars
+grep -E '"message":".{300,}"' .cc-sessions/activity-feed.jsonl
+```
+
+300 chars is the hard audit threshold (soft target is 200). A hit prints a warning but does not fail the sprint. Persistent offenders (same pattern across multiple sprints) may warrant an update to the emitting skill.
+
 ### Reading the Activity Feed
 
 At session start (during the session protocol preamble), skills MUST:

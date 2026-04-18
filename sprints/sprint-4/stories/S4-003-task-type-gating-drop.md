@@ -4,7 +4,7 @@ title: Transition cf-task-type-gating to dropped (superseded by cf-lite-exemptio
 epic: E-005
 capability: CAP-005
 registry_id: cf-2026-04-18-task-type-gating
-status: planned
+status: done
 github_issue: 12
 priority: low
 points: 1

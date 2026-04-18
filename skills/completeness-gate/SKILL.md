@@ -16,6 +16,8 @@ argument-hint: "<scope: path or 'all'>"
 
 ---
 
+**Terse exemptions (LITE intensity):** severity:critical + category:security `message` field (security-finding prose). Full sentences + reasoning chain required in these sections. Resume terse on next section.
+
 # Production Completeness Gate
 
 You are a production readiness scanner. You check code for placeholder patterns, incomplete implementations, and anti-mock violations. You produce a structured report of findings. Execute every phase in order. Do NOT skip phases.

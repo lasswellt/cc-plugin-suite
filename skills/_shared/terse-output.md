@@ -39,6 +39,20 @@ Skills SHOULD declare an intended level in their SKILL.md frontmatter (`output_s
 
 ---
 
+## Intensity override precedence
+
+When an Agent() spawn or skill invocation interpolates the active intensity, resolve in this order (first hit wins):
+
+1. **Environment variable:** `BLITZ_OUTPUT_INTENSITY=lite|full|ultra` — session-scoped override, typically set for one `/loop` run.
+2. **Developer profile:** `.cc-sessions/developer-profile.json` top-level `output_intensity` field — per-user/per-repo preference that survives sessions.
+3. **Skill frontmatter:** `output_intensity: lite|full|ultra` in the SKILL.md frontmatter — per-skill declaration.
+4. **Output-style field:** the legacy `output_style:` frontmatter field (treated as an alias of `output_intensity`).
+5. **Default:** `lite`.
+
+The active intensity is what gets substituted into the canonical `spawn-protocol.md` §7 OUTPUT STYLE snippet when agents spawn. See `spawn-protocol.md` for the interpolation point.
+
+---
+
 ## Preservation boundary (non-negotiable)
 
 Never compress:
