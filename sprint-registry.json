@@ -181,6 +181,30 @@
         "i4": "applied-2-entries"
       },
       "auto_injected_entries": 2
+    },
+    {
+      "number": 5,
+      "status": "planned",
+      "planned_date": "2026-04-18T11:55:00Z",
+      "epics": [
+        "E-006",
+        "E-007"
+      ],
+      "phase": "3+4",
+      "phase_name": "Final absorption",
+      "story_count": 3,
+      "stories": [
+        "S5-001",
+        "S5-002",
+        "S5-003"
+      ],
+      "github_issues": [
+        14,
+        15,
+        16
+      ],
+      "planner_mode": "loop-autonomous",
+      "final_sprint": true
     }
   ]
 }

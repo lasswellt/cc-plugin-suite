@@ -1,0 +1,25 @@
+{
+  "sprint": 5,
+  "status": "planned",
+  "created": "2026-04-18T11:55:00Z",
+  "planner_mode": "loop-autonomous",
+  "autonomy": "full",
+  "epics": ["E-006", "E-007"],
+  "phase": "3+4",
+  "phase_name": "Final absorption — boilerplate dedup (E-006) + enforcement upgrade (E-007)",
+  "sources": {
+    "planning_inputs": "sprints/sprint-5-planning-inputs.json",
+    "roadmap_phase": "docs/roadmap/phase-plan.json#phase-3,phase-4"
+  },
+  "carry_forward": [],
+  "story_count": 3,
+  "waived_ac_count": 0,
+  "reason_waivers": null,
+  "registry_entries_touched": [
+    "cf-2026-04-18-agent-prompt-boilerplate",
+    "cf-2026-04-18-spawn-protocol-warning-upgrade"
+  ],
+  "final_sprint": true,
+  "post_sprint_plan": "After Sprint 5 reviews out clean, ship v1.5.0 with full caveman-absorption payload (Sprints 2-5). Then run /blitz:roadmap refresh to transition E-001..E-007 status=done.",
+  "research_skipped": { "reason": "Both stories fully specified in source research docs; mechanical work." }
+}
