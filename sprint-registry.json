@@ -11,6 +11,21 @@
       "notes": "S1-005 partial (10/12 compressed, 2 UNSAFE rejected)"
     },
     {
+      "number": 3,
+      "status": "planned",
+      "planned_date": "2026-04-18T11:10:00Z",
+      "epics": ["E-003", "E-004"],
+      "phase": 2,
+      "phase_name": "Runtime Propagation — Write-Site Directive + Review Format",
+      "story_count": 4,
+      "stories": ["S3-001", "S3-002", "S3-003", "S3-004"],
+      "github_issues": [6, 7, 8, 9],
+      "planner_session": "sprint-plan-b99adad1",
+      "planner_mode": "loop-autonomous",
+      "source_planning_inputs": "sprints/sprint-3-planning-inputs.json",
+      "carry_forward_from_sprint_2": ["cf-2026-04-18-compress-safe-references-wave2"]
+    },
+    {
       "number": 2,
       "status": "reviewed",
       "started_date": "2026-04-18T10:35:00Z",
