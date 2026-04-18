@@ -5,25 +5,50 @@
       "status": "done",
       "planned_date": "2026-04-16T00:00:00Z",
       "completed_date": "2026-04-17T00:00:00Z",
-      "epics": ["S1-epic-caveman-absorption-v1"],
+      "epics": [
+        "S1-epic-caveman-absorption-v1"
+      ],
       "story_count": 5,
-      "stories": ["S1-001", "S1-002", "S1-003", "S1-004", "S1-005"],
+      "stories": [
+        "S1-001",
+        "S1-002",
+        "S1-003",
+        "S1-004",
+        "S1-005"
+      ],
       "notes": "S1-005 partial (10/12 compressed, 2 UNSAFE rejected)"
     },
     {
       "number": 3,
-      "status": "planned",
+      "status": "in-progress",
       "planned_date": "2026-04-18T11:10:00Z",
-      "epics": ["E-003", "E-004"],
+      "epics": [
+        "E-003",
+        "E-004"
+      ],
       "phase": 2,
-      "phase_name": "Runtime Propagation — Write-Site Directive + Review Format",
+      "phase_name": "Runtime Propagation \u2014 Write-Site Directive + Review Format",
       "story_count": 4,
-      "stories": ["S3-001", "S3-002", "S3-003", "S3-004"],
-      "github_issues": [6, 7, 8, 9],
+      "stories": [
+        "S3-001",
+        "S3-002",
+        "S3-003",
+        "S3-004"
+      ],
+      "github_issues": [
+        6,
+        7,
+        8,
+        9
+      ],
       "planner_session": "sprint-plan-b99adad1",
       "planner_mode": "loop-autonomous",
       "source_planning_inputs": "sprints/sprint-3-planning-inputs.json",
-      "carry_forward_from_sprint_2": ["cf-2026-04-18-compress-safe-references-wave2"]
+      "carry_forward_from_sprint_2": [
+        "cf-2026-04-18-compress-safe-references-wave2"
+      ],
+      "started_date": "2026-04-18T15:21:05Z",
+      "dev_session": "sprint-dev-49640f11"
     },
     {
       "number": 2,
@@ -38,18 +63,51 @@
       "stories_partial": 1,
       "stories_blocked": 0,
       "integration_issues": 0,
-      "quality_gates": { "validator": true, "anti_mock": true, "conventions": true, "type_check": "N/A", "lint": "N/A", "tests": "N/A", "build": "N/A" },
-      "findings": { "critical": 0, "major": 0, "minor": 1, "info": 2 },
-      "registry_invariants": { "i1": "pass-with-notes", "i2": "fail-mitigated-by-i4", "i3": "pass-vacuous", "i4": "applied-9-entries" },
+      "quality_gates": {
+        "validator": true,
+        "anti_mock": true,
+        "conventions": true,
+        "type_check": "N/A",
+        "lint": "N/A",
+        "tests": "N/A",
+        "build": "N/A"
+      },
+      "findings": {
+        "critical": 0,
+        "major": 0,
+        "minor": 1,
+        "info": 2
+      },
+      "registry_invariants": {
+        "i1": "pass-with-notes",
+        "i2": "fail-mitigated-by-i4",
+        "i3": "pass-vacuous",
+        "i4": "applied-9-entries"
+      },
       "auto_injected_entries": 9,
       "partial_notes": "S2-004: 6/7 compressed; completeness-gate UNSAFE-rejected (grep-pattern heading). Decision deferred to operator.",
       "planned_date": "2026-04-18T10:00:00Z",
-      "epics": ["E-001", "E-002"],
+      "epics": [
+        "E-001",
+        "E-002"
+      ],
       "phase": 1,
-      "phase_name": "Foundation — Directive Coverage + File Compression",
+      "phase_name": "Foundation \u2014 Directive Coverage + File Compression",
       "story_count": 5,
-      "stories": ["S2-001", "S2-002", "S2-003", "S2-004", "S2-005"],
-      "github_issues": [1, 2, 3, 4, 5],
+      "stories": [
+        "S2-001",
+        "S2-002",
+        "S2-003",
+        "S2-004",
+        "S2-005"
+      ],
+      "github_issues": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
       "planner_session": "sprint-plan-a77f22e5",
       "planner_mode": "loop-autonomous"
     }

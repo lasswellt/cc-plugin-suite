@@ -4,7 +4,7 @@ title: Resolve Sprint-2 completeness-gate partial (operator decision + close reg
 epic: E-002
 capability: CAP-002
 registry_id: cf-2026-04-18-compress-safe-references-wave2
-status: planned
+status: done
 github_issue: 9
 priority: medium
 points: 1

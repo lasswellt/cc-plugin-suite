@@ -4,7 +4,7 @@ title: Insert 5-line Output-style block at 8 SKILL.md write-phase locations
 epic: E-003
 capability: CAP-003
 registry_id: cf-2026-04-18-write-phase-directive-inserts
-status: planned
+status: done
 github_issue: 6
 priority: high
 points: 2
