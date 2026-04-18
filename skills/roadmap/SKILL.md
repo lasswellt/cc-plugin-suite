@@ -298,6 +298,8 @@ gaps:
 
 ### 2.3 Gap Analysis
 
+**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Bullet lists only. Format: `<capability-or-module> — <status> — <1-fragment rationale>`. Preserve verbatim: capability IDs, file paths, module paths, JSON records, registry IDs. No prose preamble. Phase + domain docs stay as structured registries, not narrative reports.
+
 Write `docs/roadmap/gap-analysis.md`:
 - Capabilities with no codebase support (greenfield)
 - Capabilities with partial support (extend/refactor)

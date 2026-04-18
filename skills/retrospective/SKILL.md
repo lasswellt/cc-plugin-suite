@@ -253,6 +253,8 @@ Create the proposals document:
 mkdir -p docs/retrospective
 ```
 
+**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Each proposal's field values (Pattern observed, Proposed change, Expected impact) use fragments, not full sentences. Field **labels** preserved verbatim (downstream parsers grep them). Preserve verbatim: file paths, grep patterns, session IDs, frontmatter. **LITE intensity** required for Classification rationale on "Never Auto-Apply" proposals — operator accepts/rejects based on reasoning chain; compression must not lose the why.
+
 Write to `docs/retrospective/YYYY-MM-DD-proposals.md`:
 
 ```markdown

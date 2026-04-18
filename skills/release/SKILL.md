@@ -211,6 +211,8 @@ Rules:
 
 ### 3.4 Generate Release Notes Excerpt
 
+**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Reuse CHANGELOG bullets verbatim — no narrative preamble, no "Thanks for using …" closer, no marketing framing. Preserve verbatim: version numbers, commit hashes, issue/PR numbers, `BREAKING CHANGE:` markers. **LITE intensity** required for breaking-change descriptions (users need the migration reasoning, not fragments). Migration instructions: full sentences + commands preserved exactly.
+
 Write a standalone release notes file for the GitHub release body:
 ```bash
 # Write to session temp dir

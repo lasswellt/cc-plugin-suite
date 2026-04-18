@@ -315,8 +315,10 @@ Use the YAML frontmatter schema defined in `reference.md`. Every story MUST incl
 - `verify` (list of shell commands that must pass for the story to be considered done)
 - `done` (human-readable sentence defining what "done" means for this story)
 
+**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code snippets, file paths, YAML frontmatter, verify-command shells, grep patterns. Fragments OK in story bodies. Story titles and AC phrasing stay imperative and concrete.
+
 The body must include:
-- **Description**: 2-4 sentences on what and why.
+- **Description**: 1-3 fragments on what and why (verb-first; drop articles). Example: "Add null guard on profile.load(). Prevents dashboard crash when user.profile undefined."
 - **Acceptance Criteria**: Numbered list, each testable and specific.
 - **Implementation Notes**: Key code patterns, imports, relevant research references.
 - **Code Snippets**: Starter code where helpful (types, function signatures, test skeletons).

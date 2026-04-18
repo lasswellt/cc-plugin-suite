@@ -253,6 +253,8 @@ Create the directory if it does not exist:
 mkdir -p docs/_research
 ```
 
+**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, paths, commands, grep patterns, YAML/JSON frontmatter (especially `scope:`), tables, error codes, dates, versions. No preamble, no trailing summary. Fragments OK. Intensity: `lite` for user-facing Summary + Research-Questions + Risks (reasoning chain must survive); `full` for Findings narrative + Implementation Sketch. Auto-pause for security/irreversible/root-cause sections — write full prose.
+
 Use the template from `reference.md`. The document MUST include all of these sections:
 
 1. **Summary** — 3-5 sentence executive summary of findings and recommendation.

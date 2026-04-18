@@ -403,6 +403,8 @@ Full invariant procedures (Invariants 1-4, the hard-gate decision, report schema
 
 ### 4.1 Write Review Report
 
+**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Tables preferred over prose. Executive Summary: 2-3 fragments. Recommendations: imperative bullets. Preserve verbatim: quality-gate table structure, severity prefixes, file paths, grep patterns, JSON invariant records. **LITE intensity** (full sentences, reasoning-chain preserved) for: critical/major findings explanations, security/CVE details, root-cause sections, registry-invariant mismatch deltas. `full` intensity for info-level and cosmetic findings. Finding format: `L<line>: <severity-prefix> <problem>. <fix>.` with 🔴/🟡/🔵/❓ prefixes (see S3-003 review-format absorption). If no findings in a severity bucket, write `LGTM` and stop — do not pad.
+
 Write `${SPRINT_DIR}/review-report.md` using the template from reference.md. Include:
 
 1. **Executive Summary** — Sprint number, date, overall status (PASS/CONDITIONAL/FAIL).

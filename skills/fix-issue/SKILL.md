@@ -309,6 +309,8 @@ EOF
 
 ### 4.2 Update GitHub Issue
 
+**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Field **labels** preserved verbatim (downstream parsers grep them). Field **values** compress to fragments. Preserve verbatim: file paths, branch names, verification-check pass/fail tokens. **LITE intensity** required for **Root Cause** — the reasoning chain must survive ("undefined because foo unset on cold start, caused by bar in baz.ts"). Drop the trailing "Ready for review and merge." line — filler.
+
 Post a comment on the issue with the fix details:
 ```bash
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
@@ -318,8 +320,8 @@ gh issue comment $ISSUE_NUMBER --body "$(cat <<'EOF'
 ## Fix Applied
 
 **Branch**: `<branch-name>`
-**Root Cause**: <1-2 sentence explanation>
-**Fix**: <1-2 sentence description of the change>
+**Root Cause**: <1-fragment root cause with file:line ref; LITE intensity — reasoning must survive>
+**Fix**: <1-fragment change + file:line refs>
 **Files Changed**:
 - `<file1>`: <what changed>
 - `<file2>`: <what changed>
@@ -328,8 +330,6 @@ gh issue comment $ISSUE_NUMBER --body "$(cat <<'EOF'
 - Type-check: PASS
 - Tests: PASS (<N> passed)
 - Build: PASS
-
-Ready for review and merge.
 EOF
 )"
 ```
