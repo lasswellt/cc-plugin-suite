@@ -73,3 +73,8 @@ If the answer is no, the work is not done.
 
 - [ ] Project builds successfully
 - [ ] No new build warnings introduced
+
+
+## Related protocols
+
+- [/_shared/terse-output.md](/_shared/terse-output.md) — output-style directive. All content this protocol produces (reports, checkpoints, logs) should follow it.

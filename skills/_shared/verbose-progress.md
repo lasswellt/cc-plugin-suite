@@ -278,3 +278,8 @@ This protocol extends (not replaces) the session-protocol.md. Specifically:
 4. **Conflict detection** now also reads the activity feed for recent context.
 
 All skills that reference session-protocol.md should also follow this verbose-progress protocol.
+
+
+## Related protocols
+
+- [/_shared/terse-output.md](/_shared/terse-output.md) — output-style directive. All content this protocol produces (reports, checkpoints, logs) should follow it.

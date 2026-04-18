@@ -276,3 +276,8 @@ Consumer projects that adopted blitz before the carry-forward registry shipped w
 - **Don't treat `deferred` as permanent.** Deferred entries must reappear in planning inputs at a specified revisit sprint or date, tracked in `notes`.
 - **Don't mark `status: complete` without running the `scope.acceptance` checks.** `completeness-gate` is the authority — never self-mark.
 - **Don't auto-revive `dropped` entries.** Revival is always a fresh `created` line with a new `id` and a `replaced` transition on the old one.
+
+
+## Related protocols
+
+- [/_shared/terse-output.md](/_shared/terse-output.md) — output-style directive. All content this protocol produces (reports, checkpoints, logs) should follow it.

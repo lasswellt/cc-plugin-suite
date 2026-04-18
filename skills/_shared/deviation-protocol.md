@@ -119,3 +119,8 @@ If a Tier 2 auto-add exceeds **30 lines of new code**, it must be promoted to **
 - Hiding significant design decisions in deviation reports
 
 When promoting, include the completed work so far in the ESCALATE message so the orchestrator can decide whether to accept it as-is or request changes.
+
+
+## Related protocols
+
+- [/_shared/terse-output.md](/_shared/terse-output.md) — output-style directive. All content this protocol produces (reports, checkpoints, logs) should follow it.

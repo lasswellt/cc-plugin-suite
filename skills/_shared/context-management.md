@@ -155,3 +155,8 @@ The hook maintains a running character count in `.cc-sessions/context-char-count
 **At 80%:**
 - Orchestrators: Write a checkpoint, save all state to STATE.md, and consider: if many stories remain, it may be better to complete the current wave and resume in a new session.
 - Agents: Complete the current story, report DONE, and let the orchestrator decide whether to assign more work or spawn a fresh agent.
+
+
+## Related protocols
+
+- [/_shared/terse-output.md](/_shared/terse-output.md) — output-style directive. All content this protocol produces (reports, checkpoints, logs) should follow it.

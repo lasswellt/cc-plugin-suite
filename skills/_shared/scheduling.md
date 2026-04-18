@@ -53,3 +53,8 @@ Skills that support `/loop` must be **idempotent** — safe to call repeatedly w
 | `next` | Yes | Read-only advisor |
 
 Skills that modify code (sprint-dev, refactor, fix-issue, etc.) should NOT be used with `/loop` directly — use `/blitz:sprint --loop` or `/blitz:code-sweep --loop` to orchestrate them safely.
+
+
+## Related protocols
+
+- [/_shared/terse-output.md](/_shared/terse-output.md) — output-style directive. All content this protocol produces (reports, checkpoints, logs) should follow it.

@@ -111,3 +111,8 @@ Reports are written to `.cc-sessions/reports/<SESSION_ID>.md`.
 ```
 
 Reports are preserved indefinitely. They serve as input for the `retrospective` skill's pattern analysis.
+
+
+## Related protocols
+
+- [/_shared/terse-output.md](/_shared/terse-output.md) — output-style directive. All content this protocol produces (reports, checkpoints, logs) should follow it.

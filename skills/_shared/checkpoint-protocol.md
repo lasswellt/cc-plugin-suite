@@ -194,3 +194,8 @@ If a relevant HANDOFF.json exists (same skill, matching target):
 2. Ask: "Resume from previous session or start fresh?"
 3. If resuming, load context and skip to the indicated phase.
 4. Log a `decision` event: "Resuming from HANDOFF.json (session: <old-session>)".
+
+
+## Related protocols
+
+- [/_shared/terse-output.md](/_shared/terse-output.md) — output-style directive. All content this protocol produces (reports, checkpoints, logs) should follow it.

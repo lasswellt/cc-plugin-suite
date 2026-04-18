@@ -267,3 +267,8 @@ Every skill's final phase must:
    - Last verification results (type-check, tests, build, completeness)
    - Agent tracker state if applicable (stories completed, blocked, deviations)
 7. Print skill completion message per verbose-progress.md
+
+
+## Related protocols
+
+- [/_shared/terse-output.md](/_shared/terse-output.md) — output-style directive. All content this protocol produces (reports, checkpoints, logs) should follow it.
