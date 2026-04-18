@@ -4,7 +4,7 @@ title: Adopt caveman-review output format in sprint-review + review reference.md
 epic: E-004
 capability: CAP-004
 registry_id: cf-2026-04-18-review-format-absorption
-status: planned
+status: done
 github_issue: 8
 priority: high
 points: 2

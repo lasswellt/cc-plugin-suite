@@ -68,6 +68,12 @@ STORIES (in dependency order, with verify/done criteria):
 ${STORY_LIST}
 
 Start with the first story. Report DONE: S${N}-XXX when complete, then wait for next instructions.
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles,
+fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code,
+URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows,
+error codes, dates, version numbers. No preamble. No trailing summary of work
+already evident in the diff or tool output. Format: fragments OK.
 ```
 
 ### Frontend Dev Agent
@@ -133,6 +139,12 @@ STORIES (in dependency order, with verify/done criteria):
 ${STORY_LIST}
 
 Start with the first story. Report DONE: S${N}-XXX when complete, then wait for next instructions.
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles,
+fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code,
+URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows,
+error codes, dates, version numbers. No preamble. No trailing summary of work
+already evident in the diff or tool output. Format: fragments OK.
 ```
 
 ### Test Writer Agent
@@ -197,6 +209,12 @@ STORIES (in dependency order, with verify/done criteria):
 ${STORY_LIST}
 
 Wait for SYNC: messages confirming implementations are done before writing tests.
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles,
+fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code,
+URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows,
+error codes, dates, version numbers. No preamble. No trailing summary of work
+already evident in the diff or tool output. Format: fragments OK.
 ```
 
 ### Infrastructure Dev Agent (Optional)
@@ -254,6 +272,12 @@ STORIES (in dependency order, with verify/done criteria):
 ${STORY_LIST}
 
 Start with the first story. Report DONE: S${N}-XXX when complete, then wait for next instructions.
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles,
+fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code,
+URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows,
+error codes, dates, version numbers. No preamble. No trailing summary of work
+already evident in the diff or tool output. Format: fragments OK.
 ```
 
 ---

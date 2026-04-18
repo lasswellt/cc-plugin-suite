@@ -64,6 +64,12 @@ Write each finding using this exact format:
 - **Findings**: <count> (Critical: N, High: N, Medium: N, Low: N)
 - **Top Concern**: <one-sentence summary of the most important finding>
 - **Overall Assessment**: <one-sentence pillar health assessment>
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles,
+fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code,
+URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows,
+error codes, dates, version numbers. No preamble. No trailing summary of work
+already evident in the diff or tool output. Format: fragments OK.
 ```
 
 ---

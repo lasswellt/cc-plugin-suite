@@ -288,6 +288,46 @@ Each reviewer agent must format findings consistently.
 | **Minor** | Code quality, style, minor performance. Does not affect functionality. | Unnecessary re-renders, slightly wrong naming, missing JSDoc |
 | **Info** | Suggestions for improvement. No current issue. | Alternative pattern suggestion, future optimization opportunity |
 
+### Finding Format (mandatory terse line-level shape)
+
+Each finding under the `### Critical`, `### Major`, `### Minor`, `### Info` sections MUST use caveman-review shape:
+
+- **Single file:** `L<line>: <severity-prefix> <problem>. <fix>.`
+- **Multi-file:** `<file>:L<line>: <severity-prefix> <problem>. <fix>.`
+
+**Severity prefixes (one per finding):**
+
+| Prefix | Severity | Meaning |
+|---|---|---|
+| `🔴 bug:` | Critical | Broken / incident-class / security-breach-class |
+| `🟡 risk:` | Major | Fragile but works; likely-future-bug |
+| `🔵 nit:` | Minor | Style / naming / small improvement |
+| `❓ q:` | Info | Genuine question to author |
+
+**LGTM rule:** If a severity bucket has zero findings, write `LGTM` under that heading and stop. Do NOT pad with "nothing to report", "no issues found", or similar filler.
+
+**Auto-clarity exemption:** for security/CVE-class findings, architectural disagreements, or onboarding contexts, drop the terse one-liner and write full prose explanation with references (OWASP, RFCs, docs links). Resume terse format on the next finding.
+
+**Drop from findings:** "I noticed", "It seems like", "You might want to consider", per-comment praise, restating what the line already does, general hedging.
+
+**Keep:** exact line numbers, identifiers in backticks, concrete fix, "why" only when non-obvious.
+
+Example:
+
+```markdown
+### Critical
+L42: 🔴 bug: `verifyToken` never checks `exp` claim. Add `if (payload.exp < Date.now()/1000) throw`.
+
+### Major
+src/api/user.ts:L88: 🟡 risk: missing `await` on `saveUser()` loses write on error path. Add `await`.
+
+### Minor
+LGTM
+
+### Info
+L30: ❓ q: why `Map` over `Record<string, X>` here? Hot path?
+```
+
 ### Reviewer-Specific Checklists
 
 #### Security Reviewer

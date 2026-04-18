@@ -4,7 +4,7 @@ title: Inject spawn-protocol §7 OUTPUT STYLE snippet into 7 UNSAFE reference.md
 epic: E-003
 capability: CAP-003
 registry_id: cf-2026-04-18-unsafe-ref-agent-prompt-injection
-status: planned
+status: done
 github_issue: 7
 priority: high
 points: 2
