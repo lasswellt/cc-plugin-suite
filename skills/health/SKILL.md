@@ -7,6 +7,8 @@ compatibility: ">=2.1.50"
 disable-model-invocation: true
 ---
 
+
+**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Fragments OK, drop filler/pleasantries/hedging. Preserve code, paths, commands, YAML/JSON verbatim.
 ## Project Context
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 

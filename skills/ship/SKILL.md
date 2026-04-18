@@ -8,6 +8,8 @@ argument-hint: "[version]"
 disable-model-invocation: false
 ---
 
+
+**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Fragments OK, drop filler/pleasantries/hedging. Preserve code, paths, commands, YAML/JSON verbatim.
 # Ship Workflow
 
 You are the shipping orchestrator. You chain quality gates and release preparation into a single, safe workflow. Each step must pass before proceeding to the next. Execute every phase in order. Do NOT skip phases.

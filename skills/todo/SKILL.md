@@ -7,6 +7,8 @@ compatibility: ">=2.1.50"
 argument-hint: "<add <description> | list | check | resolve <id>>"
 ---
 
+
+**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Fragments OK, drop filler/pleasantries/hedging. Preserve code, paths, commands, YAML/JSON verbatim.
 # Todo Management
 
 Track development ideas, follow-up items, and technical debt discovered during work. Prevents items from being lost or becoming stale TODO comments in code.

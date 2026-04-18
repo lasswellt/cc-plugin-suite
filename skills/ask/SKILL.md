@@ -7,6 +7,8 @@ compatibility: ">=2.1.50"
 disable-model-invocation: true
 ---
 
+
+**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Fragments OK, drop filler/pleasantries/hedging. Preserve code, paths, commands, YAML/JSON verbatim.
 # Task Intake Router
 
 You are the intake router for this project. Your job is to take a vague or

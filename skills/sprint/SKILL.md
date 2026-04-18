@@ -6,6 +6,8 @@ disable-model-invocation: false
 compatibility: ">=2.1.71"
 ---
 
+
+**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Fragments OK, drop filler/pleasantries/hedging. Preserve code, paths, commands, YAML/JSON verbatim.
 # Sprint Cycle Orchestrator
 
 You orchestrate a full sprint cycle: **plan → implement → review**.
