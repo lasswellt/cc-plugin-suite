@@ -1,0 +1,10 @@
+{
+  "source_sprint": "sprint-4",
+  "auto_injected": "2026-04-18T16:12:05Z",
+  "reason": "Invariant 4 auto-inject + explicit defer from sprint-4 review",
+  "mandatory_entries": [
+    { "id": "cf-2026-04-18-agent-prompt-boilerplate", "parent": { "capability": "CAP-006", "epic": "E-006" }, "remaining_scope": { "unit": "files", "target": 1, "actual": 0 }, "rollover_count": 2, "deferred_during_sprint": "sprint-4", "note": "Extract shared fragment + refactor 7 UNSAFE reference.md to import" },
+    { "id": "cf-2026-04-18-spawn-protocol-warning-upgrade", "parent": { "capability": "CAP-007", "epic": "E-007" }, "remaining_scope": { "unit": "files", "target": 2, "actual": 0 }, "rollover_count": 2, "deferred_during_sprint": "sprint-4", "note": "UNBLOCKED — all 7 UNSAFE ref carry snippet as of Sprint 3. Upgrade WARNING→BLOCKER + add sprint-review Invariant 5." }
+  ],
+  "final_sprint_note": "Sprint 5 completes the 14-entry caveman absorption work plan: 10 complete + 2 dropped + 2 to deliver. After Sprint 5 ships, row 7 (nothing to do) becomes reachable for the first time since tick 1."
+}
