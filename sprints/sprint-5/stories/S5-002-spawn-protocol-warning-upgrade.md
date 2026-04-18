@@ -4,7 +4,7 @@ title: Upgrade spawn-protocol §7 WARNING → BLOCKER
 epic: E-007
 capability: CAP-007
 registry_id: cf-2026-04-18-spawn-protocol-warning-upgrade
-status: planned
+status: done
 github_issue: 15
 priority: high
 points: 1

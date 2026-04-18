@@ -280,6 +280,9 @@ The per-sprint manifest lives at `sprints/sprint-${N}/manifest.json` and capture
 
 ## Agent Prompt Templates
 
+<!-- import: /_shared/agent-prompt-boilerplate.md -->
+Canonical boilerplate (Generic Agent Preamble, Medium BUDGET, WRITE-AS-YOU-GO) is documented in [/_shared/agent-prompt-boilerplate.md](/_shared/agent-prompt-boilerplate.md). The inline opening block + per-researcher templates below remain the byte-stable spawn source — OUTPUT STYLE inline preservation is required by sprint-review Invariant 5.
+
 **Workload class for all sprint-plan research agents**: Medium (per `skills/_shared/spawn-protocol.md`). Every agent prompt below must open with:
 
 ```

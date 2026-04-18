@@ -6,6 +6,9 @@ This file provides templates, checklists, and schemas used by the codebase-audit
 
 ## Agent Prompt Template
 
+<!-- import: /_shared/agent-prompt-boilerplate.md -->
+See [/_shared/agent-prompt-boilerplate.md](/_shared/agent-prompt-boilerplate.md) for canonical boilerplate (BUDGET, WRITE-AS-YOU-GO, HEARTBEAT, PARTIAL, CONFIRMATION) shared across orchestrator skills. The audit-specific template below remains the byte-stable spawn source — Invariant 5 (OUTPUT STYLE snippet) requires inline preservation. The shared fragment is the canonical reference + extraction target for future runtime splicing.
+
 Use this template for every audit agent. Replace `{PLACEHOLDERS}` with agent-specific values.
 
 ```markdown

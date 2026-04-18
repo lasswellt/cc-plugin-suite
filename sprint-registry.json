@@ -184,7 +184,7 @@
     },
     {
       "number": 5,
-      "status": "planned",
+      "status": "review",
       "planned_date": "2026-04-18T11:55:00Z",
       "epics": [
         "E-006",
@@ -204,7 +204,13 @@
         16
       ],
       "planner_mode": "loop-autonomous",
-      "final_sprint": true
+      "final_sprint": true,
+      "started_date": "2026-04-18T16:30:47Z",
+      "dev_session": "sprint-dev-eefedd88",
+      "completed_date": "2026-04-18T16:36:47Z",
+      "stories_completed": 3,
+      "stories_partial": 0,
+      "stories_blocked": 0
     }
   ]
 }

@@ -4,7 +4,7 @@ title: Add sprint-review Phase 3.6 Invariant 5 for OUTPUT STYLE snippet enforcem
 epic: E-007
 capability: CAP-007
 registry_id: cf-2026-04-18-spawn-protocol-warning-upgrade
-status: planned
+status: done
 github_issue: 16
 priority: high
 points: 1

@@ -6,6 +6,9 @@ Check-agent prompt template, grep patterns per check category, severity classifi
 
 ## Check Agent Prompt Template
 
+<!-- import: /_shared/agent-prompt-boilerplate.md -->
+Canonical boilerplate (Generic Agent Preamble, Medium BUDGET, WRITE-AS-YOU-GO JSON variant, HEARTBEAT JSON variant, CONFIRMATION) is documented in [/_shared/agent-prompt-boilerplate.md](/_shared/agent-prompt-boilerplate.md). The inline template below remains the byte-stable spawn source — OUTPUT STYLE inline preservation is required by sprint-review Invariant 5.
+
 Used by the main skill in Phase 1 when spawning the 3 domain agents (check-wiring, check-auth, check-ui). Variables: `{{DOMAIN}}`, `{{OUTPUT_PATH}}`, `{{INVENTORY_PATH}}`, `{{CHECK_DEFS}}`.
 
 ```

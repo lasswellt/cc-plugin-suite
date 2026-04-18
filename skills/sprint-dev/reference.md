@@ -6,6 +6,9 @@ Supporting templates, coordination patterns, and distribution rules for the spri
 
 ## Agent Prompt Templates
 
+<!-- import: /_shared/agent-prompt-boilerplate.md -->
+Canonical recurring sections (Heavy BUDGET, HEARTBEAT story-completion variant, PARTIAL sprint-dev variant) are documented in [/_shared/agent-prompt-boilerplate.md](/_shared/agent-prompt-boilerplate.md). The four role-specific templates below remain the byte-stable spawn source — agents execute the WORKFLOW lists byte-for-byte and OUTPUT STYLE is required inline per sprint-review Invariant 5.
+
 ### Backend Dev Agent
 
 ```

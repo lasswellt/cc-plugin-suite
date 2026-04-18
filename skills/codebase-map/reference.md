@@ -6,6 +6,9 @@ Dimension-agent prompt template, quality scoring rubric, dimension checklists, a
 
 ## Dimension Agent Prompt Template
 
+<!-- import: /_shared/agent-prompt-boilerplate.md -->
+Canonical boilerplate sections (Generic Agent Preamble, Medium BUDGET, WRITE-AS-YOU-GO, HEARTBEAT file-append form, CONFIRMATION) are documented in [/_shared/agent-prompt-boilerplate.md](/_shared/agent-prompt-boilerplate.md). The inline template below remains the byte-stable spawn source — OUTPUT STYLE inline preservation is required by sprint-review Invariant 5.
+
 Used by the main skill in Phase 1 when spawning the 4 parallel dimension agents. Variables: `{{DIMENSION}}`, `{{OUTPUT_PATH}}`, `{{INVENTORY_DIR}}`, `{{FILE_CAP}}`, `{{STACK_PROFILE}}`, `{{CHECKLIST}}`.
 
 ```

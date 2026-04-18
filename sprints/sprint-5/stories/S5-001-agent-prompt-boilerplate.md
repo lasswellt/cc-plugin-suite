@@ -4,7 +4,7 @@ title: Extract agent-prompt boilerplate into shared fragment; refactor 7 UNSAFE 
 epic: E-006
 capability: CAP-006
 registry_id: cf-2026-04-18-agent-prompt-boilerplate
-status: planned
+status: done
 github_issue: 14
 priority: high
 points: 3
