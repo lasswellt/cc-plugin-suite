@@ -20,7 +20,7 @@
     },
     {
       "number": 3,
-      "status": "review",
+      "status": "reviewed",
       "planned_date": "2026-04-18T11:10:00Z",
       "epics": [
         "E-003",
@@ -52,7 +52,23 @@
       "completed_date": "2026-04-18T15:35:31Z",
       "stories_completed": 4,
       "stories_partial": 0,
-      "stories_blocked": 0
+      "stories_blocked": 0,
+      "review_date": "2026-04-18T15:42:35Z",
+      "review_status": "CONDITIONAL",
+      "review_session": "sprint-review-3a50c2a4",
+      "findings": {
+        "critical": 0,
+        "major": 0,
+        "minor": 1,
+        "info": 2
+      },
+      "registry_invariants": {
+        "i1": "pass",
+        "i2": "fail-mitigated-by-i4",
+        "i3": "pass-vacuous",
+        "i4": "applied-6-entries"
+      },
+      "auto_injected_entries": 6
     },
     {
       "number": 2,
