@@ -130,6 +130,35 @@
       ],
       "planner_session": "sprint-plan-a77f22e5",
       "planner_mode": "loop-autonomous"
+    },
+    {
+      "number": 4,
+      "status": "planned",
+      "planned_date": "2026-04-18T11:35:00Z",
+      "epics": [
+        "E-005"
+      ],
+      "phase": 3,
+      "phase_name": "State + Gating",
+      "story_count": 4,
+      "stories": [
+        "S4-001",
+        "S4-002",
+        "S4-003",
+        "S4-004"
+      ],
+      "github_issues": [
+        10,
+        11,
+        12,
+        13
+      ],
+      "planner_mode": "loop-autonomous",
+      "source_planning_inputs": "sprints/sprint-4-planning-inputs.json",
+      "deferred_to_sprint_5": [
+        "cf-agent-prompt-boilerplate",
+        "cf-spawn-protocol-warning-upgrade"
+      ]
     }
   ]
 }

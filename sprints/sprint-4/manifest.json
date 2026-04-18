@@ -1,0 +1,30 @@
+{
+  "sprint": 4,
+  "status": "planned",
+  "created": "2026-04-18T11:35:00Z",
+  "planner_mode": "loop-autonomous",
+  "autonomy": "full",
+  "epics": ["E-005"],
+  "phase": 3,
+  "phase_name": "State + Gating (E-005 focus; E-006 + E-007 deferred to Sprint 5)",
+  "sources": {
+    "planning_inputs": "sprints/sprint-4-planning-inputs.json",
+    "roadmap_phase": "docs/roadmap/phase-plan.json#phase-3"
+  },
+  "carry_forward": [],
+  "story_count": 4,
+  "waived_ac_count": 0,
+  "reason_waivers": null,
+  "registry_entries_touched": [
+    "cf-2026-04-18-output-intensity-profile",
+    "cf-2026-04-18-lite-exemption-markers",
+    "cf-2026-04-18-task-type-gating",
+    "cf-2026-04-18-activity-feed-message-rule"
+  ],
+  "registry_entries_deferred_to_sprint_5": [
+    "cf-2026-04-18-agent-prompt-boilerplate",
+    "cf-2026-04-18-spawn-protocol-warning-upgrade"
+  ],
+  "deferral_note": "Option A (strict phase-plan). E-006 (boilerplate dedup) + E-007 (BLOCKER upgrade) bundled into Sprint 5. Per autonomy=full default; operator can override to Option B bundling if they prefer.",
+  "research_skipped": { "reason": "All work mechanical — schema extension, marker inserts, protocol text edit, registry event." }
+}
