@@ -1,43 +1,51 @@
 # Sprint 3 — STATE
 
-**Last updated:** 2026-04-18T11:18:00Z
-**Status:** in-progress — Wave 0 (2/4 stories done, 2 deferred to next tick)
-**Executor:** sprint-dev-49640f11 (tick 6)
+**Last updated:** 2026-04-18T11:28:00Z
+**Status:** review — implementation complete (4/4 done)
+**Executor:** sprint-dev-aa940c01 (tick 7) + sprint-dev-49640f11 (tick 6)
 
 ## Waves
 
 | Wave | Stories | Status |
 |---|---|---|
-| 0 | S3-001, S3-002, S3-003, S3-004 | 2/4 done (S3-001, S3-004), S3-002 + S3-003 deferred |
+| 0 | S3-001, S3-002, S3-003, S3-004 | 4/4 complete |
 
-## Stories
+## Stories — final
 
-| ID | Title | Status | Commit | Registry |
+| ID | Title | Status | Commit | Registry final |
 |---|---|---|---|---|
-| S3-001 | insert Output-style block → 8 SKILL.md write-phases | done | de7a1b8 | cf-write-phase-directive-inserts 1.0 complete |
-| S3-002 | inject §7 OUTPUT STYLE snippet → 7 UNSAFE reference.md | pending | — | cf-unsafe-ref-agent-prompt-injection 0.0 active |
-| S3-003 | caveman-review format → 2 review reference.md | pending | — | cf-review-format-absorption 0.0 active |
-| S3-004 | resolve Sprint-2 completeness-gate partial | done | (dropped-event in tick 6) | cf-compress-safe-references-wave2 0.857 dropped (path b) |
+| S3-001 | 5-line Output-style block → 8 SKILL.md | done | de7a1b8 | cf-write-phase-directive-inserts 1.0 complete |
+| S3-002 | §7 OUTPUT STYLE snippet → 7 UNSAFE reference.md | done | 66f32e4 | cf-unsafe-ref-agent-prompt-injection 1.0 complete |
+| S3-003 | caveman-review format → 2 review reference.md | done | 66f32e4 | cf-review-format-absorption 1.0 complete |
+| S3-004 | resolve Sprint-2 completeness-gate partial | done | tick-6 dropped | cf-compress-safe-references-wave2 0.857 dropped (path b) |
 
-## S3-004 resolution
+## Sprint 3 deltas
 
-Path (b) applied per autonomy=full default: `dropped` event with preservation-boundary reason. Operator can revive later by renaming `## Grep Patterns by Check` heading and re-running /blitz:compress. Terminal state: coverage 0.857 (6/7), status=dropped.
+- 13 files updated (+209 lines, -4 lines)
+- 1 new file created: `skills/review/reference.md` (skill previously had no reference.md)
+- sprint-review/reference.md and .original kept in baseline parity
+- Validator: 16 pairs OK, exit 0
 
-## Next-tick resume plan
+## Phase 2 milestone
 
-Next `/sprint --loop` fire (≈10 min):
-1. Observes sprint-3 `in-progress` + STATE.md → row 1 → `sprint-dev --resume`.
-2. Resume reads this STATE, skips S3-001 + S3-004, starts S3-002.
-3. S3-002: spawn agent to inject §7 snippet into 7 UNSAFE reference.md (manual edits, careful).
-4. If agent delivers cleanly + tick budget permits, advance to S3-003 (2 review reference.md rewrites, also agent-spawned).
-5. Otherwise S3-003 deferred to tick 8.
-6. When all 4 stories done → sprint status=review → tick dispatches sprint-review.
+CAP-003 (runtime propagation) + CAP-004 (review format) both fully delivered. CAP-007 (BLOCKER upgrade) now unblocked — ready for Phase 4 / Sprint 5 dispatch once Sprint 4 ships clean.
+
+## Open items for sprint-review
+
+1. **spawn-protocol.md:328 WARNING still present.** Every reviewer agent now compliant (7/7 UNSAFE files have the snippet). Sprint-review Invariant 5 (when added in CAP-007) would pass. No action this sprint — CAP-007 handles the edit.
+
+2. **Task-type-gating vs LITE-exemption-markers overlap.** Research doc Finding 6 marked cf-task-type-gating as superseded by cf-lite-exemption-markers. Sprint-3 didn't touch either; they're deferred to Sprint 4 (E-005). Expect registry reduction: cf-task-type-gating → dropped via E005-S03, cf-lite-exemption-markers → complete via E005-S02.
+
+3. **Registry state entering sprint-review:**
+   - complete: 7 (was 5; +S3-002, +S3-003)
+   - dropped: 1 (unchanged — S3-004 already applied tick 6)
+   - active: 6 (was 8; -S3-002, -S3-003 transitioned to complete)
 
 ## Blockers
 
-None. S3-002 + S3-003 deferral is context-budget split (each needs agent spawn for careful hand-edits), not a block.
+None.
 
 ## Notes
 
-- S3-001 scope delivered ahead of AC: target was 8 SKILL.md, delivered 13 total (6 pre-existing from S2-002 Additional-Resources inserts + 7 new write-phase blocks). Registry correctly reflects target=8, actual=8 for this specific entry.
-- S3-004's drop event is the first `dropped` transition in the carry-forward registry. Protocol validated: preservation-boundary is a legitimate drop reason per sprint-1 rule 2.3.
+- Direct in-session execution for tick 6 (S3-001 + S3-004). Agent spawn for tick 7 (S3-002 + S3-003). Both patterns worked; agent spawn was necessary for the 4-prompt injection in sprint-dev/reference.md which had too many independent edit points to hold in orchestrator context.
+- S3-003 discovered `skills/review/` had no reference.md at all (only SKILL.md). Created one with the caveman-review format as the primary content. This is a minor out-of-scope delivery but cleanly closes the AC.
