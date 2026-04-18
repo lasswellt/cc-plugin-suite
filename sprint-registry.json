@@ -1,0 +1,27 @@
+{
+  "sprints": [
+    {
+      "number": 1,
+      "status": "done",
+      "planned_date": "2026-04-16T00:00:00Z",
+      "completed_date": "2026-04-17T00:00:00Z",
+      "epics": ["S1-epic-caveman-absorption-v1"],
+      "story_count": 5,
+      "stories": ["S1-001", "S1-002", "S1-003", "S1-004", "S1-005"],
+      "notes": "S1-005 partial (10/12 compressed, 2 UNSAFE rejected)"
+    },
+    {
+      "number": 2,
+      "status": "planned",
+      "planned_date": "2026-04-18T10:00:00Z",
+      "epics": ["E-001", "E-002"],
+      "phase": 1,
+      "phase_name": "Foundation — Directive Coverage + File Compression",
+      "story_count": 5,
+      "stories": ["S2-001", "S2-002", "S2-003", "S2-004", "S2-005"],
+      "github_issues": [1, 2, 3, 4, 5],
+      "planner_session": "sprint-plan-a77f22e5",
+      "planner_mode": "loop-autonomous"
+    }
+  ]
+}

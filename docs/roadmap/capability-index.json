@@ -1,0 +1,238 @@
+{
+  "generated": "2026-04-18T09:45:00Z",
+  "mode": "full",
+  "scope_note": "Narrow scope: only ingests docs/_research/2026-04-18_caveman-full-absorption.md and docs/_research/2026-04-18_runtime-artifact-terse-propagation.md. Older research docs are historical and reconciled as shipped via sprint-1 or superseded.",
+  "source_documents": [
+    {
+      "path": "docs/_research/2026-04-18_caveman-full-absorption.md",
+      "type": "architecture",
+      "capabilities_extracted": 5,
+      "scope_entries": 9
+    },
+    {
+      "path": "docs/_research/2026-04-18_runtime-artifact-terse-propagation.md",
+      "type": "architecture",
+      "capabilities_extracted": 2,
+      "scope_entries": 5
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "CAP-001",
+      "title": "Extend terse-output directive coverage across agents, SKILL.md gap, and shared protocols",
+      "source_document": "docs/_research/2026-04-18_caveman-full-absorption.md",
+      "source_anchor": "#finding-4",
+      "document_type": "architecture",
+      "description": "Add the /_shared/terse-output.md Additional-Resources link to 6 agent definition files (0/6 current), 6 substantive SKILL.md files currently missing it (ask, sprint, ship, next, health, todo), and 10 shared protocols. Directive is a passive reference, not a runtime instruction.",
+      "user_value": "Improves discoverability of the terse-output style for every context that loads agent definitions or shared protocols. Foundational for CAP-003 to have a target file to reference.",
+      "acceptance_criteria": [
+        "6 agent files contain 'terse-output' reference",
+        "31 SKILL.md files (25 current + 6 new) contain /_shared/terse-output.md reference",
+        "11 shared protocols cross-reference terse-output.md"
+      ],
+      "complexity": "low",
+      "domain_hint": "directive-propagation",
+      "dependencies_hint": [],
+      "research_needed": false,
+      "scope_metric": [
+        {
+          "registry_entry_id": "cf-2026-04-18-terse-directive-agents",
+          "unit": "files",
+          "target": 6
+        },
+        {
+          "registry_entry_id": "cf-2026-04-18-terse-directive-skill-gap",
+          "unit": "files",
+          "target": 6
+        },
+        {
+          "registry_entry_id": "cf-2026-04-18-terse-directive-shared-protocols",
+          "unit": "files",
+          "target": 10
+        }
+      ]
+    },
+    {
+      "id": "CAP-002",
+      "title": "Wave-2 author-time compression of SAFE reference.md and research docs",
+      "source_document": "docs/_research/2026-04-18_caveman-full-absorption.md",
+      "source_anchor": "#phase-2-compression-wave-2",
+      "document_type": "architecture",
+      "description": "Run /blitz:compress on the 7 SAFE reference.md files left uncompressed after S1-005 (doc-gen, perf-profile, roadmap, completeness-gate, bootstrap, setup, fix-issue) and on 12 docs/_research/*.md files. Each pair must pass the structural validator. Estimated saving: 25-40 KB input per load.",
+      "user_value": "Reduces input-token cost of skill loading and research-doc reading across future sessions.",
+      "acceptance_criteria": [
+        "7 SAFE reference.md files have .original backups",
+        "12 research docs have .original backups",
+        "Structural validator passes for all pairs"
+      ],
+      "complexity": "low",
+      "domain_hint": "content-optimization",
+      "dependencies_hint": [],
+      "research_needed": false,
+      "scope_metric": [
+        {
+          "registry_entry_id": "cf-2026-04-18-compress-safe-references-wave2",
+          "unit": "files",
+          "target": 7
+        },
+        {
+          "registry_entry_id": "cf-2026-04-18-compress-research-docs",
+          "unit": "files",
+          "target": 12
+        }
+      ]
+    },
+    {
+      "id": "CAP-003",
+      "title": "Inject runtime terse directive at skill write-sites and Agent() prompts",
+      "source_document": "docs/_research/2026-04-18_runtime-artifact-terse-propagation.md",
+      "source_anchor": "#phase-a-directive-injection",
+      "document_type": "architecture",
+      "description": "Insert the 3-5 line inline terse-output directive into the Generate/Write phase of 8 SKILL.md files (research, sprint-plan, sprint-review, retrospective, roadmap, release, fix-issue, todo) and inject the spawn-protocol §7 OUTPUT STYLE snippet (5 lines) into the 7 UNSAFE reference.md files with agent-prompt templates. Closes the 0-to-100% propagation gap identified in research doc Finding 1.",
+      "user_value": "Runtime-generated artifacts (research docs, review reports, retrospective proposals, story bodies) stop defaulting to verbose prose. Expected 15-22% prose reduction on affected artifacts.",
+      "acceptance_criteria": [
+        "8 SKILL.md contain '**Output style:** terse-technical' block",
+        "7 UNSAFE reference.md contain 'OUTPUT STYLE: terse-technical per /_shared/terse-output.md' snippet"
+      ],
+      "complexity": "low",
+      "domain_hint": "directive-propagation",
+      "dependencies_hint": ["CAP-001"],
+      "research_needed": false,
+      "scope_metric": [
+        {
+          "registry_entry_id": "cf-2026-04-18-write-phase-directive-inserts",
+          "unit": "files",
+          "target": 8
+        },
+        {
+          "registry_entry_id": "cf-2026-04-18-unsafe-ref-agent-prompt-injection",
+          "unit": "files",
+          "target": 7
+        }
+      ]
+    },
+    {
+      "id": "CAP-004",
+      "title": "Adopt caveman-review output format in sprint-review and review skills",
+      "source_document": "docs/_research/2026-04-18_caveman-full-absorption.md",
+      "source_anchor": "#phase-5-review-format-absorption",
+      "document_type": "architecture",
+      "description": "Rewrite sprint-review/reference.md and review/reference.md to adopt the L<line>: <severity-prefix> <problem>. <fix>. format with 🔴 (bug) / 🟡 (risk) / 🔵 (nit) / ❓ (q) prefixes and LGTM-and-stop rule. Auto-clarity (full prose) for security/CVE findings.",
+      "user_value": "Sprint-review findings become the most re-read artifact per cycle; caveman-review's format pattern is the largest single-edit leverage for readability + token reduction on reviews.",
+      "acceptance_criteria": [
+        "Severity-prefix glyphs and L<line>: format present in both reference.md files",
+        "LGTM short-circuit documented",
+        "Security-finding auto-clarity exemption documented"
+      ],
+      "complexity": "low",
+      "domain_hint": "output-shaping",
+      "dependencies_hint": ["CAP-003"],
+      "research_needed": false,
+      "scope_metric": [
+        {
+          "registry_entry_id": "cf-2026-04-18-review-format-absorption",
+          "unit": "files",
+          "target": 2
+        }
+      ]
+    },
+    {
+      "id": "CAP-005",
+      "title": "Persist output intensity and add per-section LITE exemption markers",
+      "source_document": "docs/_research/2026-04-18_runtime-artifact-terse-propagation.md",
+      "source_anchor": "#phase-b-lite-markers-enforcement",
+      "document_type": "architecture",
+      "description": "Add output_intensity: lite|full|ultra field to developer-profile.json (default lite, env override BLITZ_OUTPUT_INTENSITY). Propagate the active intensity into spawn-protocol §7 interpolation. Add LITE-intensity exemption markers to 9 safety/reasoning-sensitive skills (completeness-gate, codebase-audit, research, retrospective, sprint-review, release, migrate, fix-issue, bootstrap) naming the specific sections that stay LITE (security findings, root-cause chains, breaking-change entries, never-auto-apply rationale). Also adds the activity-feed message length soft rule to verbose-progress.md. This capability supersedes cf-task-type-gating — per-section markers are the preferred approach over whole-skill policy per Finding 6.",
+      "user_value": "Prevents brevity-induced accuracy degradation (Renze 2024, Prompt-Compression-in-the-Wild) on reasoning-heavy output sections while keeping mechanical output terse.",
+      "acceptance_criteria": [
+        "developer-profile.json schema includes output_intensity",
+        "BLITZ_OUTPUT_INTENSITY env override documented in terse-output.md or spawn-protocol.md",
+        "9 skills contain LITE-intensity exemption markers",
+        "verbose-progress.md documents the ≤200-char message rule"
+      ],
+      "complexity": "medium",
+      "domain_hint": "output-shaping",
+      "dependencies_hint": ["CAP-003"],
+      "research_needed": false,
+      "scope_metric": [
+        {
+          "registry_entry_id": "cf-2026-04-18-output-intensity-profile",
+          "unit": "files",
+          "target": 1
+        },
+        {
+          "registry_entry_id": "cf-2026-04-18-lite-exemption-markers",
+          "unit": "files",
+          "target": 9
+        },
+        {
+          "registry_entry_id": "cf-2026-04-18-task-type-gating",
+          "unit": "files",
+          "target": 5,
+          "note": "Superseded by cf-lite-exemption-markers. Kept for registry completeness; will transition to status=dropped once CAP-005 completes."
+        },
+        {
+          "registry_entry_id": "cf-2026-04-18-activity-feed-message-rule",
+          "unit": "files",
+          "target": 1
+        }
+      ]
+    },
+    {
+      "id": "CAP-006",
+      "title": "Extract agent-prompt boilerplate to shared fragment; refactor 7 UNSAFE reference.md to import",
+      "source_document": "docs/_research/2026-04-18_caveman-full-absorption.md",
+      "source_anchor": "#phase-3-agent-prompt-boilerplate-dedup",
+      "document_type": "architecture",
+      "description": "Extract reused HEARTBEAT spec, PARTIAL protocol, weight-class caps, session-registration template into skills/_shared/agent-prompt-boilerplate.md. Refactor the 7 UNSAFE reference.md files to reference the shared fragment. Targets ~20-30% reduction on ~12 K tokens of per-sprint Agent() prompt input.",
+      "user_value": "Reduces redundant prompt boilerplate sent on every agent spawn. Foundational for future Agent-prompt edits to land in one place.",
+      "acceptance_criteria": [
+        "skills/_shared/agent-prompt-boilerplate.md exists",
+        "7 UNSAFE reference.md files reference the shared fragment",
+        "Dumped resolved-prompt output for one test spawn matches pre-refactor byte-for-byte"
+      ],
+      "complexity": "medium",
+      "domain_hint": "content-optimization",
+      "dependencies_hint": ["CAP-003"],
+      "research_needed": false,
+      "scope_metric": [
+        {
+          "registry_entry_id": "cf-2026-04-18-agent-prompt-boilerplate",
+          "unit": "files",
+          "target": 1
+        }
+      ]
+    },
+    {
+      "id": "CAP-007",
+      "title": "Upgrade spawn-protocol WARNING → BLOCKER; add sprint-review Invariant",
+      "source_document": "docs/_research/2026-04-18_runtime-artifact-terse-propagation.md",
+      "source_anchor": "#b-4-spawn-protocol-warning-blocker",
+      "document_type": "architecture",
+      "description": "After CAP-003 lands and one full sprint ships clean, edit spawn-protocol.md:328 from WARNING (not BLOCKER) to BLOCKER and add Invariant 5 to sprint-review Phase 3.6 that fails the sprint if any Agent() prompt template omits the OUTPUT STYLE snippet.",
+      "user_value": "Prevents future regression. Without enforcement, subsequent skill edits drop the directive silently.",
+      "acceptance_criteria": [
+        "spawn-protocol.md no longer contains 'WARNING (not BLOCKER)'",
+        "sprint-review Phase 3.6 Invariant 5 documented"
+      ],
+      "complexity": "low",
+      "domain_hint": "directive-propagation",
+      "dependencies_hint": ["CAP-003", "CAP-005", "CAP-006"],
+      "research_needed": false,
+      "scope_metric": [
+        {
+          "registry_entry_id": "cf-2026-04-18-spawn-protocol-warning-upgrade",
+          "unit": "files",
+          "target": 2
+        }
+      ]
+    }
+  ],
+  "dedup_log": [
+    {
+      "merged": "cf-2026-04-18-task-type-gating",
+      "into": "cf-2026-04-18-lite-exemption-markers",
+      "reason": "Per docs/_research/2026-04-18_runtime-artifact-terse-propagation.md Finding 6, per-section LITE markers (9 skills) supersede the whole-skill output_style_policy approach (5 skills). Task-type-gating registry entry retained and will transition to status=dropped once CAP-005 completes; acceptance criteria overlap and lite-exemption is the stronger contract."
+    }
+  ]
+}

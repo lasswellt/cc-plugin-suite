@@ -1,0 +1,230 @@
+{
+  "generated": "2026-04-18T09:45:00Z",
+  "epics": [
+    {
+      "id": "E-001",
+      "phase": 1,
+      "title": "Directive coverage — agents + SKILL.md + shared protocols",
+      "capabilities": ["CAP-001"],
+      "status": "pending",
+      "stories": [
+        {
+          "id": "E001-S01",
+          "title": "Add terse-output reference to 6 agent files",
+          "acceptance": "grep -l 'terse-output' agents/*.md returns 6 files (architect, backend-dev, doc-writer, frontend-dev, reviewer, test-writer)",
+          "effort": "15 min",
+          "registry_id": "cf-2026-04-18-terse-directive-agents"
+        },
+        {
+          "id": "E001-S02",
+          "title": "Add terse-output reference to 6 remaining SKILL.md (ask, sprint, ship, next, health, todo)",
+          "acceptance": "grep -l '/_shared/terse-output.md' skills/*/SKILL.md returns 31 files",
+          "effort": "15 min",
+          "registry_id": "cf-2026-04-18-terse-directive-skill-gap"
+        },
+        {
+          "id": "E001-S03",
+          "title": "Add 'Related protocols: see /_shared/terse-output.md' footer to 10 shared protocols",
+          "acceptance": "grep -l 'terse-output' skills/_shared/*.md returns 11 files",
+          "effort": "20 min",
+          "registry_id": "cf-2026-04-18-terse-directive-shared-protocols"
+        }
+      ],
+      "registry_entries": [
+        "cf-2026-04-18-terse-directive-agents",
+        "cf-2026-04-18-terse-directive-skill-gap",
+        "cf-2026-04-18-terse-directive-shared-protocols"
+      ],
+      "coverage": 0.0,
+      "acceptance_criteria_met": 0,
+      "carry_forward_count": 3
+    },
+    {
+      "id": "E-002",
+      "phase": 1,
+      "title": "Wave-2 compression — 7 SAFE reference.md + 12 research docs",
+      "capabilities": ["CAP-002"],
+      "status": "pending",
+      "stories": [
+        {
+          "id": "E002-S01",
+          "title": "/blitz:compress 7 SAFE reference.md (doc-gen, perf-profile, roadmap, completeness-gate, bootstrap, setup, fix-issue)",
+          "acceptance": "7 .original files exist; structural validator passes",
+          "effort": "30 min runtime",
+          "registry_id": "cf-2026-04-18-compress-safe-references-wave2"
+        },
+        {
+          "id": "E002-S02",
+          "title": "/blitz:compress 12 docs/_research/*.md",
+          "acceptance": "find docs/_research -name '*.md.original' | wc -l returns >=12; structural validator passes",
+          "effort": "45 min runtime",
+          "registry_id": "cf-2026-04-18-compress-research-docs"
+        }
+      ],
+      "registry_entries": [
+        "cf-2026-04-18-compress-safe-references-wave2",
+        "cf-2026-04-18-compress-research-docs"
+      ],
+      "coverage": 0.0,
+      "acceptance_criteria_met": 0,
+      "carry_forward_count": 2
+    },
+    {
+      "id": "E-003",
+      "phase": 2,
+      "title": "Runtime write-phase directive — 8 SKILL.md + 7 UNSAFE reference.md",
+      "capabilities": ["CAP-003"],
+      "status": "pending",
+      "stories": [
+        {
+          "id": "E003-S01",
+          "title": "Insert 5-line Output style block at 8 SKILL.md write-phases (research, sprint-plan, sprint-review, retrospective, roadmap, release, fix-issue, todo)",
+          "acceptance": "grep -l '\\*\\*Output style:\\*\\* terse-technical' skills/*/SKILL.md returns 8",
+          "effort": "45 min",
+          "registry_id": "cf-2026-04-18-write-phase-directive-inserts"
+        },
+        {
+          "id": "E003-S02",
+          "title": "Inject spawn-protocol §7 OUTPUT STYLE snippet into 7 UNSAFE reference.md (codebase-audit, codebase-map, code-sweep, integration-check, quality-metrics, sprint-dev, sprint-plan)",
+          "acceptance": "grep -l 'OUTPUT STYLE: terse-technical per /_shared/terse-output.md' skills/*/reference.md returns 7",
+          "effort": "60 min",
+          "registry_id": "cf-2026-04-18-unsafe-ref-agent-prompt-injection"
+        }
+      ],
+      "registry_entries": [
+        "cf-2026-04-18-write-phase-directive-inserts",
+        "cf-2026-04-18-unsafe-ref-agent-prompt-injection"
+      ],
+      "coverage": 0.0,
+      "acceptance_criteria_met": 0,
+      "carry_forward_count": 2
+    },
+    {
+      "id": "E-004",
+      "phase": 2,
+      "title": "Review-format absorption — caveman-review in sprint-review + review",
+      "capabilities": ["CAP-004"],
+      "status": "pending",
+      "stories": [
+        {
+          "id": "E004-S01",
+          "title": "Rewrite sprint-review/reference.md + review/reference.md output-format sections to use L<line>: <severity> <problem>. <fix>. format with 🔴/🟡/🔵/❓ prefixes; document LGTM short-circuit; add auto-clarity exemption for security findings",
+          "acceptance": "grep -l 'L<line>:\\|🔴 bug\\|🟡 risk\\|🔵 nit\\|LGTM' skills/review/reference.md skills/sprint-review/reference.md returns 2; diff of review-report output vs prior sprint reviewed",
+          "effort": "90 min",
+          "registry_id": "cf-2026-04-18-review-format-absorption"
+        }
+      ],
+      "registry_entries": ["cf-2026-04-18-review-format-absorption"],
+      "coverage": 0.0,
+      "acceptance_criteria_met": 0,
+      "carry_forward_count": 1
+    },
+    {
+      "id": "E-005",
+      "phase": 3,
+      "title": "Intensity state + LITE gating + activity-feed rule",
+      "capabilities": ["CAP-005"],
+      "status": "pending",
+      "stories": [
+        {
+          "id": "E005-S01",
+          "title": "Add output_intensity: lite|full|ultra field to developer-profile.json schema; document BLITZ_OUTPUT_INTENSITY env override in spawn-protocol.md §7",
+          "acceptance": "output_intensity referenced in >=2 files (developer-profile.json schema or example + spawn-protocol.md); env var string present",
+          "effort": "45 min",
+          "registry_id": "cf-2026-04-18-output-intensity-profile"
+        },
+        {
+          "id": "E005-S02",
+          "title": "Add LITE-intensity exemption markers to 9 skills (completeness-gate, codebase-audit, research, retrospective, sprint-review, release, migrate, fix-issue, bootstrap)",
+          "acceptance": "grep -l 'LITE intensity\\|Terse exemptions\\|lite-only' across listed skills returns 9",
+          "effort": "90 min",
+          "registry_id": "cf-2026-04-18-lite-exemption-markers"
+        },
+        {
+          "id": "E005-S03",
+          "title": "Transition cf-task-type-gating to status=dropped after LITE markers land (superseded)",
+          "acceptance": "carry-forward.jsonl contains a 'decision' event for cf-task-type-gating setting status=dropped",
+          "effort": "10 min",
+          "registry_id": "cf-2026-04-18-task-type-gating"
+        },
+        {
+          "id": "E005-S04",
+          "title": "Add ≤200-char message soft rule + non-BLOCKER grep warning for >300-char offenders to verbose-progress.md",
+          "acceptance": "grep -c 'message.*200 char\\|message.*length' skills/_shared/verbose-progress.md >=1",
+          "effort": "20 min",
+          "registry_id": "cf-2026-04-18-activity-feed-message-rule"
+        }
+      ],
+      "registry_entries": [
+        "cf-2026-04-18-output-intensity-profile",
+        "cf-2026-04-18-lite-exemption-markers",
+        "cf-2026-04-18-task-type-gating",
+        "cf-2026-04-18-activity-feed-message-rule"
+      ],
+      "coverage": 0.0,
+      "acceptance_criteria_met": 0,
+      "carry_forward_count": 4
+    },
+    {
+      "id": "E-006",
+      "phase": 3,
+      "title": "Agent-prompt boilerplate dedup",
+      "capabilities": ["CAP-006"],
+      "status": "pending",
+      "stories": [
+        {
+          "id": "E006-S01",
+          "title": "Extract HEARTBEAT spec, PARTIAL protocol, weight-class caps, session-registration template from 7 UNSAFE reference.md into skills/_shared/agent-prompt-boilerplate.md",
+          "acceptance": "skills/_shared/agent-prompt-boilerplate.md exists",
+          "effort": "60 min",
+          "registry_id": "cf-2026-04-18-agent-prompt-boilerplate"
+        },
+        {
+          "id": "E006-S02",
+          "title": "Refactor 7 UNSAFE reference.md to reference shared fragment via explicit import marker and orchestrator Read-at-spawn",
+          "acceptance": "grep -l 'agent-prompt-boilerplate' skills/*/reference.md returns 7",
+          "effort": "120 min",
+          "registry_id": "cf-2026-04-18-agent-prompt-boilerplate"
+        },
+        {
+          "id": "E006-S03",
+          "title": "Parity test — dump resolved prompt for one representative sprint-dev Agent() spawn and diff byte-for-byte against pre-refactor capture",
+          "acceptance": "Parity diff is empty or only differs on whitespace",
+          "effort": "30 min",
+          "registry_id": "cf-2026-04-18-agent-prompt-boilerplate"
+        }
+      ],
+      "registry_entries": ["cf-2026-04-18-agent-prompt-boilerplate"],
+      "coverage": 0.0,
+      "acceptance_criteria_met": 0,
+      "carry_forward_count": 1
+    },
+    {
+      "id": "E-007",
+      "phase": 4,
+      "title": "Enforcement upgrade — WARNING to BLOCKER",
+      "capabilities": ["CAP-007"],
+      "status": "pending",
+      "stories": [
+        {
+          "id": "E007-S01",
+          "title": "Edit spawn-protocol.md:328 — change 'WARNING (not BLOCKER)' to 'BLOCKER — sprint-review fails the sprint if an Agent() prompt template omits the OUTPUT STYLE snippet.'",
+          "acceptance": "grep 'WARNING (not BLOCKER)' skills/_shared/spawn-protocol.md returns nothing",
+          "effort": "10 min",
+          "registry_id": "cf-2026-04-18-spawn-protocol-warning-upgrade"
+        },
+        {
+          "id": "E007-S02",
+          "title": "Add Invariant 5 to skills/sprint-review/SKILL.md Phase 3.6 — fail sprint if any Agent() prompt template omits the OUTPUT STYLE snippet",
+          "acceptance": "grep -c 'Invariant 5' skills/sprint-review/SKILL.md >=1; one test sprint-review run shows the check firing",
+          "effort": "30 min",
+          "registry_id": "cf-2026-04-18-spawn-protocol-warning-upgrade"
+        }
+      ],
+      "registry_entries": ["cf-2026-04-18-spawn-protocol-warning-upgrade"],
+      "coverage": 0.0,
+      "acceptance_criteria_met": 0,
+      "carry_forward_count": 1
+    }
+  ]
+}
