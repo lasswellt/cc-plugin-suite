@@ -394,8 +394,33 @@ Full invariant procedures (Invariants 1-4, the hard-gate decision, report schema
    - **Invariant 2**: every active/partial entry was touched, deferred, or auto-waived this sprint; escalate at `rollover_count >= 3`.
    - **Invariant 3**: every epic claiming `status: done|complete` has all its registry entries at `status: complete`.
    - **Invariant 4**: auto-inject uncompleted `active` entries (`coverage < 1.0`, `rollover_count < 3`) into next sprint's `planning-inputs.json`.
+   - **Invariant 5**: every Agent-prompt template under `skills/*/reference.md` contains the canonical `OUTPUT STYLE: … per /_shared/terse-output.md` snippet from `spawn-protocol.md` §7. Missing snippet → Critical finding → sprint FAILs (BLOCKER, not WARNING, since Sprint 5 S5-002).
 3. Write the Invariants Report section to the review report.
-4. **Hard gate**: all four pass → proceed to Phase 4; any fail → `CONDITIONAL` at best, listed under Critical findings.
+4. **Hard gate**: all five pass → proceed to Phase 4; any fail → `CONDITIONAL` at best, with Invariant 5 fail escalating to FAIL per its BLOCKER semantics.
+
+### Invariant 5 — Agent-Prompt Output Style Snippet (BLOCKER)
+
+Pair enforcement for `spawn-protocol.md` §7. The canonical snippet:
+
+```
+OUTPUT STYLE: <intensity> per /_shared/terse-output.md. Drop articles,
+fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code,
+URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows,
+error codes, dates, version numbers. No preamble. No trailing summary of work
+already evident in the diff or tool output. Format: fragments OK.
+```
+
+MUST appear in every `skills/*/reference.md` that contains an agent-prompt template (7 files as of Sprint 3: codebase-audit, codebase-map, code-sweep, integration-check, quality-metrics, sprint-dev, sprint-plan). Any missing snippet is a Critical finding; sprint status transitions to **FAIL**.
+
+Audit command (sprint-review runs this in Phase 3.6):
+
+```bash
+EXPECTED=7  # 7 UNSAFE reference.md files known to carry agent prompts
+PRESENT=$(grep -l 'OUTPUT STYLE: terse-technical per /_shared/terse-output.md\|OUTPUT STYLE: lite per /_shared/terse-output.md\|OUTPUT STYLE: full per /_shared/terse-output.md\|OUTPUT STYLE: ultra per /_shared/terse-output.md' skills/*/reference.md | wc -l)
+[ "$PRESENT" -ge "$EXPECTED" ] || echo "Invariant 5 FAIL: $PRESENT / $EXPECTED snippets present"
+```
+
+If a new reference.md with an agent-prompt template is added to the repo, the enforcer expects it to also carry the snippet. Update `EXPECTED` when the UNSAFE file set grows.
 
 ---
 
