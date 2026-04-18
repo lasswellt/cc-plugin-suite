@@ -1,6 +1,6 @@
 # Setup Skill — Reference Material
 
-Conflict catalog schema, pattern-matching rules, per-skill behavioral assumptions for `/blitz:setup` skill.
+Conflict catalog schema, pattern-matching rules, and per-skill behavioral assumptions used by the `/blitz:setup` skill.
 
 ---
 
@@ -46,15 +46,15 @@ File: `skills/setup/conflict-catalog.json`
 
 1. All patterns are **case-insensitive** regex matches against CLAUDE.md lines.
 2. Anchor patterns to word boundaries where possible to reduce false positives (`\bnever\b` vs `never`).
-3. Test each pattern against full CLAUDE.md content; multiple patterns per conflict ID are OR'd.
-4. Line matching ANY pattern for conflict triggers finding.
+3. Test each pattern against the full CLAUDE.md content; multiple patterns per conflict ID are OR'd.
+4. A line that matches ANY pattern for a conflict triggers the finding.
 5. Comments (`<!-- -->`) and code fences should be stripped before matching to avoid flagging documentation about blitz itself.
 
 ---
 
 ## Behavioral Assumptions in Blitz Skills
 
-Reference table for what each skill does that may conflict with user's CLAUDE.md rules:
+Reference table for what each skill does that may conflict with user CLAUDE.md rules:
 
 | Skill | Behavior | Severity potential |
 |---|---|---|
@@ -81,7 +81,7 @@ Not implemented in MVP. When `--fix` lands, each catalog entry's `fix` field wil
 - Toggling skill invocation modes (`sprint-dev --mode checkpoint` instead of autonomous)
 - Updating `~/.claude/settings.json` permissions
 
-For MVP, `fix` field is advisory text only.
+For MVP, the `fix` field is advisory text only.
 
 ---
 
@@ -89,19 +89,19 @@ For MVP, `fix` field is advisory text only.
 
 To add a new conflict pattern:
 
-1. Add new object to `conflict-catalog.json` following schema above.
-2. Pick stable `id` (no spaces, lowercase-hyphenated).
-3. Provide 2-4 regex patterns matching common phrasings of user rule.
-4. List blitz skills affected.
-5. Set severity based on behavior table above.
-6. Write clear `fix` string telling user what override or flag resolves conflict.
-7. If new conflict references skill behavior not documented above, also update behavioral assumptions table.
+1. Add a new object to `conflict-catalog.json` following the schema above.
+2. Pick a stable `id` (no spaces, lowercase-hyphenated).
+3. Provide 2-4 regex patterns that match common phrasings of the user rule.
+4. List the blitz skills affected.
+5. Set severity based on the behavior table above.
+6. Write a clear `fix` string telling the user what override or flag resolves the conflict.
+7. If the new conflict references a skill behavior not documented above, also update the behavioral assumptions table.
 
 ---
 
 ## Test Cases for Catalog Maintenance
 
-When modifying catalog, run these test phrases against regex patterns:
+When modifying the catalog, run these test phrases against the regex patterns:
 
 | Phrase | Expected conflict id |
 |---|---|
@@ -116,4 +116,4 @@ When modifying catalog, run these test phrases against regex patterns:
 | "Use pnpm" | non-npm-package-manager |
 | "Only use haiku to control costs" | model-preference |
 
-CLAUDE.md containing all 10 phrases should produce 10 findings when scanned.
+A CLAUDE.md containing all 10 phrases should produce 10 findings when scanned.

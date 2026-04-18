@@ -1,6 +1,6 @@
 # Documentation Generator — Reference Material
 
-Templates, parsing patterns, diagram examples for doc-gen skill.
+Templates, parsing patterns, and diagram examples used by the doc-gen skill.
 
 ---
 
@@ -54,11 +54,11 @@ Use this template for each module documented in `docs/generated/api.md`.
 
 ### API Template Notes
 
-- Group functions by module path (e.g., `utils/format`, `services/auth`).
-- If function has no JSDoc, infer description from function name and body.
-- For Zod schemas, document inferred TypeScript type alongside schema.
-- For re-exported functions, note original module.
-- Mark deprecated functions with `> **Deprecated**: {reason}` callout.
+- Group functions by their module path (e.g., `utils/format`, `services/auth`).
+- If a function has no JSDoc, infer the description from the function name and body.
+- For Zod schemas, document the inferred TypeScript type alongside the schema.
+- For re-exported functions, note the original module.
+- Mark deprecated functions with a `> **Deprecated**: {reason}` callout.
 
 ---
 
@@ -130,9 +130,9 @@ Use this template for each component documented in `docs/generated/components.md
 ### Component Template Notes
 
 - Order components alphabetically or by directory structure.
-- For components with many props (>10), group by category if JSDoc `@group` tags exist.
+- For components with many props (>10), group props by category if JSDoc `@group` tags exist.
 - Mark deprecated props with strikethrough: `~~propName~~`.
-- If component has no description, use component file name as heading; note "No description provided."
+- If a component has no description, use the component file name as a heading and note "No description provided."
 
 ---
 
@@ -210,10 +210,10 @@ graph TD
 ## Layer Descriptions
 
 ### Pages
-{description of pages layer and routing strategy}
+{description of the pages layer and routing strategy}
 
 ### Components
-{description of component hierarchy and organization}
+{description of the component hierarchy and organization}
 
 ### Composables
 {description of shared reactive logic}
@@ -247,7 +247,7 @@ sequenceDiagram
     Component-->>User: Rendered view
 ```
 
-{description of flow}
+{description of the flow}
 
 ---
 
@@ -267,9 +267,9 @@ sequenceDiagram
 
 ### Architecture Template Notes
 
-- Limit Mermaid diagrams to 50 nodes max. Group related modules into subgraphs.
+- Limit Mermaid diagrams to 50 nodes maximum. Group related modules into subgraphs.
 - For large codebases, create separate diagrams per feature domain.
-- Include only direct dependencies in module graph (not transitive).
+- Include only direct dependencies in the module graph (not transitive).
 - Highlight circular dependencies with red edges: `A -->|circular| B`.
 
 ---
@@ -312,11 +312,11 @@ This changelog is auto-generated from conventional commits.
 
 ### Changelog Template Notes
 
-- If no conventional commit prefix found, place commit under "Other."
-- Strip commit type prefix from message (e.g., `feat: add login` becomes `add login`).
-- Link commit hashes to repository if remote URL available.
+- If no conventional commit prefix is found, place the commit under "Other."
+- Strip the commit type prefix from the message (e.g., `feat: add login` becomes `add login`).
+- Link commit hashes to the repository if a remote URL is available.
 - Group entries within each section alphabetically.
-- If scopes are used (e.g., `feat(auth):`), include scope in parentheses.
+- If scopes are used (e.g., `feat(auth):`), include the scope in parentheses.
 
 ---
 
@@ -342,7 +342,7 @@ This changelog is auto-generated from conventional commits.
 
 ## Vue SFC Parsing Patterns
 
-Regex and AST patterns for extracting component metadata from Vue SFCs.
+Regex and AST patterns for extracting component metadata from Vue Single File Components.
 
 ### defineProps Extraction
 
@@ -383,7 +383,7 @@ Regex pattern:
 withDefaults\(defineProps<(\w+)>\(\),\s*\{([^}]+)\}\)
 ```
 
-For `withDefaults`, also locate referenced `Props` interface to get type definitions.
+For `withDefaults`, also locate the referenced `Props` interface to get the type definitions.
 
 ### defineEmits Extraction
 
@@ -467,10 +467,10 @@ Regex pattern:
 
 ### Parsing Recommendations
 
-- Regex patterns above are approximations. For deeply nested types, read full `<script setup>` block and parse structurally rather than single-pass regex.
-- Handle multi-line type definitions by first extracting full block between delimiters.
-- For `withDefaults`, resolve referenced type alias by searching for corresponding `interface` or `type` declaration in same file.
-- For imported prop types (`import type { Props } from './types'`), follow import to extract type shape.
+- Regex patterns above are approximations. For deeply nested types, read the full `<script setup>` block and parse structurally rather than relying on single-pass regex.
+- Handle multi-line type definitions by first extracting the full block between delimiters.
+- For `withDefaults`, resolve the referenced type alias by searching for the corresponding `interface` or `type` declaration in the same file.
+- For imported prop types (`import type { Props } from './types'`), follow the import to extract the type shape.
 
 ---
 
@@ -536,4 +536,4 @@ stateDiagram-v2
 - Use subgraphs to group related modules by layer or feature.
 - Limit graph width: prefer `TD` (top-down) for hierarchies, `LR` (left-right) for flows.
 - Color-code by layer: green for pages, blue for components, orange for stores, purple for services.
-- Add edge labels only when relationship type is not obvious.
+- Add edge labels only when the relationship type is not obvious.

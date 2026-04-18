@@ -1,9 +1,9 @@
 # Roadmap Skill — Reference Material
 
-Schemas, templates, classification tables, detailed procedures for Phases 5-8 used by roadmap skill.
+This file provides schemas, templates, classification tables, and detailed procedures for Phases 5-8 used by the roadmap skill.
 
 **Companion protocols:**
-- [carry-forward-registry.md](/_shared/carry-forward-registry.md) — Append-only JSONL registry linking research-doc scope claims to delivered artifacts. Capability and Epic schemas below include fields that roll up to and from this registry.
+- [carry-forward-registry.md](/_shared/carry-forward-registry.md) — The append-only JSONL registry that links research-doc scope claims to delivered artifacts. Capability and Epic schemas below include fields that roll up to and from this registry.
 
 ---
 
@@ -37,9 +37,9 @@ registry_entry_id: ""  # Populated when roadmap-extend writes a carry-forward re
 tags: []               # Freeform tags for cross-referencing
 ```
 
-**Scope metric extraction:** When source research doc contains `scope:` YAML frontmatter block (see `skills/research/SKILL.md` Phase 3), every entry in that block becomes capability's `scope_metric` and must also be written to `.cc-sessions/carry-forward.jsonl` as registry entry with `status: active`. See [carry-forward-registry.md](/_shared/carry-forward-registry.md) for full schema and writer responsibilities.
+**Scope metric extraction:** When the source research doc contains a `scope:` YAML frontmatter block (see `skills/research/SKILL.md` Phase 3), every entry in that block becomes a capability's `scope_metric` and must also be written to `.cc-sessions/carry-forward.jsonl` as a registry entry with `status: active`. See [carry-forward-registry.md](/_shared/carry-forward-registry.md) for the full schema and writer responsibilities.
 
-If research doc contains quantified language (regex: `\d+\s+(files|components|modals|routes|tests|endpoints)`) but no `scope:` block, roadmap-extend step must warn user and either (a) prompt to add block or (b) write explicit `<!-- no-registry: <reason> -->` waiver. Enforced by `sprint-review` Invariant 1.
+If the research doc contains quantified language (regex: `\d+\s+(files|components|modals|routes|tests|endpoints)`) but no `scope:` block, the roadmap-extend step must warn the user and either (a) prompt to add a block or (b) write an explicit `<!-- no-registry: <reason> -->` waiver. This is enforced by `sprint-review` Invariant 1.
 
 ### Complexity Guidelines
 
@@ -67,7 +67,7 @@ If research doc contains quantified language (regex: `\d+\s+(files|components|mo
 
 ### Classification Heuristics
 
-Read first 50 lines and headings of each document. Match against:
+Read the first 50 lines and the headings of each document. Match against:
 - Contains "vision", "mission", "persona" → `product_definition`
 - Contains "user story", "as a ... I want" → `feature_spec`
 - Contains "competitor", "alternative", "market" → `competitive_analysis`
@@ -77,7 +77,7 @@ Read first 50 lines and headings of each document. Match against:
 - Contains "integration", "webhook", "OAuth", "API contract" → `integration_spec`
 - Contains "deploy", "monitor", "CI/CD", "runbook" → `operational`
 
-If document matches multiple types, use primary focus. Note secondary types in metadata.
+If a document matches multiple types, use the primary focus. Note secondary types in metadata.
 
 ---
 
@@ -205,21 +205,21 @@ estimated_stories: 0        # Rough story count for the cluster
 
 #### 5.1 Spawn Domain Agents via Agent Tool
 
-For each domain, spawn agent using `Agent` tool (all in single assistant message for parallelism):
+For each domain, spawn an agent using the `Agent` tool (all in a single assistant message for parallelism):
 - `subagent_type: general-purpose` (must Write; `Explore` cannot)
 - `model: sonnet` (explicit — prevents `[1m]` inheritance)
 - `description: roadmap-spec <domain-slug>`
-- `prompt`: spec-generation template with domain overview, capabilities, stack profile
+- `prompt`: the spec-generation template with domain overview, capabilities, and stack profile
 - `run_in_background: true`
 
-**Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)) — max 15 file reads, 5-min wall-clock, stub-then-append write pattern. Previous `TeamCreate`+`SendMessage` spawn removed in v1.4.0.
+**Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)) — max 15 file reads, 5-min wall-clock, stub-then-append write pattern. Previous `TeamCreate`+`SendMessage` spawn was removed in v1.4.0.
 
 Each agent receives:
-- Domain overview document
-- Capability details for capabilities in this domain
-- Codebase state assessment for relevant capabilities
-- Research cache entries related to this domain
-- Detected stack profile
+- The domain overview document
+- The capability details for capabilities in this domain
+- The codebase state assessment for relevant capabilities
+- The research cache entries related to this domain
+- The detected stack profile
 
 Each agent produces `docs/roadmap/domains/<slug>/spec.md` containing:
 
@@ -267,16 +267,16 @@ for domain in <list-of-domains>; do
 done
 ```
 
-**Gate**: If any domain spec file missing or empty, retry that domain's agent once with narrower scope (fewer capabilities). If still failed, write explicit placeholder spec noting domain was not analyzed, flag in final summary, do NOT silently proceed.
+**Gate**: If any domain spec file is missing or empty, retry that domain's agent once with narrower scope (fewer capabilities). If still failed, write an explicit placeholder spec noting the domain was not analyzed, flag it in the final summary, and do NOT silently proceed.
 
 Read all generated spec files. Validate:
-- Every capability in domain is covered
-- Data models consistent across domains (shared entities match)
+- Every capability in the domain is covered
+- Data models are consistent across domains (shared entities match)
 - API contracts don't conflict
 
 #### 5.4 Cross-Domain Consistency Check
 
-Compare data models across domains. If entity `User` appears in Domain A and Domain B, definitions must match. Flag conflicts for manual resolution.
+Compare data models across domains. If entity `User` appears in Domain A and Domain B, the definitions must match. Flag conflicts for manual resolution.
 
 ---
 
@@ -325,22 +325,22 @@ Write `docs/roadmap/cross-cutting/monitoring-spec.md`:
 
 #### 7.1 Spawn Phase Agents via Agent Tool
 
-For each implementation phase (from Phase 4), spawn agent using `Agent` tool (all in single assistant message for parallelism):
+For each implementation phase (from Phase 4), spawn an agent using the `Agent` tool (all in a single assistant message for parallelism):
 - `subagent_type: general-purpose` (must Write epic files; `Explore` cannot)
 - `model: sonnet` (explicit — prevents `[1m]` inheritance)
 - `description: roadmap-epics phase-<N>`
-- `prompt`: epic-generation template with phase plan, domain specs, cross-cutting specs, codebase state
+- `prompt`: the epic-generation template with phase plan, domain specs, cross-cutting specs, and codebase state
 - `run_in_background: true`
 
-**Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)) — max 15 file reads, 5-min wall-clock, stub-then-append write pattern. Previous `TeamCreate`+`SendMessage` spawn removed in v1.4.0.
+**Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)) — max 15 file reads, 5-min wall-clock, stub-then-append write pattern. Previous `TeamCreate`+`SendMessage` spawn was removed in v1.4.0.
 
 After spawning, validate each expected phase's epic directory was created and contains at least one epic file before proceeding to Phase 8.
 
 Each agent receives:
-- Phase plan (capabilities, domains, workstreams)
-- Domain specs for domains in this phase
-- Cross-cutting specs
-- Codebase state assessment
+- The phase plan (capabilities, domains, workstreams)
+- The domain specs for domains in this phase
+- The cross-cutting specs
+- The codebase state assessment
 
 Each agent produces epics in `docs/roadmap/epics/phase-N/`.
 
@@ -392,7 +392,7 @@ estimated_stories: <N>
 
 #### 7.4 Epic Numbering
 
-Epics numbered globally: `E001`, `E002`, etc. Numbering follows phase order, then domain order within phase, then dependency depth within domain.
+Epics are numbered globally: `E001`, `E002`, etc. Numbering follows phase order, then domain order within phase, then dependency depth within domain.
 
 #### 7.5 Validate Epic Graph
 
@@ -411,7 +411,7 @@ After all agents complete:
 4. OPERATE — read, modify, and write the registry file.
 5. RELEASE — delete `docs/roadmap/epic-registry.json.lock` and append `lock_released` to the operation log.
 
-Write/update `docs/roadmap/epic-registry.json` using Epic Registry JSON Schema defined below. Include all epics generated across all phases, their dependency graph, phase groupings.
+Write/update `docs/roadmap/epic-registry.json` using the Epic Registry JSON Schema defined below. Include all epics generated across all phases, their dependency graph, and phase groupings.
 
 ---
 
@@ -503,7 +503,7 @@ Write `docs/roadmap/tracker.md`:
 
 #### 8.4 Write Manifest
 
-Write `docs/roadmap/manifest.json` — single file linking to every generated artifact:
+Write `docs/roadmap/manifest.json` — a single file that links to every generated artifact:
 ```json
 {
   "generated": "<ISO-8601>",
@@ -525,7 +525,7 @@ Write `docs/roadmap/manifest.json` — single file linking to every generated ar
 
 #### 8.5 Final Output
 
-Print summary to user:
+Print a summary to the user:
 
 ```
 Roadmap Generation Complete.
@@ -619,7 +619,7 @@ Tracker: docs/roadmap/tracker.md
 
 ### Carry-Forward Integration Fields
 
-The following epic fields link roadmap to carry-forward registry described in [carry-forward-registry.md](/_shared/carry-forward-registry.md). They are rollup view of registry from epic's perspective — authoritative per-entry state lives in `.cc-sessions/carry-forward.jsonl`, not here.
+The following epic fields link the roadmap to the carry-forward registry described in [carry-forward-registry.md](/_shared/carry-forward-registry.md). They are the rollup view of the registry from an epic's perspective — the authoritative per-entry state lives in `.cc-sessions/carry-forward.jsonl`, not here.
 
 | Field | Purpose | Written by |
 |---|---|---|
@@ -632,30 +632,30 @@ The following epic fields link roadmap to carry-forward registry described in [c
 | `carry_forward_count` | Sum of `rollover_count` across all child registry entries. When any child crosses `rollover_count >= 3`, this also crosses 3 and the epic is flagged for mandatory human review. | `sprint-review` Phase 3.5 |
 | `last_touched_sprint` | The most recent sprint that shipped a story against this epic. Used by `sprint --loop` to distinguish stalled epics from completed ones. | `sprint-dev` on story completion |
 
-**Epic completion gate:** epic's `status` cannot transition to `done|complete` while any of its `registry_entries` have `status ∈ {active, partial}` in carry-forward registry. Enforced by `sprint-review` Invariant 3 and `sprint --loop` Step 2 row 7.
+**Epic completion gate:** an epic's `status` cannot transition to `done|complete` while any of its `registry_entries` have `status ∈ {active, partial}` in the carry-forward registry. This is enforced by `sprint-review` Invariant 3 and `sprint --loop` Step 2 row 7.
 
 ---
 
 ## Autonomous Execution Rules
 
-1. **Never ask for confirmation between phases.** Execute all phases in sequence. Only stop if gate condition fails.
-2. **Write artifacts incrementally.** Do not accumulate everything in memory. Write each document as completed.
-3. **Prefer specificity over abstraction.** Generated specs should reference actual file paths, function names, types from codebase.
-4. **Respect existing code.** If codebase already has pattern for something, roadmap should use that pattern, not invent new one.
+1. **Never ask for confirmation between phases.** Execute all phases in sequence. Only stop if a gate condition fails.
+2. **Write artifacts incrementally.** Do not accumulate everything in memory. Write each document as it is completed.
+3. **Prefer specificity over abstraction.** Generated specs should reference actual file paths, function names, and types from the codebase.
+4. **Respect existing code.** If the codebase already has a pattern for something, the roadmap should use that pattern, not invent a new one.
 5. **Cap research time.** Context7 lookups: max 8. Web searches: max 12. Do not spend more than 20% of total execution on research.
-6. **Handle missing data gracefully.** If research document is vague, extract what you can and flag gaps. Do not stop pipeline.
-7. **Maintain traceability.** Every epic must trace back to capabilities. Every capability must trace back to source document.
-8. **Phase gates are strict.** If gate fails, stop and report why. Do not proceed with insufficient data.
-9. **Parallelize where possible.** When spawning agents (Phases 5, 7), run concurrently.
-10. **Produce machine-readable outputs.** Every phase writes both human-readable markdown and machine-readable JSON. JSON feeds downstream skills (sprint-plan, sprint-dev).
+6. **Handle missing data gracefully.** If a research document is vague, extract what you can and flag gaps. Do not stop the pipeline.
+7. **Maintain traceability.** Every epic must trace back to capabilities. Every capability must trace back to a source document.
+8. **Phase gates are strict.** If a gate fails, stop and report why. Do not proceed with insufficient data.
+9. **Parallelize where possible.** When spawning agents (Phases 5, 7), run them concurrently.
+10. **Produce machine-readable outputs.** Every phase writes both human-readable markdown and machine-readable JSON. The JSON feeds downstream skills (sprint-plan, sprint-dev).
 
 ---
 
 ## Error Recovery
 
-- **No research documents found**: Inform user. Suggest creating research docs in `docs/_research/`; provide 8-type classification table.
-- **Existing roadmap found on `full` mode**: Warn user this will overwrite. Suggest `refresh` or `extend` instead. Proceed only if user confirms (or rename existing to `.bak`).
-- **Circular dependencies detected**: Report cycle with involved capabilities. Suggest breaking cycle by splitting capability. Do not proceed with phase assignment until resolved.
-- **Agent failure in Phases 5/7**: Retry once. If still failing, generate specs manually for that domain; note reduced quality.
-- **Insufficient capabilities**: If fewer than 5 capabilities extracted, warn roadmap may be too thin. Proceed but flag in summary.
-- **Conflicting research**: If two documents contradict, flag conflict in capability notes; use more recent document as primary source.
+- **No research documents found**: Inform user. Suggest creating research docs in `docs/_research/` and provide the 8-type classification table.
+- **Existing roadmap found on `full` mode**: Warn user that this will overwrite. Suggest `refresh` or `extend` instead. Proceed only if user confirms (or rename existing to `.bak`).
+- **Circular dependencies detected**: Report the cycle with involved capabilities. Suggest breaking the cycle by splitting a capability. Do not proceed with phase assignment until resolved.
+- **Agent failure in Phases 5/7**: Retry once. If still failing, generate specs manually for that domain and note reduced quality.
+- **Insufficient capabilities**: If fewer than 5 capabilities extracted, warn that the roadmap may be too thin. Proceed but flag in the summary.
+- **Conflicting research**: If two documents contradict each other, flag the conflict in the capability notes and use the more recent document as primary source.

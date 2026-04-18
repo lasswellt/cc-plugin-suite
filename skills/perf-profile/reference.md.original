@@ -1,6 +1,6 @@
 # Performance Profiler — Reference Material
 
-Analysis commands, anti-pattern catalogs, threshold tables for perf-profile skill.
+This file provides analysis commands, anti-pattern catalogs, and threshold tables used by the perf-profile skill.
 
 ---
 
@@ -44,7 +44,7 @@ npx nuxt build 2>&1
 ```bash
 npx nuxt build --analyze 2>&1
 ```
-Generates visual bundle analysis report if `@nuxt/webpack-builder` or analyze option is configured.
+This generates a visual bundle analysis report if `@nuxt/webpack-builder` or analyze option is configured.
 
 **Inspect Nitro output:**
 ```bash
@@ -106,7 +106,7 @@ const state = reactive({ items: [], loading: false })
 export function useItems() { return state }
 ```
 
-**Fix:** Move reactive state inside composable or use `shallowRef`:
+**Fix:** Move reactive state inside the composable or use `shallowRef`:
 ```typescript
 export function useItems() {
   const state = reactive({ items: [], loading: false })
@@ -143,7 +143,7 @@ grep -rn "ref<.*\[\]>" --include="*.ts" --include="*.vue" . | grep -v "shallowRe
 watch(complexState, handler, { deep: true }) // Expensive deep comparison
 ```
 
-**Fix:** Watch specific properties or `watchEffect` with targeted access:
+**Fix:** Watch specific properties or use `watchEffect` with targeted access:
 ```typescript
 watch(() => complexState.specificField, handler)
 ```
@@ -162,7 +162,7 @@ grep -rn "deep:\s*true" --include="*.ts" --include="*.vue" . | grep -v "node_mod
 <div v-for="item in items" @click="() => handleClick(item.id)">
 ```
 
-**Fix:** Use method that accepts item:
+**Fix:** Use a method that accepts the item:
 ```vue
 <div v-for="item in items" @click="handleClick(item.id)">
 ```
@@ -203,7 +203,7 @@ const filteredItems = computed(() => {
 })
 ```
 
-**Fix:** Move side effects into watchers:
+**Fix:** Move side effects to watchers:
 ```typescript
 const filteredItems = computed(() => items.value.filter(i => i.active))
 watch(filteredItems, () => analytics.track('filter_applied'))
@@ -216,7 +216,7 @@ grep -rn "computed(" --include="*.ts" --include="*.vue" -A 10 . | grep -E "conso
 
 #### 2.4 v-if vs v-show Misuse
 
-**Rule:** `v-show` for frequently toggled elements, `v-if` for rarely changed conditions.
+**Rule:** Use `v-show` for frequently toggled elements, `v-if` for rarely changed conditions.
 
 **Grep pattern:**
 ```bash

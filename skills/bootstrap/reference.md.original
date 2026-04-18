@@ -1,6 +1,6 @@
 # Bootstrap — Reference Material
 
-Scaffold templates, file generation patterns, convention detection rules for bootstrap skill.
+Scaffold templates, file generation patterns, and convention detection rules for the bootstrap skill.
 
 ---
 
@@ -181,7 +181,7 @@ Before creating any file, check if it already exists:
 [ -f "<planned-path>" ] && echo "EXISTS — ask user" || echo "SAFE — create"
 ```
 
-For barrel files (index.ts), check if directory already has one:
+For barrel files (index.ts), check if the directory already has one:
 ```bash
 [ -f "<dir>/index.ts" ] && echo "APPEND export" || echo "CREATE barrel"
 ```
