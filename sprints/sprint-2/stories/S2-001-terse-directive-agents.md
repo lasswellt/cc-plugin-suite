@@ -4,7 +4,7 @@ title: Add /_shared/terse-output.md reference to 6 agent definition files
 epic: E-001
 capability: CAP-001
 registry_id: cf-2026-04-18-terse-directive-agents
-status: planned
+status: done
 github_issue: 1
 priority: high
 points: 1

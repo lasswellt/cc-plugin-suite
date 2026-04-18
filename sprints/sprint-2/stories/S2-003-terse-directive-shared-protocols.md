@@ -4,7 +4,7 @@ title: Cross-reference /_shared/terse-output.md from 10 shared protocol files
 epic: E-001
 capability: CAP-001
 registry_id: cf-2026-04-18-terse-directive-shared-protocols
-status: planned
+status: done
 github_issue: 3
 priority: medium
 points: 1

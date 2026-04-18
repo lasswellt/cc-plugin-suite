@@ -4,7 +4,7 @@ title: Compress 12 docs/_research/*.md files
 epic: E-002
 capability: CAP-002
 registry_id: cf-2026-04-18-compress-research-docs
-status: planned
+status: done
 github_issue: 5
 priority: medium
 points: 2

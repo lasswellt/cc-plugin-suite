@@ -4,7 +4,7 @@ title: Add /_shared/terse-output.md reference to 6 remaining SKILL.md (ask, spri
 epic: E-001
 capability: CAP-001
 registry_id: cf-2026-04-18-terse-directive-skill-gap
-status: planned
+status: done
 github_issue: 2
 priority: high
 points: 1

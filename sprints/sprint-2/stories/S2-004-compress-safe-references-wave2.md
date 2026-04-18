@@ -4,7 +4,7 @@ title: Compress 7 SAFE reference.md files (wave-2)
 epic: E-002
 capability: CAP-002
 registry_id: cf-2026-04-18-compress-safe-references-wave2
-status: planned
+status: incomplete
 github_issue: 4
 priority: high
 points: 2
