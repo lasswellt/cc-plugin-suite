@@ -41,7 +41,7 @@ scope:
 
 ## Summary
 
-caveman-compress is Python 3.10+ CLI (`/caveman:compress <filepath>`) that uses Claude to rewrite natural-language markdown into terse form, claiming ~46% token reduction on prose-only files. Blitz has 24 reference.md files totaling 9,591 lines; after excluding code fences (~270 lines), tables (~1,290 lines), and exact-match agent-prompt content (~200 lines), ~7,831 lines of prose eligible. Realistic savings: **~3,600 lines (~38% of total)** if applied broadly — but **4 reference.md files contain exact-match agent prompt templates** agents execute verbatim, creating high corruption risk. Recommendation: **compress 12 SAFE files, leave 4 UNSAFE and 3 RISKY files untouched, add structural-diff validator**. Expected net savings: ~2,400 lines (~25% of reference.md surface).
+caveman-compress is a Python 3.10+ CLI (`/caveman:compress <filepath>`) that uses Claude to rewrite natural-language markdown into terse form, claiming ~46% token reduction on prose-only files. Blitz has 24 reference.md files totaling 9,591 lines; after excluding code fences (~270 lines), tables (~1,290 lines), and exact-match agent-prompt content (~200 lines), ~7,831 lines of prose are eligible. Realistic savings: **~3,600 lines (~38% of total)** if applied broadly — but **4 reference.md files contain exact-match agent prompt templates** that agents execute verbatim, creating high corruption risk. Recommendation: **compress 12 SAFE files, leave the 4 UNSAFE and 3 RISKY files untouched, add a structural-diff validator**. Expected net savings: ~2,400 lines (~25% of the reference.md surface).
 
 ---
 
@@ -69,15 +69,15 @@ Source: `caveman-compress/README.md` + `SKILL.md` fetched from upstream.
 - No `--dry-run`, no `--diff`, no batch mode documented
 - 500KB file-size limit (blitz's largest reference.md is browse at 1,330 lines ≈ 45KB — fine)
 - Up to 2 validation-retry cycles; if final fails, source untouched and error reported
-- `SECURITY.md` confines writes to given path and prohibits network calls beyond Anthropic API
+- `SECURITY.md` confines writes to the given path and prohibits network calls beyond Anthropic API
 
-**Operational implication:** Blitz wrapper script required to iterate over multiple files and implement dry-run/diff review before commit. Estimate ~30 lines of bash.
+**Operational implication:** A blitz wrapper script is required to iterate over multiple files and to implement dry-run/diff review before commit. Estimate ~30 lines of bash.
 
 ### Finding 2 — Blitz has 24 reference.md files; most are table-heavy
 
 Source: codebase-analyst report (full report at session tmp).
 
-Top five by size: browse (1,330), code-sweep (912), roadmap (661), sprint-dev (582), doc-gen (539). Only 7,831 of 9,591 lines actually prose — rest is code fences (270), tables (1,290), or agent-prompt templates (200). Prose is what caveman-compress actually reduces.
+Top five by size: browse (1,330), code-sweep (912), roadmap (661), sprint-dev (582), doc-gen (539). Only 7,831 of 9,591 lines are actually prose — the rest is code fences (270), tables (1,290), or agent-prompt templates (200). Prose is what caveman-compress actually reduces.
 
 ### Finding 3 — Four reference.md files contain exact-match agent prompt templates
 
@@ -90,13 +90,13 @@ Source: codebase-analyst grep of orchestrator SKILL.md files for "reference.md" 
 | sprint-dev/reference.md | 12-item dev-agent prompt checklist | Agents verify all 12 items present |
 | sprint-plan/reference.md | Epic-agent prompt template | Filled-in template sent to agents |
 
-Compressing these files would rewrite agent-facing text. caveman-compress preservation rules protect code fences and table structure but **will still rewrite prose inside table cells** — exactly where grep patterns and prompt fragments live in completeness-gate and code-sweep. Single biggest correctness risk in this adoption.
+Compressing these files would rewrite agent-facing text. caveman-compress's preservation rules protect code fences and table structure but **will still rewrite prose inside table cells** — which is exactly where the grep patterns and prompt fragments live in completeness-gate and code-sweep. This is the single biggest correctness risk in this adoption.
 
 ### Finding 4 — No existing validator catches reference.md damage
 
 Source: codebase-analyst scan of `hooks/scripts/*.sh` and `installer/validate.sh`.
 
-Existing pre-commit and post-edit hooks check SKILL.md existence and line counts. No hook parses reference.md content. Blind spot: if compression corrupts agent prompt template, failure surfaces only when user runs that skill — potentially weeks later, across interim release.
+Existing pre-commit and post-edit hooks check SKILL.md existence and line counts. No hook parses reference.md content. This is a blind spot: if compression corrupts an agent prompt template, the failure surfaces only when a user runs that skill — potentially weeks later, across an interim release.
 
 ### Finding 5 — Three additional files have RISKY section-heading references
 
@@ -106,13 +106,13 @@ Source: codebase-analyst.
 - `integration-check/reference.md` — "Check Agent Prompt Template" heading matched
 - `code-sweep/reference.md` (also UNSAFE; double-flagged) — "Grep Patterns by Check" and "Tier {{TIER}}" headings
 
-caveman-compress preserves heading *text*, per documented rules. Headings themselves safe — but if orchestrator looks up prose *under* heading, compressed prose may no longer match downstream expectations. Lower risk than UNSAFE, but still audit-worthy.
+caveman-compress preserves heading *text*, per its documented rules. So headings themselves are safe — but if the orchestrator looks up prose *under* a heading, compressed prose may no longer match downstream expectations. Lower risk than UNSAFE, but still audit-worthy.
 
 ### Finding 6 — Backup convention is `.original.md`; fits git-tracked source pattern
 
 Source: caveman-compress SKILL.md.
 
-Tool already writes `FILE.original.md` alongside compressed file. Simplest reversible pattern for blitz: commit both; `.original.md` is canonical source for future edits, compressed file is runtime artifact. Lightweight rebuild script re-runs compression when `.original.md` changes.
+The tool already writes `FILE.original.md` alongside the compressed file. Simplest reversible pattern for blitz: commit both; the `.original.md` is the canonical source for future edits, the compressed file is the runtime artifact. A lightweight rebuild script re-runs compression when `.original.md` changes.
 
 ---
 
@@ -131,17 +131,17 @@ Tool already writes `FILE.original.md` alongside compressed file. Simplest rever
 
 ## Recommendation
 
-**Phased, audited rollout — compress 12 SAFE files, add validator, defer 7 RISKY/UNSAFE files.**
+**Phased, audited rollout — compress the 12 SAFE files, add a validator, defer the 7 RISKY/UNSAFE files.**
 
 Three priorities, in order:
 
-1. **Write structural-diff validator FIRST.** `hooks/scripts/reference-compression-validate.sh` diffs compressed `reference.md` against its `.original.md` backup and fails if any of: code fences removed, URLs changed, file paths rewritten, table row counts differ, heading list differs. Prerequisite — without it, no mechanism to catch compression damage.
+1. **Write a structural-diff validator FIRST.** `hooks/scripts/reference-compression-validate.sh` diffs a compressed `reference.md` against its `.original.md` backup and fails if any of: code fences removed, URLs changed, file paths rewritten, table row counts differ, heading list differs. This is the prerequisite — without it, we have no mechanism to catch compression damage.
 
-2. **Compress 12 SAFE files.** browse, sprint-review, test-gen, ui-build, refactor, research, retrospective, release, dep-health, quality-metrics, migrate, codebase-map. Validate each. Commit both compressed and `.original.md`.
+2. **Compress the 12 SAFE files.** browse, sprint-review, test-gen, ui-build, refactor, research, retrospective, release, dep-health, quality-metrics, migrate, codebase-map. Validate each. Commit both compressed and `.original.md`.
 
-3. **Leave UNSAFE and RISKY files uncompressed.** code-sweep, completeness-gate, sprint-dev, sprint-plan (UNSAFE — contain executable agent content). codebase-audit, integration-check (RISKY — section-heading lookups). doc-gen, roadmap, bootstrap, setup, fix-issue (keep uncompressed pending per-file audit — have substantial table/schema content where compression return is marginal).
+3. **Leave UNSAFE and RISKY files uncompressed.** code-sweep, completeness-gate, sprint-dev, sprint-plan (UNSAFE — contain executable agent content). codebase-audit, integration-check (RISKY — section-heading lookups). doc-gen, roadmap, bootstrap, setup, fix-issue (keep uncompressed pending per-file audit — these have substantial table/schema content where compression return is marginal).
 
-**Projected net savings:** ~2,400 lines (25% reduction of reference.md surface), not 46% headline. If insufficient, alternate path is to rewrite reference.md files to be terse *by hand* during normal authorship — cheaper than maintaining compression pipeline.
+**Projected net savings:** ~2,400 lines (25% reduction of reference.md surface), not the 46% headline. If this is insufficient, an alternate path is to rewrite reference.md files to be terse *by hand* during normal authorship — cheaper than maintaining a compression pipeline.
 
 ---
 
@@ -206,7 +206,7 @@ Add note to `CLAUDE.md` or `CONTRIBUTING` (if exists): "Edit `reference.md.origi
 
 ### Step 5 — Measure
 
-Compare token counts before/after via `.cc-sessions/context-char-count` file (blitz already tracks this). Confirm ~2,400 line reduction translates to meaningful sprint-level token savings before scaling.
+Compare token counts before/after via the `.cc-sessions/context-char-count` file (blitz already tracks this). Confirm ~2,400 line reduction translates to meaningful sprint-level token savings before scaling.
 
 ---
 
@@ -223,8 +223,8 @@ Compare token counts before/after via `.cc-sessions/context-char-count` file (bl
 | 25% savings too small to justify the pipeline | Medium-high | If net savings fall below 2,000 lines after first batch, abandon and rewrite prose terse-by-hand instead |
 
 **Open questions:**
-- Should `.original.md` be git-tracked, or generated at build time from pre-commit hook? Tracking both doubles repo size for reference files. (Suggest: track both; reference.md files small in absolute terms.)
-- Does end-user skill loading read compressed or original? Skills always Read `reference.md` — compressed file. `.original.md` is author-only.
+- Should `.original.md` be git-tracked, or generated at build time from a pre-commit hook? Tracking both doubles the repo size for reference files. (Suggest: track both; reference.md files are small in absolute terms.)
+- Does end-user skill loading read compressed or original? Skills always Read `reference.md` — the compressed file. `.original.md` is author-only.
 - Is there value in compressing SKILL.md too? No — SKILL.md has hook-matched line-count limits and is already closer to minimum viable prose. Risk > reward.
 
 ---

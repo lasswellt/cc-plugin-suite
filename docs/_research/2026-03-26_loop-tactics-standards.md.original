@@ -9,7 +9,7 @@
 
 ## Summary
 
-Current code-sweep skill has 30 static checks but no ability to discover what codebase actually does, define that as standard, or progressively align outliers. Research across industry patterns (Notion's eslint-seatbelt, Stripe's Sorbet, Google's Rosie), existing skill architecture, and concrete algorithm design converges on three-part extension: (1) **convention discovery** phase samples codebase, counts pattern frequencies, auto-proposes standards at 70% adoption threshold; (2) **file queue** partitions large codebases into 30-file batches across loop ticks with priority scoring; (3) **ratchet mechanism** enforces monotonic improvement — violation budgets can only decrease, never increase.
+The current code-sweep skill has 30 static checks but no ability to discover what the codebase actually does, define that as a standard, or progressively align outliers. Research across industry patterns (Notion's eslint-seatbelt, Stripe's Sorbet, Google's Rosie), the existing skill architecture, and concrete algorithm design converges on a three-part extension: (1) a **convention discovery** phase that samples the codebase, counts pattern frequencies, and auto-proposes standards at a 70% adoption threshold; (2) a **file queue** that partitions large codebases into 30-file batches across loop ticks with priority scoring; and (3) a **ratchet mechanism** that enforces monotonic improvement — violation budgets can only decrease, never increase.
 
 ---
 
@@ -17,12 +17,12 @@ Current code-sweep skill has 30 static checks but no ability to discover what co
 
 ### 1. How should code-sweep discover existing conventions?
 
-**Answer**: **Propose-Count-Decide** pattern. For each convention dimension (file naming, import ordering, error handling, async patterns, component style, export style, indentation, quote style):
+**Answer**: The **Propose-Count-Decide** pattern. For each convention dimension (file naming, import ordering, error handling, async patterns, component style, export style, indentation, quote style):
 1. Sample files using stratified sampling (40% recently modified, 30% most-imported, 20% random, 10% hotspots)
-2. Extract pattern each file uses
-3. Count frequencies and classify: >70% adoption = auto-enforce, 30-70% = flag for human review, <30% = codebase has *different* convention — learn that instead
+2. Extract the pattern each file uses
+3. Count frequencies and classify: >70% adoption = auto-enforce, 30-70% = flag for human review, <30% = the codebase has a *different* convention — learn that instead
 
-Follows ESLint community practice and Prettier's "detect then standardize" philosophy. Key insight: **never propose a standard the codebase disagrees with.** Search first.
+This follows ESLint's community practice and Prettier's "detect then standardize" philosophy. The key insight: **never propose a standard the codebase disagrees with.** Search first.
 
 ### 2. What's the right loop lifecycle?
 
@@ -53,13 +53,13 @@ Partition strategies ranked by research: hotspot-first (highest ROI) > most-impo
 
 ### 4. What's the "search first" pattern?
 
-**Answer**: **verify-before-enforce** workflow from Biome and ESLint:
+**Answer**: The **verify-before-enforce** workflow from Biome and ESLint:
 
 ```
 PROPOSE → EVALUATE → ENFORCE → ALIGN → COMPLETE
 ```
 
-- **PROPOSE**: Discovery algorithm finds pattern with >30% adoption
+- **PROPOSE**: Discovery algorithm finds a pattern with >30% adoption
 - **EVALUATE**: Scan ALL files, compute adoption rate
   - >=70%: auto-enforce
   - 30-70%: needs human review (`--approve-standard <id>`)
@@ -68,7 +68,7 @@ PROPOSE → EVALUATE → ENFORCE → ALIGN → COMPLETE
 - **ALIGN**: Each fix tick resolves one violation; ratchet budget decreases monotonically
 - **COMPLETE**: 100% compliance reached; standard prevents regression
 
-Anti-pattern to avoid: enabling rule without counting first. Always measure adoption before enforcing.
+The anti-pattern to avoid: enabling a rule without counting first. Always measure adoption before enforcing.
 
 ### 5. How should standards be stored?
 
@@ -78,19 +78,19 @@ Anti-pattern to avoid: enabling rule without counting first. Always measure adop
 - History tracking for trend analysis
 - Pending-review queue for human decisions
 
-Follows config-as-code principle: config defines *target*, ratchet file tracks *current reality*, gap between them IS the work queue.
+This follows the config-as-code principle: config defines the *target*, the ratchet file tracks *current reality*, and the gap between them IS the work queue.
 
 ### 6. How do progressive alignment strategies work at scale?
 
 **Answer**: Three proven patterns from industry:
 
-1. **Notion's ratchet** (eslint-seatbelt): TSV file tracking (file, rule, violation_count). Budgets can only decrease. Pre-commit hooks auto-lower budget when fixes land. IS the migration plan.
+1. **Notion's ratchet** (eslint-seatbelt): TSV file tracking (file, rule, violation_count). Budgets can only decrease. Pre-commit hooks auto-lower budget when fixes land. This IS the migration plan.
 
 2. **Stripe's Sorbet** (file-level opt-in): Each file declares its compliance level. Different teams adopt at different rates. Centralized tooling + social enforcement (code review catches regressions).
 
 3. **Google's Rosie** (ownership-based sharding): Partition changes by OWNERS boundaries. Cap outstanding shards. Auto-escalate unresponsive reviewers. Test intersection optimization.
 
-For code-sweep, **ratchet + file queue** combination gives us: visibility (metrics show progress), irreversibility (budgets only decrease), tractability (30 files/tick = predictable velocity).
+For code-sweep, the **ratchet + file queue** combination gives us: visibility (metrics show progress), irreversibility (budgets only decrease), and tractability (30 files/tick = predictable velocity).
 
 ---
 
@@ -100,17 +100,17 @@ For code-sweep, **ratchet + file queue** combination gives us: visibility (metri
 
 **Source**: All 3 agents converge
 
-ESLint community practice, Biome's rule adoption metrics, and library-docs algorithm all settle on 70% as auto-enforcement threshold. Below 70% but above 30% requires human judgment. Below 30% means proposed pattern is actually minority — codebase has different convention. Prevents tool from fighting codebase.
+ESLint community practice, Biome's rule adoption metrics, and the library-docs algorithm all settle on 70% as the auto-enforcement threshold. Below 70% but above 30% requires human judgment. Below 30% means the proposed pattern is actually the minority — the codebase has a different convention. This prevents the tool from fighting the codebase.
 
 ### Finding 2: Ratchet Pattern is the Core Mechanism
 
 **Source**: web-researcher (Notion, imbue-ai/ratchets) + library-docs (concrete schema)
 
-Ratchet file is single most important addition. Transforms one-time scan into sustained improvement engine:
-- Initial scan creates budget (violation count per standard)
-- Each fix tick decreases budget
-- New violations exceeding budget flagged as regressions
-- Ratchet file IS the migration plan — shows exactly what's left to do
+The ratchet file is the single most important addition. It transforms a one-time scan into a sustained improvement engine:
+- Initial scan creates the budget (violation count per standard)
+- Each fix tick decreases the budget
+- New violations that exceed the budget are flagged as regressions
+- The ratchet file IS the migration plan — it shows exactly what's left to do
 
 Tools: eslint-seatbelt, imbue-ai/ratchets, eslint-formatter-ratchet.
 
@@ -118,17 +118,17 @@ Tools: eslint-seatbelt, imbue-ai/ratchets, eslint-formatter-ratchet.
 
 **Source**: codebase-analyst (architecture gap) + library-docs (queue design)
 
-Current code-sweep scans ALL files every tick (Tier 1). For 500+ file codebases, doesn't scale for standards enforcement. File queue with 30 files/tick batching solves this:
+The current code-sweep scans ALL files every tick (Tier 1). For 500+ file codebases, this doesn't scale for standards enforcement. The file queue with 30 files/tick batching solves this:
 - First run: full scan, initialize queue sorted by priority
 - Each subsequent tick: pop next batch, scan, fix one item
-- Changed files (git diff) always scanned regardless of queue position
+- Changed files (git diff) always get scanned regardless of queue position
 - Queue wraps around and re-prioritizes when exhausted
 
 ### Finding 4: Stratified Sampling Produces Better Discovery
 
 **Source**: library-docs (algorithm design)
 
-Pure random sampling misses high-value files. Stratified sampling (40% recently modified, 30% most-imported, 20% random, 10% hotspots) captures both "active convention" (what developers write today) and "core convention" (what shapes the project). Cap at 200 files for larger codebases.
+Pure random sampling misses high-value files. Stratified sampling (40% recently modified, 30% most-imported, 20% random, 10% hotspots) captures both "active convention" (what developers write today) and "core convention" (what shapes the project). Cap at 200 files for codebases larger than that.
 
 ### Finding 5: Eight Convention Dimensions Cover Most Standards
 
@@ -149,13 +149,13 @@ Pure random sampling misses high-value files. Stratified sampling (40% recently 
 
 **Source**: web-researcher (Agoda, Notion)
 
-Standards should progress through enforcement levels: off → info → warn → error+budget → error+zero. Matches PROPOSE → EVALUATE → ENFORCE lifecycle and prevents anti-pattern of enabling a rule that produces hundreds of errors overnight.
+Standards should progress through enforcement levels: off → info → warn → error+budget → error+zero. This matches the PROPOSE → EVALUATE → ENFORCE lifecycle and prevents the anti-pattern of enabling a rule that produces hundreds of errors overnight.
 
 ---
 
 ## Recommendation
 
-**Implement three-part extension to code-sweep:**
+**Implement a three-part extension to code-sweep:**
 
 ### Part 1: Convention Discovery (Phase 1.5)
 - New phase between OBSERVE and SCAN

@@ -12,9 +12,9 @@
 
 ## Summary
 
-Blitz sprint --loop silently dropped 46 files of promised CAP-133 scope because **no persistent registry links research-doc scope claims to delivered artifacts**, and **auto-waiver in `full` autonomy writes carry-forward state into single sprint manifest next sprint's planner never reads**. Drop not caused by any one bug — it's expected behavior of current state machine, which has no coverage gate, no rollup, no stalled-item query, no parent-scope audit.
+The blitz sprint --loop silently dropped 46 files of promised CAP-133 scope because **no persistent registry links research-doc scope claims to delivered artifacts**, and **auto-waiver in `full` autonomy writes carry-forward state into a single sprint manifest that the next sprint's planner never reads**. The drop is not caused by any one bug — it's the expected behavior of the current state machine, which has no coverage gate, no rollup, no stalled-item query, and no parent-scope audit.
 
-Industry answer unambiguous: **(1)** append-only JSONL registry with structured scope metrics (target vs delivered), **(2)** KEP-style status enum making `partial` and `dropped` first-class, **(3)** sprint-close invariant refusing to mark epic done while child registry entry is `active` or `partial`, **(4)** loop exit guard checking registry coverage before declaring "nothing to do." Implementation: one new file (`.cc-sessions/carry-forward.jsonl`), four SKILL.md patches, one pre-sprint-close invariant check — roughly the size of `activity-feed.jsonl` feature already in repo.
+The industry answer is unambiguous: **(1)** an append-only JSONL registry with structured scope metrics (target vs delivered), **(2)** a KEP-style status enum that makes `partial` and `dropped` first-class, **(3)** a sprint-close invariant that refuses to mark an epic done while a child registry entry is `active` or `partial`, and **(4)** a loop exit guard that checks registry coverage before declaring "nothing to do." Implementation is one new file (`.cc-sessions/carry-forward.jsonl`), four SKILL.md patches, and one pre-sprint-close invariant check — roughly the size of the `activity-feed.jsonl` feature already in the repo.
 
 ---
 
@@ -35,7 +35,7 @@ Industry answer unambiguous: **(1)** append-only JSONL registry with structured 
 
 ### Theme 1 — The Drop Mechanism Is a State-Machine Hole, Not a Bug
 
-Exact sequence of silent drop in CAP-133 case, traced to file:line ([codebase-analyst.md](#references), full table in § "Exact Sequence"):
+The exact sequence of silent drop in the CAP-133 case, traced to file:line ([codebase-analyst.md](#references), full table in § "Exact Sequence"):
 
 1. **sprint-plan S197**: Phase 4.1 AC-coverage gate runs. 46 of 130 files are uncovered. Autonomy is `full` (loop mode), so `sprint-plan/SKILL.md:320` auto-waives them into `manifest.carry_forward` and logs a `decision` event to the activity feed. **No epic-registry update.**
 2. **sprint-dev S197**: Agent implements S197-004 on 84 files. Build passes. Story marked `done`. **No re-check of AC coverage.**
@@ -54,36 +54,36 @@ Exact sequence of silent drop in CAP-133 case, traced to file:line ([codebase-an
 
 ### Theme 2 — Zombie Scrum Is the Named Anti-Pattern
 
-Incident is textbook instance of three overlapping anti-patterns from the literature:
+The incident is a textbook instance of three overlapping anti-patterns from the literature:
 
-- **Zombie Scrum** (Scrum.org) — *"items from the sprint backlog get carried over to the next sprint without question."* Ceremonies look healthy; empiricism dead.
-- **Ticket decay** (Philipp Flenker) — longer a ticket sits, more its context decays; fix is short-TTL tickets that either execute or die.
-- **Zombie work** (Atlassian Rovo, 2025) — *"any issue that looks active but is functionally blocked, quietly aging out of sprints."* Atlassian ships dedicated detector because pattern is ubiquitous.
+- **Zombie Scrum** (Scrum.org) — *"items from the sprint backlog get carried over to the next sprint without question."* Ceremonies look healthy; empiricism is dead.
+- **Ticket decay** (Philipp Flenker) — the longer a ticket sits, the more its context decays; the fix is short-TTL tickets that either execute or die.
+- **Zombie work** (Atlassian Rovo, 2025) — *"any issue that looks active but is functionally blocked, quietly aging out of sprints."* Atlassian ships a dedicated detector because the pattern is ubiquitous.
 
-All three prescriptions converge on same mechanism: **explicit re-surfacing**. Registry/ledger of delayed items that must be reviewed each cycle, with items aging past N sprints triggering hard escalation.
+All three prescriptions converge on the same mechanism: **explicit re-surfacing**. A registry/ledger of delayed items that must be reviewed each cycle, with items aging past N sprints triggering hard escalation.
 
 ### Theme 3 — "Migrate 130 Files via Glob" Is a Spike Dressed as a Story
 
-S197-004 story violated every well-known decomposition rule:
+The S197-004 story violated every well-known decomposition rule:
 
-- **SPIDR** (Mountain Goat / Mike Cohn): for 130-file migration, **Data** axis is right split — by route, feature area, or author. S197-004 was horizontal "all layers, all files" story delivering value only at end — why it rolled over twice.
-- **Batch-size control** (Allen Holub, Planview): small batches have exponentially better flow metrics. 5-point story touching 130 files is outside any sane WIP policy. *"When the team can't articulate AC beyond 'it compiles', that's a spike, not a story."*
-- **Shape Up "hammer scope, don't cut"** (Basecamp): if project doesn't ship in its appetite, does not automatically continue. Goes back to shaper for fresh pitch. No silent carry.
+- **SPIDR** (Mountain Goat / Mike Cohn): for a 130-file migration, the **Data** axis is the right split — by route, feature area, or author. S197-004 was a horizontal "all layers, all files" story that delivers value only at the end, which is why it rolled over twice.
+- **Batch-size control** (Allen Holub, Planview): small batches have exponentially better flow metrics. A 5-point story touching 130 files is outside any sane WIP policy. *"When the team can't articulate AC beyond 'it compiles', that's a spike, not a story."*
+- **Shape Up "hammer scope, don't cut"** (Basecamp): if a project doesn't ship in its appetite, it does not automatically continue. It goes back to the shaper for a fresh pitch. No silent carry.
 
-**Implication for blitz sprint-plan**: linter-style rule flagging stories with `files.length > N` or descriptions matching "all X" / "via pattern" / "across the codebase" should force interactive split (or mandatory `spidr_split` field justifying large scope) before accepting story.
+**Implication for blitz sprint-plan**: a linter-style rule that flags stories with `files.length > N` or descriptions matching "all X" / "via pattern" / "across the codebase" should force an interactive split (or a mandatory `spidr_split` field justifying the large scope) before accepting the story.
 
 ### Theme 4 — The Registry Pattern Is Well-Precedented
 
-Every mature tool surveyed has **same two missing elements** blitz lacks:
+Every mature tool we surveyed has **the same two missing elements** that blitz lacks:
 
-1. **Numeric rollup metric** (not just count-of-children). Azure DevOps, Linear milestones, and Jira burn-up charts all track `delivered/target` as ratio. Binary "done/not done" on 130 files hides 45% state.
-2. **Partial/dropped status not implicit.** KEP's `implementable | implemented | deferred | rejected | withdrawn | replaced`, PEP's `Deferred | Superseded | Withdrawn`, and Shortcut's "archived with revival path" all make abandonment loud, not silent.
+1. **A numeric rollup metric** (not just count-of-children). Azure DevOps, Linear milestones, and Jira burn-up charts all track `delivered/target` as a ratio. A binary "done/not done" on 130 files hides the 45% state.
+2. **A partial/dropped status that is not implicit.** KEP's `implementable | implemented | deferred | rejected | withdrawn | replaced`, PEP's `Deferred | Superseded | Withdrawn`, and Shortcut's "archived with revival path" all make abandonment loud, not silent.
 
-Kubernetes KEP pattern closest fit for blitz: **machine-readable sibling file** (`kep.yaml`) alongside human-readable proposal prose. blitz should adopt same: research docs stay prose, companion JSONL entry carries structured metadata.
+The Kubernetes KEP pattern is the closest fit for blitz: a **machine-readable sibling file** (`kep.yaml`) alongside the human-readable proposal prose. blitz should adopt the same: research docs stay prose, and a companion JSONL entry carries the structured metadata.
 
 ### Theme 5 — Capability-Level DoD Must Be Executable
 
-Strongest single insight from web research: **capability-level DoD should be executable grep/AST check, not checklist item**. For CAP-133, DoD should have been:
+The strongest single insight from the web research: **capability-level DoD should be an executable grep/AST check, not a checklist item**. For CAP-133, the DoD should have been:
 
 ```
 grep -r 'from.*shared/ConfirmDialog' apps/web/src/ | wc -l   # must be 0
@@ -92,7 +92,7 @@ grep -r 'import AdminModal'           apps/web/src/ | wc -l   # must be 0
 grep -r 'from.*@mbk/ui.*Modal'        apps/web/src/ | wc -l   # must be > 30
 ```
 
-**Verifiable in milliseconds and cannot be marked done dishonestly**. blitz's `completeness-gate` skill already exists but checks overall code health; needs to accept per-capability DoD rules as inputs from registry.
+This is **verifiable in milliseconds and cannot be marked done dishonestly**. blitz's `completeness-gate` skill already exists but checks overall code health; it needs to accept per-capability DoD rules as inputs from the registry.
 
 ---
 
@@ -112,11 +112,11 @@ grep -r 'from.*@mbk/ui.*Modal'        apps/web/src/ | wc -l   # must be > 30
 | `skills/research/SKILL.md` Phase 3 | Prose research doc | **Add** optional `## Scope` block with structured `scope:` YAML frontmatter the roadmap can parse. |
 | `skills/roadmap/SKILL.md` extend mode | Adds epics from research docs | **Add** registry write for every quantified scope claim found in the source doc. |
 
-**No new tools.** No new services. No schema migration. Every change additive to existing JSON files and SKILL.md flows.
+**No new tools.** No new services. No schema migration. Every change is additive to existing JSON files and SKILL.md flows.
 
-**Dependency on filesystem conventions**: blitz plugin already relies on `.cc-sessions/` for cross-session state. Registry lives there naturally.
+**Dependency on filesystem conventions**: the blitz plugin already relies on `.cc-sessions/` for cross-session state. The registry lives there naturally.
 
-**Back-compat**: old sprints without registry entries unaffected. Sprint-review invariant only fails if registry entry exists and is stale — greenfield behavior is no-op.
+**Back-compat**: old sprints without registry entries are unaffected. The sprint-review invariant only fails if a registry entry exists and is stale — greenfield behavior is a no-op.
 
 ---
 
@@ -126,11 +126,11 @@ grep -r 'from.*@mbk/ui.*Modal'        apps/web/src/ | wc -l   # must be > 30
 
 ### Part A — Registry (highest leverage, smallest change)
 
-Add `.cc-sessions/carry-forward.jsonl` as append-only JSONL registry, teach `skills/research`, `skills/roadmap` extend, and `skills/sprint-plan` auto-waiver to write to it. Alone makes silent drops visible.
+Add `.cc-sessions/carry-forward.jsonl` as an append-only JSONL registry, and teach `skills/research`, `skills/roadmap` extend, and `skills/sprint-plan` auto-waiver to write to it. This alone makes silent drops visible.
 
 ### Part B — Invariants at sprint close
 
-Add one phase to `skills/sprint-review/SKILL.md` enforcing four invariants against registry:
+Add one phase to `skills/sprint-review/SKILL.md` that enforces four invariants against the registry:
 
 1. Every quantified scope claim in a research doc touched this sprint has a registry entry.
 2. Every `status==active` entry was touched this sprint OR explicitly transitioned to `deferred`/`dropped`.
@@ -157,7 +157,7 @@ One-line change to `skills/sprint/SKILL.md:67` decision tree: idle exit requires
 
 ### Step 1 — Create the registry schema
 
-New file: `.cc-sessions/carry-forward.jsonl`. Append-only. One JSON object per line. Updates are new lines with same `id`; **latest wins** on `id`. Example:
+New file: `.cc-sessions/carry-forward.jsonl`. Append-only. One JSON object per line. Updates are new lines with the same `id`; **latest wins** on `id`. Example:
 
 ```jsonl
 {"id":"cf-2026-04-02-modal-consistency","ts":"2026-04-02T10:00:00Z","event":"created","source":{"doc":"docs/_research/2026-04-02_modal-consistency.md","anchor":"§Scope"},"parent":{"capability":"CAP-133","epic":"EPIC-105"},"scope":{"unit":"files","target":130,"description":"Migrate modal components to @mbk/ui Modal.vue"},"delivered":{"unit":"files","actual":0,"last_sprint":null},"coverage":0.0,"status":"active","last_touched":{"sprint":"sprint-197","date":"2026-04-03"},"children":[],"blocker":null,"drop_reason":null,"revival_candidate":false,"notes":""}
@@ -169,7 +169,7 @@ Canonical status enum (borrowed from KEP + PEP): `provisional | active | partial
 
 ### Step 2 — Teach `skills/research` to emit structured scope
 
-In `skills/research/SKILL.md` Phase 3, when finding includes quantified target (regex: `\d+\s+(files|components|modals|tests|routes|...)`), emit YAML frontmatter block:
+In `skills/research/SKILL.md` Phase 3, when a finding includes a quantified target (regex: `\d+\s+(files|components|modals|tests|routes|...)`), emit a YAML frontmatter block:
 
 ```yaml
 ---
@@ -185,7 +185,7 @@ scope:
 ---
 ```
 
-`skills/roadmap` extend mode parses this block and writes new registry line on first ingestion.
+`skills/roadmap` extend mode parses this block and writes a new registry line on first ingestion.
 
 ### Step 3 — Extend epic-registry + sprint manifest schemas
 
@@ -293,7 +293,7 @@ Write an initial registry line for CAP-133 reflecting current state:
 {"id":"cf-2026-04-02-modal-consistency","ts":"2026-04-08T00:00:00Z","event":"backfilled","source":{"doc":"docs/_research/2026-04-02_modal-consistency.md"},"parent":{"capability":"CAP-133","epic":"EPIC-105"},"scope":{"unit":"files","target":130},"delivered":{"unit":"files","actual":84,"last_sprint":"sprint-197"},"coverage":0.646,"status":"partial","last_touched":{"sprint":"sprint-197","date":"2026-04-03"},"notes":"Backfilled during registry rollout; see 2026-04-08_modal-standardization-finish-state.md for finish plan"}
 ```
 
-Running loop tick after this backfill should automatically surface CAP-133 as mandatory planning input for next sprint — proving fix works by closing original incident.
+Running a loop tick after this backfill should automatically surface CAP-133 as a mandatory planning input for the next sprint — proving the fix works by closing the original incident.
 
 ---
 
@@ -312,9 +312,9 @@ Running loop tick after this backfill should automatically surface CAP-133 as ma
 
 ### Open questions
 
-- **Who owns revival prioritization for dropped entries?** WSJF vs RICE vs age-sorted? — defer to follow-up research spike; for now, dropped entries surface in next `retrospective` run for human triage.
-- **Should the registry live in the blitz plugin source, or in the consumer project's `.cc-sessions/`?** Activity feed lives in consumer project, so registry should too. Keeping co-located is low-surprise choice.
-- **Does `skills/research` today emit anything structured that we can piggyback on?** Answer from codebase-analyst: no — research docs are prose-only today. Teaching research to emit scope YAML block is first prerequisite change.
+- **Who owns revival prioritization for dropped entries?** WSJF vs RICE vs age-sorted? — defer to a follow-up research spike; for now, dropped entries surface in the next `retrospective` run for human triage.
+- **Should the registry live in the blitz plugin source, or in the consumer project's `.cc-sessions/`?** The activity feed lives in the consumer project, so the registry should too. Keeping them co-located is the low-surprise choice.
+- **Does `skills/research` today emit anything structured that we can piggyback on?** Answer from codebase-analyst: no — research docs are prose-only today. Teaching research to emit the scope YAML block is the first prerequisite change.
 
 ---
 

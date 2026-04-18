@@ -9,9 +9,9 @@
 
 ## Summary
 
-Existing `codebase-audit` skill is a comprehensive 5-pillar, 10-agent read-only analysis taking 5+ minutes and producing reports but never fixing anything. `completeness-gate` is lightweight read-only scanner with 11 check categories. Neither designed for iterative, loopable cleanup.
+The existing `codebase-audit` skill is a comprehensive 5-pillar, 10-agent read-only analysis that takes 5+ minutes and produces reports but never fixes anything. The `completeness-gate` is a lightweight read-only scanner with 11 check categories. Neither is designed for iterative, loopable cleanup.
 
-Recommend creating new `code-sweep` skill combining scanning + fixing in loop-compatible design, following **Observe-Diff-Act-Report** reconciliation pattern from `sprint --loop` and **ratchet pattern** from industry best practices. Each `/loop` tick scans for issues, picks highest-priority auto-fixable finding, applies fix, verifies it didn't break anything, commits, exits — incremental progress every iteration.
+We recommend creating a new `code-sweep` skill that combines scanning + fixing in a loop-compatible design, following the **Observe-Diff-Act-Report** reconciliation pattern from `sprint --loop` and the **ratchet pattern** from industry best practices. Each `/loop` tick scans for issues, picks the highest-priority auto-fixable finding, applies the fix, verifies it didn't break anything, commits, and exits -- making incremental progress with every iteration.
 
 ---
 
@@ -19,11 +19,11 @@ Recommend creating new `code-sweep` skill combining scanning + fixing in loop-co
 
 ### 1. What's the right granularity for a loopable cleanup skill?
 
-**Answer**: Between completeness-gate (read-only, 11 checks, ~30s) and codebase-audit (10 agents, 5 pillars, 5+ min). Code-sweep skill should run **13 check categories** in 3 tiers, completing full scan + one fix in **< 2 minutes** per loop tick. Uses no sub-agents (unlike codebase-audit's 10) — just sequential grep/glob scans.
+**Answer**: Between completeness-gate (read-only, 11 checks, ~30s) and codebase-audit (10 agents, 5 pillars, 5+ min). The code-sweep skill should run **13 check categories** in 3 tiers, completing a full scan + one fix in **< 2 minutes** per loop tick. It uses no sub-agents (unlike codebase-audit's 10) -- just sequential grep/glob scans.
 
 ### 2. How should the skill track state between loop iterations?
 
-**Answer**: Use **JSONL ledger** (`docs/sweeps/sweep-ledger.jsonl`) with one line per finding, keyed by `category + file + line + identifier`. Each entry tracks `status` (found / fixed / wontfix / false-positive), `found_at`, `fixed_at`. Date-stamped snapshots (`docs/sweeps/YYYY-MM-DD.json`) provide aggregate metrics for trend tracking. Follows ratchet pattern — counts can only decrease, never increase.
+**Answer**: Use a **JSONL ledger** (`docs/sweeps/sweep-ledger.jsonl`) with one line per finding, keyed by `category + file + line + identifier`. Each entry tracks `status` (found / fixed / wontfix / false-positive), `found_at`, `fixed_at`. Date-stamped snapshots (`docs/sweeps/YYYY-MM-DD.json`) provide aggregate metrics for trend tracking. This follows the ratchet pattern -- counts can only decrease, never increase.
 
 ### 3. What scan categories should be included?
 
@@ -45,14 +45,14 @@ Recommend creating new `code-sweep` skill combining scanning + fixing in loop-co
 | **3** | Unused dependencies | Knip or depcheck | Semi-auto (package.json edit) | 30s |
 | **3** | Hardcoded sample data | Array pattern matching in non-test files | No (report) | <2s |
 
-**Tier 1** runs every iteration (~8 seconds total). **Tier 2** runs once per sweep session (cached). **Tier 3** runs as optional deep scan with knip or full grep analysis.
+**Tier 1** runs every iteration (~8 seconds total). **Tier 2** runs once per sweep session (cached). **Tier 3** runs as an optional deep scan with knip or full grep analysis.
 
 ### 4. How should it handle the scan-vs-fix decision per iteration?
 
-**Answer**: Dual-mode operation with priority queue:
+**Answer**: Dual-mode operation with a priority queue:
 
 - **`--scan-only`** (default): Read-only scan, produces report. Safe for CI, idempotent, loop-compatible.
-- **`--fix`**: Scan + auto-fix highest-priority fixable issue. Each tick fixes ONE issue, verifies (typecheck + lint), commits if passing, reverts if failing. Circuit breaker: if fix breaks verification 2x in a row, mark `needs-human` and move to next.
+- **`--fix`**: Scan + auto-fix highest-priority fixable issue. Each tick fixes ONE issue, verifies (typecheck + lint), commits if passing, reverts if failing. Circuit breaker: if a fix breaks verification 2x in a row, mark it `needs-human` and move to next.
 - **`--fix-all`**: Batch-fix all auto-fixable issues in one category at a time, verifying after each category.
 
 Priority order for fixes:
@@ -63,7 +63,7 @@ Priority order for fixes:
 
 ### 5. What does the Observe-Diff-Act-Report pattern look like for code cleanup?
 
-**Answer**: Direct adaptation of sprint --loop reconciliation:
+**Answer**: Direct adaptation of sprint --loop's reconciliation:
 
 ```
 OBSERVE (5s):
@@ -93,10 +93,10 @@ REPORT (5s):
 ### 6. How to integrate with existing skills?
 
 **Answer**:
-- **completeness-gate**: code-sweep subsumes its check categories (placeholder returns, TODOs, empty catches, console.log, etc.) but adds fix capability and state tracking. completeness-gate remains useful as fast gate check; code-sweep is iterative cleanup companion.
-- **quality-metrics**: code-sweep snapshots (`docs/sweeps/YYYY-MM-DD.json`) can be consumed by quality-metrics as additional metric source (sweep score = 100 - weighted findings).
-- **codebase-audit**: Remains comprehensive read-only audit for architecture, security, performance. code-sweep handles automatable maintainability/cleanup subset.
-- **scheduling.md**: Add code-sweep to loop-compatible skills table. Recommended: `/loop 10m /blitz:code-sweep --fix`.
+- **completeness-gate**: code-sweep subsumes its check categories (placeholder returns, TODOs, empty catches, console.log, etc.) but adds fix capability and state tracking. completeness-gate remains useful as a fast gate check; code-sweep is the iterative cleanup companion.
+- **quality-metrics**: code-sweep snapshots (`docs/sweeps/YYYY-MM-DD.json`) can be consumed by quality-metrics as an additional metric source (sweep score = 100 - weighted findings).
+- **codebase-audit**: Remains the comprehensive read-only audit for architecture, security, performance. code-sweep handles the maintainability/cleanup subset that's automatable.
+- **scheduling.md**: Add code-sweep to the loop-compatible skills table. Recommended: `/loop 10m /blitz:code-sweep --fix`.
 
 ---
 
@@ -106,35 +106,35 @@ REPORT (5s):
 
 **Source**: web-researcher (Notion's eslint-seatbelt, SonarQube's "new code")
 
-Ratchet pattern enforces that quality metrics can only improve over time. Each sweep run establishes baseline; subsequent runs can only decrease violation counts, never increase. Naturally pairs with `/loop` — each tick tightens ratchet by fixing one issue.
+The ratchet pattern enforces that quality metrics can only improve over time. Each sweep run establishes a baseline; subsequent runs can only decrease violation counts, never increase them. This naturally pairs with `/loop` -- each tick tightens the ratchet by fixing one issue.
 
-**Implementation**: Sweep ledger acts as ratchet. New findings tracked. Fixed findings recorded. If previously-fixed issue reappears (regression), gets elevated priority. Snapshot score can only go up over time.
+**Implementation**: The sweep ledger acts as the ratchet. New findings are tracked. Fixed findings are recorded. If a previously-fixed issue reappears (regression), it gets elevated priority. The snapshot score can only go up over time.
 
 ### Finding 2: Knip is the Gold Standard for Deep Analysis but Optional
 
 **Source**: web-researcher + library-docs (convergent)
 
-Knip detects unused files, exports, and dependencies with high accuracy via full dependency graph analysis. Has 100+ framework plugins (Vue, Vite, Vitest, etc.) and JSON output mode. But requires `npm install` and runs TS compiler under the hood.
+Knip detects unused files, exports, and dependencies with high accuracy via full dependency graph analysis. It has 100+ framework plugins (Vue, Vite, Vitest, etc.) and JSON output mode. However, it requires `npm install` and runs the TS compiler under the hood.
 
-**Recommendation**: Make knip optional Tier 3 pre-scan. If `npx knip --reporter json` succeeds, cache results and use to enrich findings. If knip not available, fall back to grep-based detection (higher false positive rate but no dependency).
+**Recommendation**: Make knip an optional Tier 3 pre-scan. If `npx knip --reporter json` succeeds, cache its results and use them to enrich findings. If knip isn't available, fall back to grep-based detection (higher false positive rate but no dependency).
 
 ### Finding 3: Grep Patterns Provide ~80% of Value Without External Tools
 
 **Source**: library-docs (detailed pattern analysis)
 
-Tier 1 grep patterns (TODO, console.log, empty catch, placeholder throws) have low false-positive rates and scan 500-file project in under 8 seconds. Covers most impactful cleanup categories without requiring any npm tools. Tier 2 patterns (unused imports, commented-out code) add coverage but with higher false-positive risk.
+Tier 1 grep patterns (TODO, console.log, empty catch, placeholder throws) have low false-positive rates and scan a 500-file project in under 8 seconds. This covers the most impactful cleanup categories without requiring any npm tools. Tier 2 patterns (unused imports, commented-out code) add coverage but with higher false-positive risk.
 
 ### Finding 4: TODO Age Tracking via Git Blame Adds Prioritization
 
 **Source**: library-docs
 
-Running `git blame` on TODO lines reveals their age. TODOs older than 180 days likely forgotten and should be surfaced first. Adds actionable prioritization layer no existing skill provides. Performance: ~0.1-0.5s per blame call, so cache results between iterations. Bucket into red (>180d), yellow (30-180d), green (<30d).
+Running `git blame` on TODO lines reveals their age. TODOs older than 180 days are likely forgotten and should be surfaced first. This adds an actionable prioritization layer that no existing skill provides. Performance: ~0.1-0.5s per blame call, so cache results between iterations. Bucket into red (>180d), yellow (30-180d), green (<30d).
 
 ### Finding 5: One Fix Per Tick is the Safe Loop Strategy
 
 **Source**: codebase-analyst (sprint --loop pattern analysis)
 
-Sprint --loop executes exactly one phase per tick then exits. Code-sweep skill should follow same pattern: fix ONE issue per tick, verify, commit, exit. Minimizes blast radius, ensures each change independently verifiable, creates clean git history where each commit is single sweep fix.
+Sprint --loop executes exactly one phase per tick then exits. The code-sweep skill should follow the same pattern: fix ONE issue per tick, verify, commit, exit. This minimizes blast radius, ensures each change is independently verifiable, and creates a clean git history where each commit is a single sweep fix.
 
 ---
 
@@ -154,7 +154,7 @@ Sprint --loop executes exactly one phase per tick then exits. Code-sweep skill s
 
 ### Model Selection
 
-Use `sonnet` (not opus). Skill runs grep patterns and makes small, formulaic edits. No architectural judgment needed. Keeps cost low for frequent `/loop` invocations.
+Use `sonnet` (not opus). The skill runs grep patterns and makes small, formulaic edits. No architectural judgment needed. This keeps cost low for frequent `/loop` invocations.
 
 ### Tool Requirements
 
@@ -168,7 +168,7 @@ No agents, no web search, no teams. Lightweight by design.
 
 ## Recommendation
 
-**Create new `code-sweep` skill** with following architecture:
+**Create a new `code-sweep` skill** with the following architecture:
 
 ### Skill Identity
 - **Name**: `code-sweep`
@@ -180,10 +180,10 @@ No agents, no web search, no teams. Lightweight by design.
 
 ### Core Design Principles
 
-1. **Loop-first**: Every invocation is single tick. Scan, optionally fix ONE thing, report, exit.
+1. **Loop-first**: Every invocation is a single tick. Scan, optionally fix ONE thing, report, exit.
 2. **Ratchet enforcement**: Findings can only decrease over time. Regressions get elevated priority.
 3. **Tiered scanning**: Tier 1 every tick (~8s), Tier 2 once per session (~20s cached), Tier 3 optional deep scan.
-4. **Verify-before-commit**: Every auto-fix verified with typecheck/lint before committing. Failed fixes reverted.
+4. **Verify-before-commit**: Every auto-fix is verified with typecheck/lint before committing. Failed fixes are reverted.
 5. **State persistence**: JSONL ledger for findings, date-stamped JSON snapshots for metrics, config file for project-specific overrides.
 
 ### Modes
@@ -204,7 +204,7 @@ No agents, no web search, no teams. Lightweight by design.
 
 Each tick: scan (~8s) -> pick top fix -> apply -> verify -> commit -> report -> exit (~90s total).
 
-Over time: 6 fixes/hour, ~48 fixes per 8-hour day. Codebase with 100 auto-fixable issues cleaned up in ~2 days of background looping.
+Over time: 6 fixes/hour, ~48 fixes per 8-hour day. A codebase with 100 auto-fixable issues would be cleaned up in ~2 days of background looping.
 
 ---
 

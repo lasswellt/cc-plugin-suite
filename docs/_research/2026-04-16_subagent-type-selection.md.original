@@ -65,7 +65,7 @@ scope:
 
 ## Summary
 
-Claude Code ships five built-in subagent types (Explore, Plan, general-purpose, statusline-setup, claude-code-guide) plus blitz's six plugin agents (architect, backend-dev, frontend-dev, test-writer, reviewer, doc-writer). Critical distinction is **write capability**: `Explore`, `Plan`, and blitz's `architect` strictly read-only (no Write/Edit/NotebookEdit). When skill spawns subagents via `TeamCreate`+`SendMessage` without specifying `subagent_type`, SDK picks by heuristic and can land on `Explore`, silently breaking any workflow expecting agents to write findings to disk — exactly the bug this project hit in prior /blitz:research run. Four blitz skills at risk today (`research`, `sprint-plan`, `sprint-review`, `codebase-audit`); two (`sprint-dev`, `code-sweep`) already specify subagent_type correctly. Recommendation: create `skills/_shared/subagent-types.md` as authoritative guidance doc, update four at-risk skills to specify `subagent_type: general-purpose` at every spawn site.
+Claude Code ships five built-in subagent types (Explore, Plan, general-purpose, statusline-setup, claude-code-guide) plus blitz's six plugin agents (architect, backend-dev, frontend-dev, test-writer, reviewer, doc-writer). The critical distinction is **write capability**: `Explore`, `Plan`, and blitz's `architect` are strictly read-only (no Write/Edit/NotebookEdit). When a skill spawns subagents via `TeamCreate`+`SendMessage` without specifying `subagent_type`, the SDK picks by heuristic and can land on `Explore`, which silently breaks any workflow that expects agents to write findings to disk — exactly the bug this project hit in the prior /blitz:research run. Four blitz skills are at risk today (`research`, `sprint-plan`, `sprint-review`, `codebase-audit`); two (`sprint-dev`, `code-sweep`) already specify subagent_type correctly. Recommendation: create `skills/_shared/subagent-types.md` as the authoritative guidance doc, and update the four at-risk skills to specify `subagent_type: general-purpose` at every spawn site.
 
 ## Research Questions
 
@@ -107,7 +107,7 @@ Source: `/home/tom/development/blitz/agents/` (6 files verified).
 | `frontend-dev` | Read, **Write**, Edit, Bash, Glob, Grep, WebSearch, ToolSearch | No | sonnet | Vue 3 / Pinia implementation |
 | `test-writer` | Read, **Write**, Edit, Bash, Glob, Grep | No | sonnet | Unit / integration / E2E tests |
 
-**Foot-gun**: blitz `architect` is strictly read-only but its own description implies writing findings to `${SESSION_TMP_DIR}/architect-findings.md` — it cannot. Orchestrator must write architect findings from agent's text return, same failure mode as Explore.
+**Foot-gun**: blitz `architect` is strictly read-only but its own description implies writing findings to `${SESSION_TMP_DIR}/architect-findings.md` — it cannot. The orchestrator must write architect findings from the agent's text return, same failure mode as Explore.
 
 **Plugin agent caveat**: plugin agents silently ignore `permissionMode`, `hooks`, and `mcpServers` frontmatter. Those fields only work in `.claude/agents/` or `~/.claude/agents/` (outside plugin directories).
 
@@ -123,9 +123,9 @@ Source: `/home/tom/development/blitz/agents/` (6 files verified).
 | `codebase-audit` | `TeamCreate`+`SendMessage` | **Not specified** | Write `findings/*.md` | **RISKY** |
 | `roadmap` | No agent spawn | N/A | Orchestrator writes directly | OK |
 
-**Root cause of risk**: `TeamCreate`+`SendMessage` does not accept `subagent_type` parameter — SDK picks by heuristic. When agent prompts look read-only-ish (e.g., `codebase-analyst` explicitly told "Do NOT use web search"), heuristic biases toward `Explore`. Exactly what produced 2-of-4 read-only bug observed in 2026-04-16 plugin-agent-strategy research run.
+**Root cause of the risk**: `TeamCreate`+`SendMessage` does not accept a `subagent_type` parameter — the SDK picks by heuristic. When agent prompts look read-only-ish (e.g., `codebase-analyst` is explicitly told "Do NOT use web search"), the heuristic biases toward `Explore`. This is exactly what produced the 2-of-4 read-only bug observed in the 2026-04-16 plugin-agent-strategy research run.
 
-`Agent` tool, in contrast, takes `subagent_type` as explicit field — using it guarantees the type. Why `sprint-dev` and (post-v1.1.3) `code-sweep` are safe.
+The `Agent` tool, in contrast, takes `subagent_type` as an explicit field — using it guarantees the type. This is why `sprint-dev` and (post-v1.1.3) `code-sweep` are safe.
 
 ### 4. Model and context inheritance
 
@@ -135,40 +135,40 @@ Resolution order (highest priority first):
 3. Subagent definition's `model` frontmatter
 4. Main conversation's model (inherit default)
 
-**Default is `inherit`** — including `[1m]` flags. Exactly the behavior that produced v1.1.3 → v1.1.4 code-sweep crash: Sonnet-declared skill inherited `[1m]` from Opus parent and Sonnet 4.6 can't run 1M without `/extra-usage`.
+**Default is `inherit`** — including `[1m]` flags. This is exactly the behavior that produced the v1.1.3 → v1.1.4 code-sweep crash: a Sonnet-declared skill inherited `[1m]` from the Opus parent and Sonnet 4.6 can't run 1M without `/extra-usage`.
 
-**To force non-1M subagents**: set explicit `model: sonnet` / `model: opus` (no `[1m]`) in subagent frontmatter, or set `CLAUDE_CODE_SUBAGENT_MODEL=sonnet` globally.
+**To force non-1M subagents**: set explicit `model: sonnet` / `model: opus` (no `[1m]`) in the subagent frontmatter, or set `CLAUDE_CODE_SUBAGENT_MODEL=sonnet` globally.
 
 ### 5. Anthropic's official guidance
 
-Anthropic does **not** publish "default subagent" recommendation or spawn-vs-inline decision tree. Two quotes are relevant:
+Anthropic does **not** publish a "default subagent" recommendation or a spawn-vs-inline decision tree. Two quotes are relevant:
 
 > "Use one [a subagent] when a side task would flood your main conversation with search results, logs, or file contents you won't reference again."
 
 > "Design focused subagents: each subagent should excel at one specific task. Limit tool access: grant only necessary permissions for security and focus."
 
-Doc pattern consistently favors **custom subagents with explicit tool allowlists** over generic types. Blitz's 6 plugin agents already follow this pattern — gap is skills spawning them sometimes reach for SDK heuristics instead.
+The doc pattern consistently favors **custom subagents with explicit tool allowlists** over generic types. Blitz's 6 plugin agents already follow this pattern — the gap is that the skills spawning them sometimes reach for SDK heuristics instead.
 
 ## Compatibility Analysis
 
-All fixes proposed compatible with existing blitz architecture:
+All fixes proposed are compatible with the existing blitz architecture:
 
-- **Adding `subagent_type: general-purpose` to `SendMessage` bodies or converting to `Agent` tool spawns** is text change to existing SKILL.md files. No schema changes, no new dependencies, no model changes.
-- **New `skills/_shared/subagent-types.md`** follows established shared-doc pattern (session-protocol.md, checkpoint-protocol.md, verbose-progress.md, context-management.md, carry-forward-registry.md).
-- **No frontmatter changes needed**. `preferred-subagent-type` field considered and rejected — single skill can spawn agents of different types, so per-skill metadata can't capture per-spawn nuance.
+- **Adding `subagent_type: general-purpose` to `SendMessage` bodies or converting to `Agent` tool spawns** is a text change to existing SKILL.md files. No schema changes, no new dependencies, no model changes.
+- **New `skills/_shared/subagent-types.md`** follows the established shared-doc pattern (session-protocol.md, checkpoint-protocol.md, verbose-progress.md, context-management.md, carry-forward-registry.md).
+- **No frontmatter changes needed**. A `preferred-subagent-type` field was considered and rejected — a single skill can spawn agents of different types, so per-skill metadata can't capture per-spawn nuance.
 
-**Interaction with 2026-04-16 plugin-agent-strategy research**: work complements cf-2026-04-16-refactor-candidates (codebase-map, integration-check, quality-metrics refactors). Those refactors should adopt subagent-type convention from day one — specifying `subagent_type: general-purpose` on their new Agent-tool spawns.
+**Interaction with the 2026-04-16 plugin-agent-strategy research**: this work complements cf-2026-04-16-refactor-candidates (codebase-map, integration-check, quality-metrics refactors). Those refactors should adopt the subagent-type convention from day one — specifying `subagent_type: general-purpose` on their new Agent-tool spawns.
 
 ## Recommendation
 
-**Ship four bundled changes in single minor release (v1.2.0 alongside setup-skill MVP or as own v1.2.x patch series):**
+**Ship four bundled changes in a single minor release (v1.2.0 alongside the setup-skill MVP or as its own v1.2.x patch series):**
 
 1. **Create `skills/_shared/subagent-types.md`** — authoritative guidance doc with: built-in types table, blitz plugin agents table, decision matrix, foot-gun list, model-inheritance rules.
-2. **Update four at-risk skills** to specify `subagent_type: general-purpose` at every spawn site: `research`, `sprint-plan`, `sprint-review`, `codebase-audit`. Either convert to `Agent` tool (structural fix) or add explicit instruction to each `SendMessage` body (advisory fix). Structural fix preferred where feasible.
-3. **Link shared doc from every spawning skill's Additional Resources** so future authors encounter guidance during first pass through the skill.
-4. **Add reviewer checklist item** in `skills/sprint-review/reference.md`: "Any new `TeamCreate`+`SendMessage` or `Agent` spawn must specify `subagent_type`. Absence is BLOCKER."
+2. **Update the four at-risk skills** to specify `subagent_type: general-purpose` at every spawn site: `research`, `sprint-plan`, `sprint-review`, `codebase-audit`. Either convert to the `Agent` tool (structural fix) or add explicit instruction to each `SendMessage` body (advisory fix). Structural fix is preferred where feasible.
+3. **Link the shared doc from every spawning skill's Additional Resources** so future authors encounter the guidance during their first pass through the skill.
+4. **Add a reviewer checklist item** in `skills/sprint-review/reference.md`: "Any new `TeamCreate`+`SendMessage` or `Agent` spawn must specify `subagent_type`. Absence is a BLOCKER."
 
-**Rationale**: Fix is small (text changes to 4 SKILL.md files + 1 new shared doc), risk is low (no code or schema changes), impact is high (eliminates silent-failure class users will otherwise keep hitting).
+**Rationale**: The fix is small (text changes to 4 SKILL.md files + 1 new shared doc), the risk is low (no code or schema changes), and the impact is high (eliminates a silent-failure class that users will otherwise keep hitting).
 
 ## Implementation Sketch
 
@@ -178,7 +178,7 @@ Structure (≤180 lines):
 
 1. **Purpose** — one paragraph on why this doc exists.
 2. **Built-in Claude Code types** — table from Finding 1.
-3. **Blitz plugin agents** — table from Finding 2 with `architect is read-only` foot-gun highlighted.
+3. **Blitz plugin agents** — table from Finding 2 with the `architect is read-only` foot-gun highlighted.
 4. **Decision Matrix** — task type → recommended subagent_type:
    - Read-only codebase search returning text → `Explore`
    - Research writing findings to file → `general-purpose`
@@ -246,11 +246,11 @@ Add to `skills/sprint-review/reference.md` review checklist:
 
 ## Risks
 
-- **Switching `TeamCreate`+`SendMessage` to `Agent` tool may break existing cross-steering (`STEER:`) patterns.** `STEER:` convention relies on sibling agents being reachable via SendMessage. Mitigation: keep `TeamCreate` for coordination channel, but spawn actual work via `Agent` (or, if must stay with SendMessage, add `subagent_type` to message body as explicit instruction rather than structural guarantee).
-- **`subagent_type: general-purpose` workers more expensive than `Explore` (which uses Haiku).** Mitigation: use `general-purpose` only when Write required; for pure-read analysis, continue to prefer `Explore`. Decision matrix makes this explicit.
-- **Explicit `model: sonnet` on subagents to avoid `[1m]` inheritance may conflict with user preferences.** If user runs `/extra-usage` and wants Sonnet 1M for research, explicit model forecloses that. Mitigation: document that `CLAUDE_CODE_SUBAGENT_MODEL` env var overrides frontmatter, so users who want 1M can set it themselves.
-- **Guidance-doc drift**: as new subagent types land in Claude Code or new blitz agents added, subagent-types.md will drift. Mitigation: add pre-release gate in `/blitz:release` that greps `agents/*.md` and verifies every agent appears in subagent-types.md. Small CI step, catches drift at release time.
-- **Reviewer-checklist enforcement depends on sprint-review being run.** If sprint-review skipped for a PR, spawn without `subagent_type` can still land. Mitigation: also add lint rule to `hooks/scripts/pre-commit-validate.sh` flagging SKILL.md changes introducing `TeamCreate`/`SendMessage`/`Agent` without nearby `subagent_type`.
+- **Switching `TeamCreate`+`SendMessage` to `Agent` tool may break existing cross-steering (`STEER:`) patterns.** The `STEER:` convention relies on sibling agents being reachable via SendMessage. Mitigation: keep `TeamCreate` for the coordination channel, but spawn the actual work via `Agent` (or, if must stay with SendMessage, add `subagent_type` to the message body as explicit instruction rather than structural guarantee).
+- **`subagent_type: general-purpose` workers are more expensive than `Explore` (which uses Haiku).** Mitigation: use `general-purpose` only when Write is required; for pure-read analysis, continue to prefer `Explore`. The decision matrix makes this explicit.
+- **Explicit `model: sonnet` on subagents to avoid `[1m]` inheritance may conflict with user preferences.** If a user runs `/extra-usage` and wants Sonnet 1M for research, our explicit model forecloses that. Mitigation: document that `CLAUDE_CODE_SUBAGENT_MODEL` env var overrides the frontmatter, so users who want 1M can set it themselves.
+- **Guidance-doc drift**: as new subagent types land in Claude Code or new blitz agents are added, subagent-types.md will drift. Mitigation: add a pre-release gate in `/blitz:release` that greps `agents/*.md` and verifies every agent appears in subagent-types.md. Small CI step, catches drift at release time.
+- **Reviewer-checklist enforcement depends on sprint-review being run.** If sprint-review is skipped for a PR, a spawn without `subagent_type` can still land. Mitigation: also add a lint rule to `hooks/scripts/pre-commit-validate.sh` that flags SKILL.md changes introducing `TeamCreate`/`SendMessage`/`Agent` without a nearby `subagent_type`.
 
 ## References
 

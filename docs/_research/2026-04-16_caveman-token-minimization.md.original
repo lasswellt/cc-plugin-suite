@@ -28,11 +28,11 @@ scope:
 
 ## Summary
 
-Caveman is **prompt-style directive** (Claude Code skill + rules + hooks, 35K★ repo) instructing model to produce terse, technical output — claimed 65% avg output-token reduction across benchmarks. *Not* a compression library with programmatic API; nothing to import or call. Integrating into blitz means adopting its activation pattern inside blitz's own skill prompts and agent templates.
+Caveman is a **prompt-style directive** (Claude Code skill + rules + hooks, 35K★ repo) that instructs the model to produce terse, technical output — claimed 65% avg output-token reduction across benchmarks. It is *not* a compression library with a programmatic API; there is nothing to import or call. Integrating it into blitz means adopting its activation pattern inside blitz's own skill prompts and agent templates.
 
-**Critical clarification for user's premise:** caveman affects **output tokens only** (what model writes). Blitz's actual dominant token cost — per codebase-analyst survey — is **input tokens** (SKILL.md bodies ~10K lines, shared protocols ~1.9K lines, reference.md files ~9.6K lines, agent prompt templates injected into 72+ Agent() spawns per sprint). Caveman does not compress inputs.
+**Critical clarification for the user's premise:** caveman affects **output tokens only** (what the model writes). Blitz's actual dominant token cost — per the codebase-analyst survey — is **input tokens** (SKILL.md bodies ~10K lines, shared protocols ~1.9K lines, reference.md files ~9.6K lines, agent prompt templates injected into 72+ Agent() spawns per sprint). Caveman does not compress inputs.
 
-**Recommendation:** Partial adoption — add shared `terse-output.md` directive, reference it from every SKILL.md, inject it into every Agent() prompt. Skip bundling full caveman plugin as dependency. Pair with separate input-compression workstream (not caveman) for larger ~60K-line context bloat.
+**Recommendation:** Partial adoption — add a shared `terse-output.md` directive, reference it from every SKILL.md, and inject it into every Agent() prompt. Skip bundling the full caveman plugin as a dependency. Pair with a separate input-compression workstream (not caveman) for the larger ~60K-line context bloat.
 
 ---
 
@@ -53,7 +53,7 @@ Caveman is **prompt-style directive** (Claude Code skill + rules + hooks, 35K★
 
 ### Finding 1 — Caveman is a directive, not a library
 
-Source: `rules/caveman-activate.md` (full content fetched). Core mechanism is ~15-line system directive:
+Source: `rules/caveman-activate.md` (full content fetched). The core mechanism is a ~15-line system directive:
 
 > Speech pattern: minimal, direct, technical-only.
 > Drop: articles, filler words, pleasantries, hedging.
@@ -62,7 +62,7 @@ Source: `rules/caveman-activate.md` (full content fetched). Core mechanism is ~1
 > Auto-pause: security warnings, irreversible actions, confused users.
 > Boundary: code, commits, PRs written normally.
 
-Four intensity levels (lite / full / ultra / wenyan) scale how aggressively filler removed. Hooks (`caveman-activate.js`, `caveman-mode-tracker.js`) maintain mode state across turns; do not preprocess text.
+Four intensity levels (lite / full / ultra / wenyan) scale how aggressively filler is removed. The hooks (`caveman-activate.js`, `caveman-mode-tracker.js`) maintain mode state across turns; they do not preprocess text.
 
 ### Finding 2 — Blitz token hotspot is INPUT context, not output
 
@@ -78,17 +78,17 @@ Per codebase-analyst (full report in session tmp):
 | Verification/test output passed to synthesis | variable | output (when model paraphrases) | partial |
 | Orchestrator-to-user text | variable | output | ~65% reduction |
 
-Research doc `docs/_research/` tradition, sprint-review narratives, and retrospective writeups all output-side — those will compress. But 20K+ lines of skill documentation loaded on every `/blitz:<skill>` invocation is input, and caveman does nothing for it.
+The research doc `docs/_research/` tradition, sprint-review narratives, and retrospective writeups are all output-side — those will compress. But the 20K+ lines of skill documentation loaded on every `/blitz:<skill>` invocation is input, and caveman does nothing for it.
 
 ### Finding 3 — A separate "caveman-compress" sub-skill exists for input files
 
-Source: caveman repo has `caveman-compress/` directory. README describes it: "Rewrites memory files (like `CLAUDE.md`) into caveman-speak, achieving approximately 46% input token savings across sessions."
+Source: caveman repo has a `caveman-compress/` directory. README describes it: "Rewrites memory files (like `CLAUDE.md`) into caveman-speak, achieving approximately 46% input token savings across sessions."
 
-One part of caveman ecosystem that does address input tokens — operates by **author-time rewriting** (compress markdown file itself), not runtime compression. If adopted, batch job to rewrite SKILL.md + reference.md + shared protocols into terse form once, checked into repo. Does not require caveman installed at runtime.
+This is the one part of the caveman ecosystem that does address input tokens, and it operates by **author-time rewriting** (compress the markdown file itself), not runtime compression. If adopted, this is a batch job to rewrite SKILL.md + reference.md + shared protocols into terse form once, checked into the repo. It does not require caveman to be installed at runtime.
 
 ### Finding 4 — Blitz already has context-hygiene patterns, partial overlap
 
-`skills/_shared/context-management.md` exists. Prescribes write-to-file streaming for agents, checkpoint protocols, spawn hygiene. Caveman is complementary (compresses style of what's written), not replacement. No conflict.
+`skills/_shared/context-management.md` exists. It prescribes write-to-file streaming for agents, checkpoint protocols, and spawn hygiene. Caveman is complementary (compresses the style of what's written), not a replacement. No conflict.
 
 ### Finding 5 — Caveman repo is mature and actively maintained
 
@@ -97,7 +97,7 @@ One part of caveman ecosystem that does address input tokens — operates by **a
 - Multi-platform (Claude Code, Codex, Gemini, generic)
 - Plugin marketplace distribution available via `claude plugin install caveman@caveman`
 
-No maintenance risk for directive content. JS hooks would be extra runtime dependency if bundled, so avoid bundling.
+No maintenance risk for the directive content. The JS hooks would be an extra runtime dependency if bundled, so avoid bundling.
 
 ---
 
@@ -116,21 +116,21 @@ No maintenance risk for directive content. JS hooks would be extra runtime depen
 
 ## Recommendation
 
-**Adopt directive pattern; do not bundle the plugin.**
+**Adopt the directive pattern; do not bundle the plugin.**
 
 Three concrete changes:
 
-1. **Add `skills/_shared/terse-output.md`** — 15–20 line distillation of caveman's activation rule, credited and linked to upstream. Include 4 intensity levels and "auto-pause for security / irreversible actions / confusion" guard. Boundary clause: "code, commit messages, PR bodies, file paths, grep patterns, YAML frontmatter, and structured JSON are NOT compressed."
+1. **Add `skills/_shared/terse-output.md`** — 15–20 line distillation of caveman's activation rule, credited and linked to upstream. Include the 4 intensity levels and the "auto-pause for security / irreversible actions / confusion" guard. Boundary clause: "code, commit messages, PR bodies, file paths, grep patterns, YAML frontmatter, and structured JSON are NOT compressed."
 
-2. **Reference from every SKILL.md header** — one line near top: `Output style: see /_shared/terse-output.md`. No body rewrite. 33 files touched.
+2. **Reference it from every SKILL.md header** — one line near the top: `Output style: see /_shared/terse-output.md`. No body rewrite. 33 files touched.
 
-3. **Inject into every Agent() prompt template** — shared prefix in `skills/_shared/spawn-protocol.md` that all orchestrator skills already reference. Agents inherit terse output automatically when spawned via shared protocol. Zero per-skill edits.
+3. **Inject it into every Agent() prompt template** — shared prefix in `skills/_shared/spawn-protocol.md` that all orchestrator skills already reference. Agents inherit terse output automatically when spawned via the shared protocol. Zero per-skill edits.
 
-**Expected savings (conservative):** 20–40% reduction in model-generated output across sprint cycle. Not 65% (benchmarks include pure-prose tasks; blitz output is mostly code + structured findings, which caveman explicitly preserves uncompressed).
+**Expected savings (conservative):** 20–40% reduction in model-generated output across a sprint cycle. Not 65% (benchmarks include pure-prose tasks; blitz output is mostly code + structured findings, which caveman explicitly preserves uncompressed).
 
 **What NOT to do:**
-- Do not add caveman as runtime install dependency. Blitz users should not be forced to install another plugin.
-- Do not apply terse mode to reference.md or SKILL.md bodies without separate compression research pass — those are input, not output, and rewriting risks damaging exact-match patterns used by hooks and validators.
+- Do not add caveman as a runtime install dependency. Blitz users should not be forced to install another plugin.
+- Do not apply terse mode to reference.md or SKILL.md bodies without a separate compression research pass — those are input, not output, and rewriting them risks damaging exact-match patterns used by hooks and validators.
 - Do not apply terse mode to checkpoint files, audit logs, or structured data — reduction of prose there saves little and risks parser regressions.
 
 ---
@@ -147,13 +147,13 @@ Content: ~20 lines summarizing caveman's rule, with blitz-specific boundary carv
 
 ### Step 2 — Add reference line to each SKILL.md
 
-For each of 33 files under `skills/*/SKILL.md`, add near top (after frontmatter or first heading):
+For each of the 33 files under `skills/*/SKILL.md`, add near the top (after the frontmatter or first heading):
 
 ```markdown
 > Output style: terse-technical. See [/_shared/terse-output.md](/_shared/terse-output.md).
 ```
 
-Mechanical edit. Covered by scope block in this doc's frontmatter.
+Mechanical edit. Covered by the scope block in this doc's frontmatter.
 
 ### Step 3 — Inject into shared spawn-protocol.md
 
@@ -167,7 +167,7 @@ Orchestrator skills that already reference spawn-protocol.md inherit this for fr
 
 ### Step 4 — Validate
 
-Run existing plugin validator. Confirm no skill exceeds its former size (expect trivial growth: +1 line per SKILL.md, +5 lines in spawn-protocol.md).
+Run the existing plugin validator. Confirm no skill exceeds its former size (expect trivial growth: +1 line per SKILL.md, +5 lines in spawn-protocol.md).
 
 ### Step 5 — Measure
 
@@ -175,7 +175,7 @@ After v1.5.0 ships, run one sprint with terse mode and one without. Compare tran
 
 ### Optional Phase 2 — Input compression (separate research)
 
-If user wants 10K-line SKILL.md bloat addressed: spawn dedicated research task for `caveman-compress` batch rewriting of reference.md files (not SKILL.md — those read by validators and hooks with exact-match patterns and must stay stable). Distinct workstream, not in scope for this doc.
+If the user wants the 10K-line SKILL.md bloat addressed: spawn a dedicated research task for `caveman-compress` batch rewriting of reference.md files (not SKILL.md — those are read by validators and hooks with exact-match patterns and must stay stable). This is a distinct workstream, not in scope for this doc.
 
 ---
 
@@ -190,7 +190,7 @@ If user wants 10K-line SKILL.md bloat addressed: spawn dedicated research task f
 | 65% reduction doesn't materialize | High | Stated above — blitz output is code-heavy, which caveman preserves. Expect 20–40%, not 65%. |
 | Confusion with existing `code-sweep` / `simplify` skill semantics | Low | Terse-output is style-only; simplify/code-sweep touch code. No conceptual overlap. |
 
-**Open question:** Should terse mode be default-on or opt-in via `/blitz:terse` toggle? Default-on ships savings to all users automatically; opt-in is safer for first release. **Suggest: default-on at `lite` intensity, with `/blitz:terse full|ultra` to escalate.**
+**Open question:** Should terse mode be default-on or opt-in via a `/blitz:terse` toggle? Default-on ships savings to all users automatically; opt-in is safer for the first release. **Suggest: default-on at `lite` intensity, with `/blitz:terse full|ultra` to escalate.**
 
 ---
 

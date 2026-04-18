@@ -9,7 +9,7 @@
 
 ## Summary
 
-`/sprint` (plan -> implement -> review) cannot currently be used with `/loop` — always starts from scratch, blocks on stale session conflicts, requires user confirmation at phase boundaries. Fix: add **reconciliation layer** at `/sprint` entry that reads sprint state from disk, determines correct phase, dispatches automatically — controller pattern used by Kubernetes, Terraform, ArgoCD. Existing `/next` skill already has the decision tree needed; main work is embedding that logic into `/sprint`, adding stale session cleanup to session protocol, suppressing user prompts in loop mode.
+The `/sprint` skill (plan -> implement -> review) cannot currently be used with `/loop` because it always starts from scratch, blocks on stale session conflicts, and requires user confirmation at phase boundaries. The fix is to add a **reconciliation layer** at `/sprint` entry that reads current sprint state from disk, determines the correct phase, and dispatches automatically -- following the controller pattern used by Kubernetes, Terraform, and ArgoCD. The existing `/next` skill already has the exact decision tree needed; the main work is embedding that logic into `/sprint`, adding stale session cleanup to the session protocol, and suppressing user prompts in loop mode.
 
 ---
 
@@ -17,11 +17,11 @@
 
 ### 1. What does /loop expect from skills it invokes?
 
-`/loop` is built-in Claude Code feature that re-invokes slash command at fixed interval (e.g., `/loop 10m /blitz:sprint`). Expects:
-- Target skill can be called repeatedly without side effects from prior invocations
-- Each invocation self-bootstrapping (reads state from disk, not memory)
-- Skill exits cleanly after doing its work so next interval can fire
-- No special args or env vars passed — skill receives same invocation each time
+`/loop` is a built-in Claude Code feature that re-invokes a slash command at a fixed interval (e.g., `/loop 10m /blitz:sprint`). It expects:
+- The target skill can be called repeatedly without side effects from prior invocations
+- Each invocation is self-bootstrapping (reads state from disk, not memory)
+- The skill exits cleanly after doing its work so the next interval can fire
+- No special args or env vars are passed -- the skill receives the same invocation each time
 
 ### 2. What state detection does /sprint currently have?
 
@@ -39,12 +39,12 @@
 
 ### 3. How should session conflicts be handled for /loop?
 
-Session protocol detects stale **locks** (>4h + dead PID) but not stale **session JSON files**. Crashed `/sprint` leaves its session file with `status: active`, blocking next `/loop` invocation.
+The session protocol detects stale **locks** (>4h + dead PID) but not stale **session JSON files**. A crashed `/sprint` leaves its session file with `status: active`, blocking the next `/loop` invocation.
 
 **Fix**: Add stale session detection to `session-protocol.md`:
-- Session JSON stale if: `status: active` AND (`pid` not running OR session older than 4 hours)
+- A session JSON is stale if: `status: active` AND (`pid` not running OR session older than 4 hours)
 - On stale detection: update `status` to `failed`, release any locks, log cleanup event
-- Must happen during session registration (step 5) before conflict checking
+- This must happen during session registration (step 5) before conflict checking
 
 ### 4. What existing mechanisms support idempotent behavior?
 
@@ -58,13 +58,13 @@ Session protocol detects stale **locks** (>4h + dead PID) but not stale **sessio
 
 ### 5. What's the right granularity for /loop invocations?
 
-**One phase per invocation** is recommended pattern. Each `/loop` tick should:
-1. Read sprint state (fast — file reads only)
+**One phase per invocation** is the recommended pattern. Each `/loop` tick should:
+1. Read sprint state (fast -- file reads only)
 2. Determine which phase to run
 3. Execute that phase
 4. Exit cleanly
 
-Matches reconciliation pattern and avoids long-running multi-phase operations blocking loop interval.
+This matches the reconciliation pattern and avoids the problem of long-running multi-phase operations blocking the loop interval.
 
 ---
 
@@ -72,7 +72,7 @@ Matches reconciliation pattern and avoids long-running multi-phase operations bl
 
 ### Finding 1: The /next Decision Tree is Directly Reusable
 
-`/next` (`skills/next/SKILL.md`) has priority-ordered decision tree mapping current project state to correct next action:
+The `/next` skill (`skills/next/SKILL.md`) has a priority-ordered decision tree that maps current project state to the correct next action:
 
 ```
 1. In-progress sprint WITH STATE.md    -> /blitz:implement --resume
@@ -85,13 +85,13 @@ Matches reconciliation pattern and avoids long-running multi-phase operations bl
 8. No roadmap                          -> /blitz:roadmap full
 ```
 
-Exact routing logic `/sprint` needs for loop compatibility. Currently `/next` only **suggests** — doesn't execute. Design question: make `/next` executable or embed logic in `/sprint`.
+This is the exact routing logic `/sprint` needs for loop compatibility. Currently `/next` only **suggests** -- it doesn't execute. The design question is whether to make `/next` executable or embed the logic in `/sprint`.
 
 *Source: codebase-analyst, skills/next/SKILL.md*
 
 ### Finding 2: Sprint State Machine is Fully Tracked on Disk
 
-Sprint lifecycle captured in `sprint-registry.json`:
+The sprint lifecycle is captured in `sprint-registry.json`:
 
 ```
 (none) --[sprint-plan]--> planned --[sprint-dev]--> in-progress --[sprint-dev]--> review --[sprint-review]--> reviewed --[ship]--> done
@@ -103,7 +103,7 @@ Additionally, `STATE.md` tracks per-story progress within `in-progress`, and sto
 
 ### Finding 3: The Controller/Reconciliation Pattern is the Right Model
 
-Dominant pattern for idempotent multi-phase CLIs comes from Kubernetes operators:
+The dominant pattern for idempotent multi-phase CLIs comes from Kubernetes operators:
 
 ```
 Observe -> Diff -> Act -> Report
@@ -115,13 +115,13 @@ Applied to `/sprint`:
 3. **Act**: Execute the one phase that advances toward completion
 4. **Report**: Log what was done and exit
 
-Key principle: **reconciler doesn't care about history — only cares about delta between "what is" and "what should be."**
+Key principle: **the reconciler doesn't care about history -- it only cares about the delta between "what is" and "what should be."**
 
 *Source: web-researcher*
 
 ### Finding 4: Stale Session Cleanup is the Critical Blocker
 
-Session protocol has stale lock detection but NOT stale session detection. Consequences:
+The session protocol has stale lock detection but NOT stale session detection. This means:
 - First `/loop` invocation starts `/sprint`, creates session with `status: active`
 - Sprint completes or crashes
 - If crash: session remains `status: active`
@@ -139,12 +139,12 @@ For each session with status: active:
 
 ### Finding 5: User Prompts Must Be Suppressible
 
-`/sprint` currently prompts user at:
+`/sprint` currently prompts the user at:
 - Phase 1: "Present the plan to the user and ask for confirmation before proceeding"
 - Phase 1.5 (gap closure): "Present the gap-closure plan and ask for confirmation"
 - STATE.md staleness: "Warn user, ask whether to resume or start fresh"
 
-In `/loop` mode, these must be auto-approved. Autonomy level system already supports this (high/full = skip confirmations).
+In `/loop` mode, these must be auto-approved. The autonomy level system already supports this (high/full = skip confirmations).
 
 *Source: codebase-analyst, session-protocol.md autonomy levels*
 
@@ -166,21 +166,21 @@ In `/loop` mode, these must be auto-approved. Autonomy level system already supp
 
 ### No New Dependencies Required
 
-Purely a SKILL.md instruction change + session protocol enhancement. No new tools, libraries, or infrastructure needed.
+This is purely a SKILL.md instruction change + session protocol enhancement. No new tools, libraries, or infrastructure needed.
 
 ---
 
 ## Recommendation
 
-**Approach: Add reconciliation layer to `/sprint` with `--loop` flag.**
+**Approach: Add a reconciliation layer to `/sprint` with a `--loop` flag.**
 
-Preferred over "use `/loop` with `/next`" because:
-1. `/sprint` is natural entry point users already know
-2. Reconciliation logic small (file reads + decision tree)
-3. Keeps `/next` as read-only advisor (clean separation of concerns)
-4. Allows `/sprint --loop` to be documented pattern
+This is preferred over "use `/loop` with `/next`" because:
+1. `/sprint` is the natural entry point users already know
+2. The reconciliation logic is small (file reads + decision tree)
+3. Keeps `/next` as a read-only advisor (clean separation of concerns)
+4. Allows `/sprint --loop` to be the documented pattern
 
-`--loop` flag (or auto-detection when invoked by `/loop`) triggers:
+The `--loop` flag (or auto-detection when invoked by `/loop`) triggers:
 - Skip user confirmations (set autonomy to high)
 - Auto-resume from checkpoints without prompting
 - Stale session cleanup before conflict check
@@ -271,24 +271,24 @@ Update the sprint entry's description and argument-hint to document `--loop`.
 ## Risks
 
 ### 1. Runaway Loop (Low Risk)
-If `/sprint` dispatches phase that fails repeatedly, `/loop` will keep re-invoking and hitting same failure.
+If `/sprint` dispatches a phase that fails repeatedly, `/loop` will keep re-invoking and hitting the same failure.
 
-**Mitigation**: Circuit breaker already exists in sprint-dev (3 failures = blocked). For plan/review phases, add simple failure counter in session JSON. After 3 consecutive failures of same phase, exit with "Circuit breaker: phase X failed 3 times. Manual intervention needed."
+**Mitigation**: The circuit breaker already exists in sprint-dev (3 failures = blocked). For plan/review phases, add a simple failure counter in the session JSON. After 3 consecutive failures of the same phase, exit with "Circuit breaker: phase X failed 3 times. Manual intervention needed."
 
 ### 2. Stale Session Cleanup Race (Low Risk)
-Two `/loop` invocations could try to clean same stale session simultaneously.
+Two `/loop` invocations could try to clean the same stale session simultaneously.
 
-**Mitigation**: Cleanup is idempotent (marking `failed` twice is harmless). Lock files protect shared registries. Session JSONs are per-session so no write contention.
+**Mitigation**: The cleanup is idempotent (marking `failed` twice is harmless). Lock files protect shared registries. Session JSONs are per-session so no write contention.
 
 ### 3. Long Phase Overlaps (Medium Risk)
-If phase takes longer than `/loop` interval, next invocation arrives while previous still running.
+If a phase takes longer than the `/loop` interval, the next invocation arrives while the previous is still running.
 
-**Mitigation**: Session conflict check (after stale cleanup) will detect active session and correctly BLOCK. Next `/loop` tick will try again. Recommend `/loop` interval of 15-30 minutes for sprints (not 5m).
+**Mitigation**: The session conflict check (after stale cleanup) will detect the active session and correctly BLOCK. The next `/loop` tick will try again. Recommend a `/loop` interval of 15-30 minutes for sprints (not 5m).
 
 ### 4. Sprint-Dev Resume Reliability (Low Risk)
-STATE.md resume specified but may not be battle-tested in all edge cases.
+STATE.md resume has been specified but may not be battle-tested in all edge cases.
 
-**Mitigation**: Reconciliation layer adds no new complexity to sprint-dev — just auto-passes `--resume`. Any resume bugs are pre-existing and should be fixed regardless.
+**Mitigation**: The reconciliation layer adds no new complexity to sprint-dev -- it just auto-passes `--resume`. Any resume bugs are pre-existing and should be fixed regardless.
 
 ---
 

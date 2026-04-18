@@ -9,7 +9,7 @@
 
 ## Summary
 
-Current code-sweep skill has 13 checks falling into 3 narrow buckets: cleanup, placeholder detection, dead code. Has **zero** checks for optimization, convention alignment, security, correctness enforcement, or code reduction. Research across existing codebase-audit checklists, industry tools (Semgrep, SonarQube, Biome), and academic studies identifies **13 high-value new checks** expanding code-sweep into 6 categories. Research-backed ordering: conventions first (74% reduction), then correctness (44%), then security (32%). Seven new patterns auto-fixable with verification; all fit within <2 minute loop tick budget.
+The current code-sweep skill has 13 checks that all fall into 3 narrow buckets: cleanup, placeholder detection, and dead code. It has **zero** checks for optimization, convention alignment, security, correctness enforcement, or code reduction. Research across the existing codebase-audit checklists, industry tools (Semgrep, SonarQube, Biome), and academic studies identifies **13 high-value new checks** that expand code-sweep into 6 categories. The research-backed ordering is: conventions first (74% reduction), then correctness (44%), then security (32%). Seven of the new patterns are auto-fixable with verification, and all fit within the <2 minute loop tick budget.
 
 ---
 
@@ -17,7 +17,7 @@ Current code-sweep skill has 13 checks falling into 3 narrow buckets: cleanup, p
 
 ### 1. What code improvement categories should be added beyond cleanup?
 
-**Answer**: Five new categories, each mapped from existing codebase-audit pillars:
+**Answer**: Five new categories, each mapped from the existing codebase-audit pillars:
 
 | New Category | Maps To (Audit Pillar) | Checks Added |
 |-------------|----------------------|--------------|
@@ -58,11 +58,11 @@ All convention detection, security findings, Vue patterns, sequential-await, n-p
 
 1. **Mechanical enforcement** (grep/glob): File naming consistency (detect mixed kebab/camel/pascal per directory), import ordering (detect external-after-internal), mixed error handling patterns (throw vs console.error vs return-error in same file types), mixed async patterns (`.then()` alongside `await` in same file).
 
-2. **Convention inference**: Count dominant patterns per directory/file-type and flag outliers. E.g., if 90% of files use `kebab-case.ts`, flag the 10% using `camelCase.ts`. Leverages NATURALIZE principle — infer local conventions from codebase itself.
+2. **Convention inference**: Count dominant patterns per directory/file-type and flag outliers. E.g., if 90% of files use `kebab-case.ts`, flag the 10% that use `camelCase.ts`. This leverages the NATURALIZE principle — infer local conventions from the codebase itself.
 
 3. **LLM-assisted** (future): Semantic naming quality, architectural pattern consistency. Not suitable for grep-level detection.
 
-For current skill, approach 1 immediately implementable. Approach 2 can be added as Tier 2 check.
+For the current skill, approach 1 is immediately implementable. Approach 2 can be added as a Tier 2 check.
 
 ### 4. What correctness checks can be done at grep/read level without running the code?
 
@@ -76,7 +76,7 @@ For current skill, approach 1 immediately implementable. Approach 2 can be added
 | `skipped-test` | `it\.skip\|xit\|describe\.skip` | Very high — never intentional in CI |
 | `typescript-any` | `:\s*any\b` / `as\s+any` | High — enforces DoD rule |
 
-Lower-confidence patterns needing AST: non-null assertions (`!`), unhandled promises, missing null checks. Better left to `tsc --strict`.
+Lower-confidence patterns that need AST: non-null assertions (`!`), unhandled promises, missing null checks. These are better left to `tsc --strict`.
 
 ### 5. How should the skill prioritize improvements vs. cleanups in the fix queue?
 
@@ -95,7 +95,7 @@ Within each priority level, auto-fixable issues rank above report-only.
 
 ### 6. What from the codebase-audit could be adapted as automatable improvements?
 
-**Answer**: 13 checks extracted from 5-pillar checklists:
+**Answer**: 13 checks extracted from the 5-pillar checklists:
 
 - **Architecture**: circular-import detection (Tier 3, report-only)
 - **Performance**: sequential-await, n-plus-one, return-await (Tier 1-2)
@@ -113,7 +113,7 @@ Plus 4 checks from completeness-gate not yet in code-sweep: `placeholder-returns
 
 **Source**: codebase-analyst
 
-Project's `definition-of-done.md` has 6 rules enforceable by automated scanning, but code-sweep currently enforces only 2 (console.log, commented-code). Missing 4:
+The project's `definition-of-done.md` has 6 rules enforceable by automated scanning, but code-sweep currently enforces only 2 (console.log, commented-code). The missing 4 are:
 
 | DoD Rule | Proposed Check | Detection |
 |----------|---------------|-----------|
@@ -122,13 +122,13 @@ Project's `definition-of-done.md` has 6 rules enforceable by automated scanning,
 | No `it.skip`/`xit`/`describe.skip` | `skipped-test` | Direct grep |
 | No placeholder returns | `placeholder-returns` | `return\s*\{\s*\}` |
 
-Adding these makes code-sweep "DoD enforcement engine."
+Adding these makes code-sweep the "DoD enforcement engine."
 
 ### Finding 2: Seven New Auto-Fixable Patterns
 
 **Source**: library-docs (concrete patterns) + web-researcher (safety validation)
 
-Beyond existing 4 auto-fixable checks (console-log, empty-catch, unused-import, commented-code), 7 new patterns safe to auto-fix:
+Beyond the existing 4 auto-fixable checks (console-log, empty-catch, unused-import, commented-code), 7 new patterns are safe to auto-fix:
 
 1. **Loose equality** → strict equality (exclude `== null`)
 2. **Return await** → remove await (outside try blocks)
@@ -138,13 +138,13 @@ Beyond existing 4 auto-fixable checks (console-log, empty-catch, unused-import, 
 6. **Immediate return variable** → inline into return
 7. **Skipped tests** → remove `.skip`
 
-Brings auto-fixable checks from 4 to 11, significantly increasing value per loop tick.
+This brings auto-fixable checks from 4 to 11, significantly increasing the value per loop tick.
 
 ### Finding 3: Research-Backed Iteration Ordering
 
 **Source**: web-researcher (academic studies)
 
-"Static Analysis as Feedback Loop" study (Aug 2025) using GPT-4o + static analysis found:
+The "Static Analysis as Feedback Loop" study (Aug 2025) using GPT-4o + static analysis found:
 - Conventions: 74% issue reduction (fastest, safest)
 - Correctness: 44% reduction
 - Security: 32% reduction
@@ -152,7 +152,7 @@ Brings auto-fixable checks from 4 to 11, significantly increasing value per loop
 - Diminishing returns after ~10 iterations
 - Multi-issue batching outperforms single-issue-per-iteration
 
-**Implication**: Fix priority queue should process convention fixes before correctness fixes before security reports.
+**Implication**: The fix priority queue should process convention fixes before correctness fixes before security reports.
 
 ### Finding 4: Completeness-Gate Checks Should Be Ported
 
@@ -164,7 +164,7 @@ Four completeness-gate checks have proven grep patterns and severity rules but a
 - `three-state-ui` — Vue components missing loading/error states
 - `unwired-store-actions` — store actions without API calls
 
-Battle-tested patterns, directly portable.
+These are battle-tested patterns that can be directly ported.
 
 ### Finding 5: Vue-Specific Improvement Patterns
 
@@ -176,13 +176,13 @@ Four Vue-specific patterns add significant value for Vue/Nuxt projects:
 - Options API vs Composition API detection (migration candidates)
 - `ref()` wrapping large objects (performance)
 
-Of these, `missing-v-for-key` highest value — common bug with low false-positive risk.
+Of these, `missing-v-for-key` is the highest value — it's a common bug with low false-positive risk.
 
 ---
 
 ## Recommendation
 
-**Expand code-sweep from 13 to 26 checks across 6 categories.** Add 13 new checks organized into existing tier system, with 7 new auto-fixable patterns. Restructure fix priority queue to follow research-backed ordering: conventions → reduction → correctness → optimization → security → cleanup.
+**Expand code-sweep from 13 to 26 checks across 6 categories.** Add 13 new checks organized into the existing tier system, with 7 new auto-fixable patterns. Restructure the fix priority queue to follow the research-backed ordering: conventions → reduction → correctness → optimization → security → cleanup.
 
 ### New Check Roster
 
@@ -250,9 +250,9 @@ Of these, `missing-v-for-key` highest value — common bug with low false-positi
 
 ### Changes to SKILL.md
 
-1. **Add 17 new check definitions** in Phase 2 (SCAN), organized under existing tier structure
+1. **Add 17 new check definitions** in Phase 2 (SCAN), organized under the existing tier structure
 2. **Add category field** to each check (cleanup / correctness / reduction / optimization / convention / security / robustness)
-3. **Update Phase 3 (DIFF) priority queue** to follow research-backed ordering
+3. **Update Phase 3 (DIFF) priority queue** to follow the research-backed ordering
 4. **Add 7 new auto-fix strategies** in Phase 4 (ACT)
 5. **Update Phase 5 (REPORT)** to show findings by category, not just by severity
 6. **Add `--category <list>` flag** to run only specific categories

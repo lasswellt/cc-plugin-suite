@@ -9,7 +9,7 @@
 
 ## Summary
 
-Claude Code shipped significant improvements in March 2026 that blitz does not yet leverage. Highest-impact gaps: (1) sprint-dev manually manages worktrees via bash though dedicated `EnterWorktree`/`ExitWorktree` tools now exist, (2) seven new hook events (`CwdChanged`, `FileChanged`, `SessionStart`, `TeammateIdle`, `TaskCompleted`, `Elicitation`, `ElicitationResult`) unharnessed, (3) `CronCreate`/`CronDelete` scheduling tools unused — they complement `/loop`, (4) `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` flag may be obsolete — agent teams went production-stable in March, (5) PID-based stale session detection (`$$`) broken — each bash invocation gets new PID.
+Claude Code has shipped significant improvements in March 2026 that the blitz plugin does not yet leverage. The highest-impact gaps are: (1) sprint-dev still manually manages worktrees via bash when dedicated `EnterWorktree`/`ExitWorktree` tools now exist, (2) seven new hook events (`CwdChanged`, `FileChanged`, `SessionStart`, `TeammateIdle`, `TaskCompleted`, `Elicitation`, `ElicitationResult`) are available but unharnessed, (3) `CronCreate`/`CronDelete` scheduling tools exist but are unused — they complement the `/loop` support we just added, (4) the `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` flag may no longer be needed as agent teams went production-stable in March, and (5) PID-based stale session detection (`$$`) is broken since each bash invocation gets a new PID.
 
 ---
 
@@ -29,7 +29,7 @@ Claude Code shipped significant improvements in March 2026 that blitz does not y
 
 ### 2. Are there new tool capabilities blitz skills could leverage?
 
-Yes — `EnterWorktree`/`ExitWorktree` for worktree management, `CronCreate`/`CronDelete`/`CronList` for scheduling, `RemoteTrigger` for remote execution. Available in tool environment but unused.
+Yes — `EnterWorktree`/`ExitWorktree` for worktree management, `CronCreate`/`CronDelete`/`CronList` for scheduling, `RemoteTrigger` for remote execution. All available in the tool environment but unused.
 
 ### 3. Have there been changes to the agent/team system?
 
@@ -41,11 +41,11 @@ Agent Teams went production-stable in March. Key additions: `agent_id`/`agent_ty
 
 ### 5. Has the skill system been updated?
 
-Skills and commands unified. Skills can restrict tools, override models, hook lifecycle events, run in forked contexts. Auto-namespaced (`plugin-name:skill-name`). Fixed: skill hooks firing twice per event.
+Skills and commands are now unified. Skills can restrict tools, override models, hook lifecycle events, and run in forked contexts. Auto-namespaced (`plugin-name:skill-name`). Fixed: skill hooks firing twice per event.
 
 ### 6. Are there deprecations or breaking changes?
 
-`TaskOutput` deprecated (use `Read` on output file). `/output-style` deprecated (use `/config`). Legacy SDK removed — must use `@anthropic-ai/claude-agent-sdk`. Windows managed settings path changed.
+`TaskOutput` tool deprecated (use `Read` on output file). `/output-style` deprecated (use `/config`). Legacy SDK removed — must use `@anthropic-ai/claude-agent-sdk`. Windows managed settings path changed.
 
 ---
 
@@ -53,9 +53,9 @@ Skills and commands unified. Skills can restrict tools, override models, hook li
 
 ### Finding 1: EnterWorktree/ExitWorktree Tools Replace Manual Worktree Management
 
-Sprint-dev (Phase 2.3) manually creates worktrees via `git worktree add -b ...` and tells agents working directory via message instructions. Claude Code now has dedicated `EnterWorktree`/`ExitWorktree` tools providing worktree isolation with auto-cleanup when no changes made.
+Sprint-dev (Phase 2.3) manually creates worktrees via `git worktree add -b ...` and tells agents their working directory via message instructions. Claude Code now has dedicated `EnterWorktree`/`ExitWorktree` tools that provide proper worktree isolation with auto-cleanup when no changes are made.
 
-**Impact**: High. Current approach fragile — cleanup uses `git worktree remove ... 2>/dev/null` which silently swallows errors and can lose uncommitted changes. Dedicated tools handle this correctly.
+**Impact**: High. Current approach is fragile — cleanup uses `git worktree remove ... 2>/dev/null` which silently swallows errors and can lose uncommitted changes. The dedicated tools handle this correctly.
 
 **Fix**: Replace Phase 2.3/4.4 manual worktree bash commands with `EnterWorktree`/`ExitWorktree` tool calls. Update agent spawn instructions to use `isolation: "worktree"` parameter on Agent tool.
 
@@ -63,7 +63,7 @@ Sprint-dev (Phase 2.3) manually creates worktrees via `git worktree add -b ...` 
 
 ### Finding 2: Seven New Hook Events Available
 
-Blitz uses only `PreToolUse` and `PostToolUse` (9 hooks total). Claude Code now supports:
+Blitz currently uses only `PreToolUse` and `PostToolUse` (9 hooks total). Claude Code now supports:
 
 | New Event | Blitz Use Case |
 |-----------|---------------|
@@ -81,7 +81,7 @@ Additionally, **HTTP hooks** allow sending JSON to a URL instead of running shel
 
 ### Finding 3: CronCreate/CronDelete Scheduling Tools Available but Unused
 
-`CronCreate`, `CronDelete`, and `CronList` tools available in environment. These provide more robust scheduling than `/loop` for periodic skill execution:
+`CronCreate`, `CronDelete`, and `CronList` tools are available in the environment. These provide more robust scheduling than `/loop` for periodic skill execution:
 
 | Skill | Schedule | Rationale |
 |-------|----------|-----------|
@@ -90,44 +90,44 @@ Additionally, **HTTP hooks** allow sending JSON to a URL instead of running shel
 | `completeness-gate` | Post-commit | Catch placeholders before they age |
 | `retrospective` | After each sprint | Auto-analyze completed sessions |
 
-The `/schedule` skill listed in system but has no blitz implementation.
+The `/schedule` skill is already listed in the system but has no blitz implementation.
 
 *Source: codebase-analyst (tool environment audit)*
 
 ### Finding 4: Experimental Agent Teams Flag May Be Obsolete
 
-Installer sets `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in project settings. Agent Teams launched Feb 5, 2026 as experimental. By March 2026, stability improvements (nested spawning, memory leak fixes) and expanded platform support (Bedrock, Vertex, Foundry) suggest graduation to stable.
+The installer sets `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in project settings. Agent Teams was launched Feb 5, 2026 as experimental. By March 2026, stability improvements (nested spawning, memory leak fixes) and expanded platform support (Bedrock, Vertex, Foundry) suggest it has graduated to stable.
 
-**Risk**: If Anthropic removes experimental flag, env var becomes no-op (harmless). But relying on it delays awareness of API changes in stable version.
+**Risk**: If Anthropic removes the experimental flag, the env var becomes a no-op (harmless). But relying on it delays awareness of any API changes in the stable version.
 
-**Fix**: Test agent spawning without flag. If it works, remove from installer and document minimum CLI version required.
+**Fix**: Test agent spawning without the flag. If it works, remove it from the installer and document the minimum CLI version required.
 
 *Sources: web-researcher (v2.1.71 changelog), codebase-analyst (installer audit)*
 
 ### Finding 5: PID-Based Stale Session Detection is Broken
 
-Session protocol tracks session PID via `$$` in bash and checks staleness via `kill -0 $pid`. But `$$` returns subshell PID which changes between bash invocations — does not represent Claude Code session PID. Consequences:
-- Stale session detection cannot reliably determine if session alive
-- Stale cleanup just added to session-protocol.md inherits flaw
+The session protocol tracks session PID via `$$` in bash and checks staleness via `kill -0 $pid`. However, `$$` returns the subshell PID which changes between bash invocations — it does not represent the Claude Code session PID. This means:
+- Stale session detection cannot reliably determine if a session is alive
+- The stale cleanup we just added to session-protocol.md inherits this flaw
 
-**Fix**: Replace PID tracking with timestamp-based staleness only (session older than threshold = stale). Alternatively, use activity feed's last write timestamp — if session hasn't logged to feed in >30 minutes, likely dead.
+**Fix**: Replace PID tracking with timestamp-based staleness only (session older than threshold = stale). Alternatively, use the activity feed's last write timestamp — if a session hasn't logged to the feed in >30 minutes, it's likely dead.
 
 *Source: codebase-analyst (session-protocol audit)*
 
 ### Finding 6: Silent Error Suppression Masks Failures
 
-Multiple patterns across plugin suppress errors silently:
+Multiple patterns across the plugin suppress errors silently:
 - `git worktree remove ... 2>/dev/null` — can lose uncommitted changes
 - Hook scripts use `|| true` — failures invisible
 - `cat ... 2>/dev/null || echo "..."` — masks missing file errors
 
-**Fix**: Replace `2>/dev/null` with proper error handling. Log errors to activity feed. Use exit codes to distinguish "file not found" (expected) from "permission denied" (unexpected).
+**Fix**: Replace `2>/dev/null` with proper error handling. Log errors to the activity feed. Use exit codes to distinguish "file not found" (expected) from "permission denied" (unexpected).
 
 *Source: codebase-analyst*
 
 ### Finding 7: SKILL.md Frontmatter Capabilities Not Fully Leveraged
 
-Claude Code now supports additional SKILL.md frontmatter fields blitz skills don't use:
+Claude Code now supports additional SKILL.md frontmatter fields that blitz skills don't use:
 
 | Field | Current Usage | Opportunity |
 |-------|--------------|-------------|
@@ -141,7 +141,7 @@ Claude Code now supports additional SKILL.md frontmatter fields blitz skills don
 ### Finding 8: Agent Hook Fields Enable Better Monitoring
 
 Hook inputs now include `agent_id` and `agent_type` fields. Blitz hooks could use these to:
-- Track which agent triggered edit (for activity feed attribution)
+- Track which agent triggered an edit (for activity feed attribution)
 - Apply different validation rules per agent type
 - Monitor agent-specific patterns (e.g., frontend-dev editing backend files = deviation)
 
@@ -149,15 +149,15 @@ Hook inputs now include `agent_id` and `agent_type` fields. Blitz hooks could us
 
 ### Finding 9: MCP Elicitation Enables Interactive Skills Without Prompts
 
-MCP servers can now request structured input from user mid-task. Could replace prompt-based confirmation pattern in skills like sprint-plan (AC waiver) and sprint (plan confirmation) — providing structured dialog rather than free-text prompts.
+MCP servers can now request structured input from the user mid-task. This could replace the prompt-based confirmation pattern in skills like sprint-plan (AC waiver) and sprint (plan confirmation) — providing a structured dialog rather than free-text prompts.
 
 *Source: web-researcher (v2.1.79 changelog)*
 
 ### Finding 10: Stack Detection Runs on Every Skill Without Caching
 
-Every skill includes `!${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh` which runs bash on every invocation. Results not cached. For `/loop` scenarios where skills re-invoked frequently, adds unnecessary overhead.
+Every skill includes `!${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh` which runs bash on every invocation. Results are not cached. For `/loop` scenarios where skills are re-invoked frequently, this adds unnecessary overhead.
 
-**Fix**: Cache stack detection results in file (e.g., `.cc-sessions/stack-profile.json`) with TTL (e.g., 1 hour). Invalidate on `CwdChanged` hook event.
+**Fix**: Cache stack detection results in a file (e.g., `.cc-sessions/stack-profile.json`) with a TTL (e.g., 1 hour). Invalidate on `CwdChanged` hook event.
 
 *Source: codebase-analyst*
 
@@ -293,19 +293,19 @@ fi
 ## Risks
 
 ### 1. EnterWorktree known bug (Low Risk)
-March 19 bug: `EnterWorktree` tool does not invoke `WorktreeCreate`/`WorktreeRemove` hooks (but `--worktree` CLI flag does). If blitz relies on worktree hooks, could be an issue.
+March 19 bug: `EnterWorktree` tool does not invoke `WorktreeCreate`/`WorktreeRemove` hooks (but `--worktree` CLI flag does). If blitz relies on worktree hooks, this could be an issue.
 
 **Mitigation**: Don't depend on worktree hooks. Use explicit worktree management where needed.
 
 ### 2. Hook event availability by CC version (Medium Risk)
-New hook events (CwdChanged, etc.) only available in v2.1.83+. Users on older versions would see these hooks fail.
+New hook events (CwdChanged, etc.) are only available in v2.1.83+. Users on older versions would see these hooks fail.
 
-**Mitigation**: Add `compatibility: ">=2.1.83"` to plugin.json. Hook scripts should check CC version and exit 0 gracefully if events not supported.
+**Mitigation**: Add `compatibility: ">=2.1.83"` to plugin.json. Hook scripts should check CC version and exit 0 gracefully if events aren't supported.
 
 ### 3. Experimental flag removal (Low Risk)
-Removing `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` could break users on older CC versions where flag still required.
+Removing `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` could break users on older CC versions where the flag is still required.
 
-**Mitigation**: Keep flag in installer but add comment. Only remove when minimum CC version pinned to >=2.1.71.
+**Mitigation**: Keep the flag in the installer but add a comment. Only remove when minimum CC version is pinned to >=2.1.71.
 
 ### 4. JSONL race conditions (Medium Risk)
 Activity feed append by multiple sessions has no atomic guarantee. Could cause corrupted lines.

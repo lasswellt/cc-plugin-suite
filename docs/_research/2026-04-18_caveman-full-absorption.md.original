@@ -137,9 +137,9 @@ scope:
 
 ## Summary
 
-Prior work absorbed two of caveman's surfaces: output-style directive (`skills/_shared/terse-output.md`) and author-time `reference.md` compression (10 files under S1-005). This pass catalogs remaining absorbable surfaces — agent-definition coverage, shared-protocol discoverability, review-format specialization, agent-prompt boilerplate dedup, intensity-mode persistence, task-type gating, further wave of file compression against `docs/_research/` and 7 remaining SAFE reference.md. **Crucially, web research surfaced strong counter-evidence against aggressive brevity**: real effect is 15-25% cost reduction (not 75%), brevity actively degrades code-generation and weak-model math reasoning, and caveman itself has 8+ open issues around activation reliability and cross-session state conflicts.
+Prior work absorbed two of caveman's surfaces: the output-style directive (`skills/_shared/terse-output.md`) and author-time `reference.md` compression (10 files under S1-005). This pass catalogs the remaining absorbable surfaces — agent-definition coverage, shared-protocol discoverability, review-format specialization, agent-prompt boilerplate dedup, intensity-mode persistence, task-type gating, and a further wave of file compression against `docs/_research/` and 7 remaining SAFE reference.md. **Crucially, web research surfaced strong counter-evidence against aggressive brevity**: the real effect is 15-25% cost reduction (not 75%), brevity actively degrades code-generation and weak-model math reasoning, and caveman itself has 8+ open issues around activation reliability and cross-session state conflicts.
 
-**Recommendation:** Absorb remaining safe patterns (review format, boilerplate dedup, compression wave, directive coverage). Gate terse-output by task type — ON for mechanical skills, OFF for reasoning-heavy. Do NOT adopt runtime/proxy compression, wenyan mode, or multi-editor distribution. Persist intensity in `developer-profile.json` rather than building caveman's flag-file + JS-hook apparatus (blitz's per-session `.cc-sessions/` infra is already richer). Cite Hakim 2026 for design justification but calibrate public claims to 15-25% measured band — avoid caveman's credibility-damaging 75% claim.
+**Recommendation:** Absorb the remaining safe patterns (review format, boilerplate dedup, compression wave, directive coverage). Gate terse-output by task type — ON for mechanical skills, OFF for reasoning-heavy. Do NOT adopt runtime/proxy compression, the wenyan mode, or multi-editor distribution. Persist intensity in `developer-profile.json` rather than building caveman's flag-file + JS-hook apparatus (blitz's per-session `.cc-sessions/` infra is already richer). Cite Hakim 2026 for design justification but calibrate public claims to the 15-25% measured band — avoid caveman's credibility-damaging 75% claim.
 
 ---
 
@@ -193,13 +193,13 @@ Sources: web-researcher.
 - **Anthropic's own guidance** (`effective-context-engineering-for-ai-agents`): supports "smallest possible set of high-signal tokens" AND explicitly cautions against "overly aggressive compaction causing information loss".
 - **Pillitteri independent review of caveman**: keep ON for refactor/mechanical/background agents; turn OFF for learning frameworks, architectural decisions, debugging unknowns, shared outputs. Formal proofs + complex math degrade under full/ultra.
 
-**Actionable conclusion**: Gate terse-output by task type. Five blitz skills should be exempt or at `lite`-only: `completeness-gate`, `codebase-audit`, `research`, `retrospective`, `bootstrap`. Mechanical skills (`sprint-dev`, `code-sweep`, `test-gen`, `refactor`, `ui-build`, `migrate`) can default to `full`. `/blitz:compress` itself stays at `full` as canonical reference.
+**Actionable conclusion**: Gate terse-output by task type. Five blitz skills should be exempt or at `lite`-only: `completeness-gate`, `codebase-audit`, `research`, `retrospective`, `bootstrap`. Mechanical skills (`sprint-dev`, `code-sweep`, `test-gen`, `refactor`, `ui-build`, `migrate`) can default to `full`. `/blitz:compress` itself stays at `full` as the canonical reference.
 
 ### Finding 3 — Caveman's measured savings are 15-25%, not 75%
 
 Source: web-researcher, Pillitteri.
 
-Caveman's headline "cuts ~75% of tokens" is **output-token, prose-only**. Once thinking tokens, input context, and system prompt counted:
+Caveman's headline "cuts ~75% of tokens" is **output-token, prose-only**. Once thinking tokens, input context, and system prompt are counted:
 
 | Measurement | Savings |
 |---|---|
@@ -209,7 +209,7 @@ Caveman's headline "cuts ~75% of tokens" is **output-token, prose-only**. Once t
 | Full API cost (with Sonnet + prompt caching) | 15-25% (Pillitteri) |
 | Combined with Sonnet + caching | up to 50% (edge case) |
 
-**Implication for blitz**: if we ship metrics, calibrate to 15-25% band. Don't repeat caveman's credibility error. Current sprint-1 result of -3.26% aggregate on reference.md compression is consistent with this band — it's table/code-dense, so prose share is lower than caveman's test corpus.
+**Implication for blitz**: if we ship metrics, calibrate to the 15-25% band. Don't repeat caveman's credibility error. The current sprint-1 result of -3.26% aggregate on reference.md compression is consistent with this band — it's table/code-dense, so the prose share is lower than caveman's test corpus.
 
 ### Finding 4 — Agent-definition and shared-protocol coverage gap
 
@@ -221,15 +221,15 @@ Source: codebase-analyst.
 | `skills/_shared/*.md` | 11 | 1/11 (spawn-protocol.md) |
 | `skills/*/SKILL.md` | 34 | 25/34 (6 substantively missing) |
 
-Agent definition files loaded every time `Agent(subagent_type: blitz:…)` spawns — high frequency. Currently **none** carry terse directive. Fixing this is highest-leverage directive-injection work.
+Agent definition files are loaded every time `Agent(subagent_type: blitz:…)` spawns — high frequency. Currently **none** carry the terse directive. Fixing this is the highest-leverage directive-injection work.
 
-Shared protocols govern output-bearing behavior (`verbose-progress.md`, `session-report-template.md`, `definition-of-done.md`) but don't cross-reference `terse-output.md`. Adding "Related protocols" footer is low-effort, improves discoverability.
+Shared protocols govern output-bearing behavior (`verbose-progress.md`, `session-report-template.md`, `definition-of-done.md`) but don't cross-reference `terse-output.md`. Adding a "Related protocols" footer is low-effort, improves discoverability.
 
 ### Finding 5 — UNSAFE reference.md boilerplate is duplicated; dedup is feasible
 
 Source: codebase-analyst.
 
-Seven reference.md files contain exact-match agent prompt templates totaling ~3,118 lines. Cannot be author-time compressed (prompts must match verbatim). But they **redundantly** reprint same boilerplate: HEARTBEAT specification, PARTIAL protocol, weight-class cap tables, session-registration instructions. Shared fragment at `skills/_shared/agent-prompt-boilerplate.md`, imported (via `<!-- import: ... -->` marker or explicit Read instruction) by each template, would save estimated 20-30% per template.
+Seven reference.md files contain exact-match agent prompt templates totaling ~3,118 lines. They cannot be author-time compressed (the prompts must match verbatim). But they **redundantly** reprint the same boilerplate: HEARTBEAT specification, PARTIAL protocol, weight-class cap tables, session-registration instructions. A shared fragment at `skills/_shared/agent-prompt-boilerplate.md`, imported (via `<!-- import: ... -->` marker or explicit Read instruction) by each template, would save an estimated 20-30% per template.
 
 Per sprint-dev run: ~610 lines of prompt-template input × ~80 chars/line ÷ ~4 chars/token ≈ 12 K tokens of prompt-template input. Dedup savings: ~2.5-3.5 K tokens per sprint, repeated across every spawn wave.
 
@@ -245,15 +245,15 @@ Source: web-researcher (caveman issues list) + codebase-analyst (blitz session i
 | Activation persistence drops mid-session | Blitz doesn't require cross-turn persistence for terse-output; directive is referenced from SKILL.md and injected into every Agent() prompt. |
 | Cursor/Copilot/Cowork cross-client breakage | Blitz is Claude-Code-only; no multi-agent port surface. |
 
-Structural advantages worth documenting as differentiators — they come "for free" from blitz's existing design and shouldn't be eroded by future absorption work.
+These are structural advantages worth documenting as differentiators — they come "for free" from blitz's existing design and shouldn't be eroded by future absorption work.
 
 ### Finding 7 — Commit and PR compression is not worth shipping
 
 Source: codebase-analyst git audit.
 
-Blitz commit history: 74 commits, avg subject 60.8 chars, already using conventional-commits with scope. `/blitz:commit-style` skill would save ~400 tokens over repo's lifetime and risks stripping body context retrospectives and sprint-reviews rely on. **Skip.**
+Blitz commit history: 74 commits, avg subject 60.8 chars, already using conventional-commits with scope. A `/blitz:commit-style` skill would save ~400 tokens over the repo's lifetime and risks stripping body context that retrospectives and sprint-reviews rely on. **Skip.**
 
-Blitz has 0 GitHub PRs (direct push to main). No absorption surface exists. If workflow changes to include PRs, `/blitz:pr-describe` skill becomes interesting — but new-feature territory, not caveman absorption.
+Blitz has 0 GitHub PRs (direct push to main). No absorption surface exists. If the workflow changes to include PRs, a `/blitz:pr-describe` skill becomes interesting — but that is new-feature territory, not caveman absorption.
 
 ### Finding 8 — Blitz has richer mode-state infra than caveman; no new hooks needed
 
@@ -288,7 +288,7 @@ Adding `output_intensity: lite|full|ultra` to `developer-profile.json` (with opt
 
 ## Recommendation
 
-**Absorb remaining safe patterns in phased rollout, preserving blitz's structural advantages (per-session state, no JS hooks, no multi-editor fan-out). Gate terse-output by task type. Calibrate public messaging to measured 15-25%, not 75%.**
+**Absorb the remaining safe patterns in a phased rollout, preserving blitz's structural advantages (per-session state, no JS hooks, no multi-editor fan-out). Gate terse-output by task type. Calibrate public messaging to measured 15-25%, not 75%.**
 
 ### Priority matrix
 
@@ -314,11 +314,11 @@ Adding `output_intensity: lite|full|ultra` to `developer-profile.json` (with opt
 
 ### Design principles (durable)
 
-1. **Terse-output is subset intervention, not global optimization.** Evidence: Hakim 2026 (7.7% of problems), Renze 2024 (weaker-model math degradation), Prompt-Compression-in-the-Wild (code-gen harm). Apply selectively.
+1. **Terse-output is a subset intervention, not a global optimization.** Evidence: Hakim 2026 (7.7% of problems), Renze 2024 (weaker-model math degradation), Prompt-Compression-in-the-Wild (code-gen harm). Apply selectively.
 2. **Claim 15-25%, not 75%.** Calibrate public docs and metric dashboards to measured outcomes. Audit sprint-review output for inflated claims.
-3. **Author-time > runtime.** Compression shipping in repo is reviewer-gated and deterministic; runtime/proxy compression (LLMLingua-class) adds overhead and can silently degrade code generation.
+3. **Author-time > runtime.** Compression that ships in the repo is reviewer-gated and deterministic; runtime/proxy compression (LLMLingua-class) adds overhead and can silently degrade code generation.
 4. **Existing infra > new hooks.** Extend `developer-profile.json` and sprint-review WARNINGs before building caveman's flag-file + JS-hook apparatus.
-5. **Preservation boundary non-negotiable.** UNSAFE list (7 reference.md files + code + JSON schemas + grep-pattern tables) must never receive author-time compression.
+5. **Preservation boundary is non-negotiable.** The UNSAFE list (7 reference.md files + code + JSON schemas + grep-pattern tables) must never receive author-time compression.
 
 ---
 
@@ -328,50 +328,50 @@ Phased, each phase shippable independently.
 
 ### Phase 1 — Directive coverage (low-risk, mechanical)
 
-1. Add `/_shared/terse-output.md` reference to 6 agent files (`agents/architect.md`, `agents/backend-dev.md`, `agents/doc-writer.md`, `agents/frontend-dev.md`, `agents/reviewer.md`, `agents/test-writer.md`). Pattern: single line near top — "Output style: terse-technical per `/_shared/terse-output.md`."
-2. Add same reference to 6 SKILL.md gap (`ask`, `sprint`, `ship`, `next`, `health`, `todo`). Leave `implement`, `review`, `quick` exempt (genuinely thin aliases).
-3. Add "Related protocols: see `/_shared/terse-output.md`" footer to 10 shared protocols currently lacking it.
+1. Add `/_shared/terse-output.md` reference to 6 agent files (`agents/architect.md`, `agents/backend-dev.md`, `agents/doc-writer.md`, `agents/frontend-dev.md`, `agents/reviewer.md`, `agents/test-writer.md`). Pattern: a single line near the top — "Output style: terse-technical per `/_shared/terse-output.md`."
+2. Add the same reference to the 6 SKILL.md gap (`ask`, `sprint`, `ship`, `next`, `health`, `todo`). Leave `implement`, `review`, `quick` exempt (genuinely thin aliases).
+3. Add "Related protocols: see `/_shared/terse-output.md`" footer to the 10 shared protocols currently lacking it.
 4. Validate: `grep -l 'terse-output' agents/*.md skills/*/SKILL.md skills/_shared/*.md | wc -l` ≥ 31 + 6 + 10 = ≥ 47.
 
 ### Phase 2 — Compression wave 2 (author-time, validator-gated)
 
-1. Invoke `/blitz:compress` on each of 7 SAFE uncompressed reference.md files: doc-gen, perf-profile, roadmap, completeness-gate, bootstrap, setup, fix-issue. Expect 2-8% per file based on S1-005 range.
+1. Invoke `/blitz:compress` on each of the 7 SAFE uncompressed reference.md files: doc-gen, perf-profile, roadmap, completeness-gate, bootstrap, setup, fix-issue. Expect 2-8% per file based on S1-005 range.
 2. Invoke `/blitz:compress` on each of 12 `docs/_research/*.md` files. Expect 10-15% per file (higher prose density).
 3. For each compressed file, commit both compressed + `.original`. Validator runs at commit time.
 4. Measure total byte delta; expect ~25-50 KB aggregate reduction.
 
 ### Phase 3 — Agent-prompt boilerplate dedup
 
-1. Read 7 UNSAFE reference.md files (codebase-audit, codebase-map, code-sweep, integration-check, quality-metrics, sprint-dev, sprint-plan). Identify duplicated boilerplate sections: HEARTBEAT spec, PARTIAL protocol, weight-class caps, session-registration template.
-2. Extract shared sections to `skills/_shared/agent-prompt-boilerplate.md` — new file containing verbatim text each template was reprinting.
-3. Replace duplicated sections in each of 7 reference.md files with single-line import marker: `<!-- import: /_shared/agent-prompt-boilerplate.md -->`. Orchestrator skill reading the reference.md must be updated to resolve import at spawn time (Read the referenced file, splice content into Agent() prompt verbatim, then emit combined prompt).
-4. Verify: each Agent() spawn still receives byte-identical prompt text as before (import resolution is mechanical, no rewriting).
+1. Read the 7 UNSAFE reference.md files (codebase-audit, codebase-map, code-sweep, integration-check, quality-metrics, sprint-dev, sprint-plan). Identify duplicated boilerplate sections: HEARTBEAT spec, PARTIAL protocol, weight-class caps, session-registration template.
+2. Extract the shared sections to `skills/_shared/agent-prompt-boilerplate.md` — a new file containing the verbatim text each template was reprinting.
+3. Replace the duplicated sections in each of the 7 reference.md files with a single-line import marker: `<!-- import: /_shared/agent-prompt-boilerplate.md -->`. The orchestrator skill that reads the reference.md must be updated to resolve the import at spawn time (Read the referenced file, splice the content into the Agent() prompt verbatim, then emit the combined prompt).
+4. Verify: each Agent() spawn still receives byte-identical prompt text as before (the import resolution is mechanical, no rewriting).
 5. Expected savings: 20-30% per template × ~12 K tokens/sprint input = ~2.5-3.5 K tokens saved per sprint-dev run.
 
 ### Phase 4 — Persisted intensity + task-type gating
 
 1. Extend `developer-profile.json` schema to include `output_intensity: lite|full|ultra` (default `lite`). Respect env-var override `BLITZ_OUTPUT_INTENSITY`.
-2. Update `skills/_shared/spawn-protocol.md` §7 to interpolate active intensity into Agent() prompt terse-snippet: `OUTPUT STYLE: terse-technical at <intensity> level per /_shared/terse-output.md. …`.
-3. Mark 5 reasoning-heavy skills with `output_style_policy:` frontmatter field set to `lite` or `reasoning-heavy` (override default). Targets: `completeness-gate`, `codebase-audit`, `research`, `retrospective`, `bootstrap`.
-4. Update `terse-output.md` §Auto-pause to include "reasoning-heavy skill active" case with cite of Hakim 2026 and Renze 2024.
+2. Update `skills/_shared/spawn-protocol.md` §7 to interpolate the active intensity into the Agent() prompt terse-snippet: `OUTPUT STYLE: terse-technical at <intensity> level per /_shared/terse-output.md. …`.
+3. Mark 5 reasoning-heavy skills with an `output_style_policy:` frontmatter field set to `lite` or `reasoning-heavy` (override default). Targets: `completeness-gate`, `codebase-audit`, `research`, `retrospective`, `bootstrap`.
+4. Update `terse-output.md` §Auto-pause to include the "reasoning-heavy skill active" case with a cite of Hakim 2026 and Renze 2024.
 
 ### Phase 5 — Review-format absorption
 
-1. Read `skills/caveman-review/SKILL.md` verbatim for severity-prefix + `L<line>:` format.
-2. Rewrite `skills/review/reference.md` and `skills/sprint-review/reference.md` output-format sections to use same pattern: `L<line>: <severity> <problem>. <fix>.` with 🔴/🟡/🔵/❓ prefixes, `LGTM` for clean code, auto-clarity for security/CVE findings (full prose, not terse).
+1. Read `skills/caveman-review/SKILL.md` verbatim for the severity-prefix + `L<line>:` format.
+2. Rewrite `skills/review/reference.md` and `skills/sprint-review/reference.md` output-format sections to use the same pattern: `L<line>: <severity> <problem>. <fix>.` with 🔴/🟡/🔵/❓ prefixes, `LGTM` for clean code, auto-clarity for security/CVE findings (full prose, not terse).
 3. Validate via sprint-review run on a real sprint — compare reviewer output readability before/after.
 
 ### Phase 6 — Evidence trail
 
 1. Update `skills/_shared/terse-output.md` to cite:
-   - Hakim 2026 (arXiv:2604.00025) — supporting evidence for brevity as accuracy intervention on inverse-scaling subset.
+   - Hakim 2026 (arXiv:2604.00025) — supporting evidence for brevity as accuracy intervention on the inverse-scaling subset.
    - Renze & Guven 2024 (arXiv:2401.05618) — counter-evidence on weaker-model math degradation.
    - Anthropic's `effective-context-engineering-for-ai-agents` — official guidance on "smallest set of high-signal tokens" paired with warning on "overly aggressive compaction".
-2. Add "Known limits" section listing task-type exemption rationale.
+2. Add a "Known limits" section listing the task-type exemption rationale.
 
 ### Phase 7 (optional) — Per-turn reinforcement hook
 
-**Defer unless Phase 1-6 prove insufficient.** If user reports terse directive "drifts" mid-conversation (caveman's known #184-class issue), consider bash UserPromptSubmit hook that re-emits terse-snippet. Blitz already has hooks.json surface; cost is one more hook script. But evidence from sprint-1 suggests SKILL.md + agent-prompt injection is already persistent (no drift observed). Only revisit if measurement shows need.
+**Defer unless Phase 1-6 prove insufficient.** If user reports the terse directive "drifts" mid-conversation (caveman's known #184-class issue), consider a bash UserPromptSubmit hook that re-emits the terse-snippet. Blitz already has a hooks.json surface; the cost is one more hook script. But evidence from sprint-1 suggests the SKILL.md + agent-prompt injection is already persistent (no drift observed). Only revisit if measurement shows the need.
 
 ---
 
@@ -391,9 +391,9 @@ Phased, each phase shippable independently.
 
 **Open questions:**
 
-- Should per-turn reinforcement hook be built proactively, or only if drift observed? **Recommended: wait for evidence.**
-- Should commit-style skill be shipped as opt-in toggle for users pushing high commit volumes, even if blitz's own cadence doesn't benefit? **No — leave as user's own concern; don't ship ~400-token-lifetime feature.**
-- Does statusline pattern have value for blitz's sprint-phase indication? **Defer; UX-only, no token impact.**
+- Should the per-turn reinforcement hook be built proactively, or only if drift is observed? **Recommended: wait for evidence.**
+- Should the commit-style skill be shipped as an opt-in toggle for users who push high commit volumes, even if blitz's own cadence doesn't benefit? **No — leave it as a user's own concern; don't ship a ~400-token-lifetime feature.**
+- Does the statusline pattern have any value for blitz's sprint-phase indication? **Defer; UX-only, no token impact.**
 - Should Phase 5 (review-format) escalate to also modify `skills/review/SKILL.md` body, not just reference.md? **Reference.md only first; escalate if reviewer output still looks verbose.**
 
 ---

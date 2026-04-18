@@ -79,7 +79,7 @@ scope:
 
 ## Summary
 
-Blitz skills hemorrhaging tokens on agents that time out or return nothing because four root causes recur across suite: (1) **unbounded workloads** — sprint-plan's 4 research agents, sprint-review's 4 reviewers, sprint-dev's dev agents, and doc-gen's 4 doc agents declare zero caps on file reads, web searches, output length, or turns, even though Claude Code now caps tool calls per turn at ~20 (Feb 2026 regression); (2) **no write-as-you-go** in sprint-plan, sprint-review, sprint-dev, or doc-gen (doc-gen actively forbids it) — any interruption produces zero usable output rather than partial findings; (3) **missing validation** — four orchestrator sites (sprint-plan 2.4, sprint-review 2.6, roadmap 5/7, fix-issue 1.4) proceed without checking that spawned agents actually wrote expected output file, silently producing degraded results; (4) **no HEARTBEAT / PARTIAL / turn-budget patterns anywhere** in codebase — orchestrator cannot distinguish "agent stalled at 90%" from "agent dead from start." Since all tokens billed regardless of outcome and no refunds, fix must lean **fail-fast** over salvage: define Light/Medium/Heavy workload-sizing heuristic, ban unbounded spawns, require orchestrator-side output validation before consuming agent results.
+Blitz skills are hemorrhaging tokens on agents that time out or return nothing because four root causes recur across the suite: (1) **unbounded workloads** — sprint-plan's 4 research agents, sprint-review's 4 reviewers, sprint-dev's dev agents, and doc-gen's 4 doc agents declare zero caps on file reads, web searches, output length, or turns, even though Claude Code now caps tool calls per turn at ~20 (a Feb 2026 regression); (2) **no write-as-you-go** in sprint-plan, sprint-review, sprint-dev, or doc-gen (doc-gen actively forbids it) — meaning any interruption produces zero usable output rather than partial findings; (3) **missing validation** — four orchestrator sites (sprint-plan 2.4, sprint-review 2.6, roadmap 5/7, fix-issue 1.4) proceed without checking that their spawned agents actually wrote the expected output file, silently producing degraded results; (4) **no HEARTBEAT / PARTIAL / turn-budget patterns anywhere** in the codebase, so the orchestrator cannot distinguish "agent stalled at 90%" from "agent dead from the start." Since all tokens are billed regardless of outcome and there are no refunds, the fix must lean **fail-fast** over salvage: define a Light/Medium/Heavy workload-sizing heuristic, ban unbounded spawns, and require orchestrator-side output validation before consuming agent results.
 
 ## Research Questions
 
@@ -138,7 +138,7 @@ Blitz skills hemorrhaging tokens on agents that time out or return nothing becau
 | `codebase-audit` | all 10 | MEDIUM | File caps + write-as-you-go; no turn/output cap |
 | `code-sweep` | tier agents | **LOW** | Model explicit; bounded file set; JSON output; proceed-with-succeeded fallback |
 
-**Root cause of pain**: sprint-dev dev agents have zero caps — 6-story backend-dev agent doing 5 reads + 3 writes + 1 verify per story = 54 tool calls minimum, well past ~20/turn server cap with no circuit break on wall clock. sprint-review's unbounded diff pass is second-biggest risk — 40+ file sprint produces thousands of lines of diff × 4 reviewers.
+**Root cause of the pain**: sprint-dev dev agents have zero caps — a 6-story backend-dev agent doing 5 reads + 3 writes + 1 verify per story = 54 tool calls minimum, well past the ~20/turn server cap with no circuit break on wall clock. sprint-review's unbounded diff pass is the second-biggest risk — a 40+ file sprint produces thousands of lines of diff × 4 reviewers.
 
 ### 4. Defensive patterns — 5 present, 3 absent everywhere
 
@@ -155,7 +155,7 @@ Blitz skills hemorrhaging tokens on agents that time out or return nothing becau
 
 ### 5. Silent orchestrator-failure sites
 
-Four places where orchestrator proceeds after agents run without validating that they actually produced output:
+Four places where the orchestrator proceeds after agents run without validating that they actually produced output:
 
 | Site | Failure mode | Impact |
 |---|---|---|
@@ -169,35 +169,35 @@ Four places where orchestrator proceeds after agents run without validating that
 - **All tokens billed** regardless of outcome — no refund for timeouts, context exhaustion, or `error_max_turns`.
 - `ResultMessage.total_cost_usd` reflects actual charges even on `error_*` subtypes.
 - Subagent overhead: community reports ~7× token multiplier vs single-session for equivalent work.
-- 695M-token auto-compact loop (#22758) and 359 GB output-file loop (#29557) illustrate catastrophic-cost tail risk.
+- The 695M-token auto-compact loop (#22758) and 359 GB output-file loop (#29557) illustrate the catastrophic-cost tail risk.
 
-**Implication**: mitigation must favor **fail-fast** over salvage. Set hard caps (`max_turns`, file-read caps, wall-clock timeout) to bound blast radius. Salvaging partial work via HEARTBEAT/PARTIAL is secondary — important, but not first-order fix.
+**Implication**: mitigation must favor **fail-fast** over salvage. Set hard caps (`max_turns`, file-read caps, wall-clock timeout) to bound the blast radius. Salvaging partial work via HEARTBEAT/PARTIAL is secondary — important, but not the first-order fix.
 
 ## Compatibility Analysis
 
-All proposed fixes compatible with existing blitz architecture:
+All proposed fixes are compatible with existing blitz architecture:
 
-- **Adding caps to SKILL.md prompts** is text change. No schema changes, no new dependencies.
-- **New `skills/_shared/agent-workload-sizing.md`** follows established shared-doc pattern (session-protocol.md, checkpoint-protocol.md, verbose-progress.md, context-management.md, subagent-types.md from prior research).
+- **Adding caps to SKILL.md prompts** is a text change. No schema changes, no new dependencies.
+- **New `skills/_shared/agent-workload-sizing.md`** follows the established shared-doc pattern (session-protocol.md, checkpoint-protocol.md, verbose-progress.md, context-management.md, subagent-types.md from the prior research).
 - **Output-file validation** uses existing Bash patterns (`[ -s "$file" ]`) already in use by research and codebase-audit skills.
-- **No external tool dependencies**: patterns require only prompt text changes + orchestrator Bash checks. No new MCP servers or SDK flags.
+- **No external tool dependencies**: the patterns require only prompt text changes + orchestrator Bash checks. No new MCP servers or SDK flags.
 
 **Interaction with prior research**:
 - `docs/_research/2026-04-16_plugin-agent-strategy.md` proposed refactoring codebase-map, integration-check, quality-metrics to parallel workers. Those refactors must adopt this workload-sizing guidance on day one.
-- `docs/_research/2026-04-16_subagent-type-selection.md` is prerequisite — agent with no Write capability cannot write-as-you-go regardless of how prompt worded. Ship subagent-type fixes first.
+- `docs/_research/2026-04-16_subagent-type-selection.md` is a prerequisite — an agent with no Write capability cannot write-as-you-go regardless of how the prompt is worded. Ship the subagent-type fixes first.
 
 ## Recommendation
 
 **Ship four bundled changes as v1.2.x patch series (independent of other in-flight work):**
 
-1. **Create `skills/_shared/agent-workload-sizing.md`** — authoritative guidance doc defining Light/Medium/Heavy weight classes with hard caps, mandatory defensive patterns, and banned patterns.
-2. **Fix 4 silent-failure sites** (sprint-plan 2.4, sprint-review 2.6, roadmap 5/7, fix-issue 1.4) with output-file existence checks and explicit N-of-M failure handling.
-3. **Apply workload caps** to 6 at-risk skills (sprint-plan, sprint-review, sprint-dev, doc-gen, roadmap, fix-issue) using heuristic table. Add write-as-you-go to every Medium/Heavy agent.
+1. **Create `skills/_shared/agent-workload-sizing.md`** — the authoritative guidance doc defining Light/Medium/Heavy weight classes with hard caps, mandatory defensive patterns, and banned patterns.
+2. **Fix the 4 silent-failure sites** (sprint-plan 2.4, sprint-review 2.6, roadmap 5/7, fix-issue 1.4) with output-file existence checks and explicit N-of-M failure handling.
+3. **Apply workload caps** to the 6 at-risk skills (sprint-plan, sprint-review, sprint-dev, doc-gen, roadmap, fix-issue) using the heuristic table. Add write-as-you-go to every Medium/Heavy agent.
 4. **Introduce HEARTBEAT + PARTIAL protocol** — add to agent prompt templates across the suite, starting with the HIGH-risk skills. Orchestrator reads the output file partway through and after timeout to salvage partial work.
 
-**Sequencing**: ship #1 + #2 first as bug-fix patch (v1.2.0 — addresses immediate "tokens spent, nothing returned" pain). Ship #3 + #4 as v1.3.0 once sizing doc stable and reviewer checklist updates have caught drift.
+**Sequencing**: ship #1 + #2 first as a bug-fix patch (v1.2.0 — addresses the immediate "tokens spent, nothing returned" pain). Ship #3 + #4 as v1.3.0 once the sizing doc is stable and reviewer checklist updates have caught drift.
 
-**Rationale**: fixes are text-only changes with zero code risk. Economic argument decisive — every run of sprint-plan or sprint-review today has non-trivial chance of producing degraded result while billing full tokens. Fixing four silent-failure sites alone will eliminate worst "paid but got nothing" cases.
+**Rationale**: these fixes are text-only changes with zero code risk. The economic argument is decisive — every run of sprint-plan or sprint-review today has a non-trivial chance of producing a degraded result while billing full tokens. Fixing the four silent-failure sites alone will eliminate the worst "paid but got nothing" cases.
 
 ## Implementation Sketch
 
@@ -205,7 +205,7 @@ All proposed fixes compatible with existing blitz architecture:
 
 Structure (≤200 lines):
 
-1. **Purpose** — one paragraph on why this doc exists; reference 2026-04-16 reliability research.
+1. **Purpose** — one paragraph on why this doc exists; reference the 2026-04-16 reliability research.
 2. **Weight Class Table**:
 
 | Class | Use case | Max file reads | Max web searches | Max tool calls | Max output | Wall-clock | Model |
@@ -304,12 +304,12 @@ Then write a one-line confirmation and end.
 
 ## Risks
 
-- **Prompt length grows**: adding BUDGET + WRITE-AS-YOU-GO + HEARTBEAT + PARTIAL sections to every agent prompt adds ~40 lines per prompt. For agents already at 100-line prompts (sprint-dev dev agents), pushes prompt size up further. Mitigation: extract common blocks into reusable snippets in workload-sizing doc and use `!` includes or templated text to keep SKILL.md DRY.
-- **PARTIAL being trusted**: agent claiming `PARTIAL: true CONFIDENCE: high` but having missed critical domain is false positive. Mitigation: orchestrator always cross-references PARTIAL against expected deliverable list and warns when known-required sections in MISSING list.
-- **Caps may be too tight for large projects**: 15 file reads may not be enough for Medium task on 2000-file monorepo. Mitigation: weight classes are defaults; skills can override with documented rationale in their SKILL.md.
-- **Retries still burn tokens**: narrow-retry on failure doubles cost on already-failed agents. Mitigation: retry only when failure mode suggests recovery possible (PARTIAL with low confidence, missing output file) — do not retry on `error_max_turns` or `error_max_budget_usd` without reducing scope.
-- **Server-side 20-tool-call-per-turn cap is outside our control** (#33969). Agents asked to do >20 calls in single turn will fail regardless of prompt engineering. Mitigation: design agents for ≤15 tool calls to leave headroom, and break up Heavy workloads into multiple agents rather than single bloated ones.
-- **HEARTBEAT adds token cost per phase** — each heartbeat line ~40 tokens. For 10-phase workflows with 4 agents that's 1600 tokens of ops overhead. Mitigation: acceptable cost vs alternative (zero output from timed-out agent). Don't add heartbeats to Light class.
+- **Prompt length grows**: adding BUDGET + WRITE-AS-YOU-GO + HEARTBEAT + PARTIAL sections to every agent prompt adds ~40 lines per prompt. For agents that already have 100-line prompts (sprint-dev dev agents), this pushes prompt size up further. Mitigation: extract the common blocks into reusable snippets in the workload-sizing doc and use `!` includes or templated text to keep SKILL.md DRY.
+- **PARTIAL being trusted**: an agent claiming `PARTIAL: true CONFIDENCE: high` but having missed a critical domain is a false positive. Mitigation: orchestrator always cross-references PARTIAL against the expected deliverable list and warns when known-required sections are in the MISSING list.
+- **Caps may be too tight for large projects**: 15 file reads may not be enough for a Medium task on a 2000-file monorepo. Mitigation: weight classes are defaults; skills can override with documented rationale in their SKILL.md.
+- **Retries still burn tokens**: narrow-retry on failure doubles cost on already-failed agents. Mitigation: retry only when the failure mode suggests recovery is possible (PARTIAL with low confidence, missing output file) — do not retry on `error_max_turns` or `error_max_budget_usd` without reducing scope.
+- **Server-side 20-tool-call-per-turn cap is outside our control** (#33969). Agents asked to do >20 calls in a single turn will fail regardless of prompt engineering. Mitigation: design agents for ≤15 tool calls to leave headroom, and break up Heavy workloads into multiple agents rather than single bloated ones.
+- **HEARTBEAT adds token cost per phase** — each heartbeat line is ~40 tokens. For 10-phase workflows with 4 agents this is 1600 tokens of ops overhead. Mitigation: acceptable cost vs the alternative (zero output from a timed-out agent). Don't add heartbeats to Light class.
 
 ## References
 
