@@ -297,7 +297,7 @@
     },
     {
       "number": 7,
-      "status": "planned",
+      "status": "review",
       "planned_date": "2026-04-24T01:28:10Z",
       "epics": [
         "E-010",
@@ -329,7 +329,13 @@
       "planner_session": "sprint-plan-27142940",
       "planner_mode": "research-reuse",
       "research_source": "docs/_research/2026-04-23_ui-audit-skill.md",
-      "carry_forward_from_sprint_6": []
+      "carry_forward_from_sprint_6": [],
+      "started_date": "2026-04-24T01:34:29Z",
+      "dev_session": "sprint-dev-2891a289",
+      "completed_date": "2026-04-24T01:41:13Z",
+      "stories_completed": 13,
+      "stories_blocked": 0,
+      "integration_issues": 0
     }
   ]
 }

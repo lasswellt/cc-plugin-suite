@@ -1,6 +1,6 @@
 {
   "sprint": 7,
-  "status": "planned",
+  "status": "review",
   "created": "2026-04-24T01:22:43Z",
   "epics": [
     "E-010",
@@ -41,5 +41,10 @@
   "planned_date": "2026-04-24T01:28:10Z",
   "waived_ac_count": 0,
   "spidr_splits": [],
-  "registry_entries_touched": []
+  "registry_entries_touched": [],
+  "started_date": "2026-04-24T01:34:29Z",
+  "completed_date": "2026-04-24T01:41:13Z",
+  "stories_completed": 13,
+  "stories_blocked": 0,
+  "integration_issues": 0
 }
