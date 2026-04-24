@@ -2,6 +2,68 @@
 
 All notable changes to the blitz plugin are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] — 2026-04-23
+
+### ui-audit — Continuous Cross-Page Consistency & UX Auditor
+
+New skill `blitz:ui-audit` fills a gap no mainstream tool covers: semantic cross-page data consistency ("dashboard says 47, list page says 46" detection). Visual-regression tools (Percy, Chromatic, Applitools) explicitly mask numeric changes as noise. This skill extracts labeled values via Playwright MCP `browser_evaluate`, persists to an append-only registry, and asserts invariants across pages, roles, events, and interactive elements.
+
+Delivered across 3 sprints (Sprint 6–8) and 35 stories. Research: `docs/_research/2026-04-23_ui-audit-skill.md`. All 5 epics closed (E-008 foundation + E-009 quality/heuristics + E-010 interactive + E-011 events + E-012 role matrix).
+
+### Added
+
+- **`blitz:ui-audit` skill** (`skills/ui-audit/`) — SKILL.md + reference.md + CHECKS.md + PATTERNS.md + tests/. 9 modes: `full`, `smoke`, `data`, `buttons`, `events`, `consistency`, `heuristics`, `role <name>`, `--loop`. Opus orchestrator + effort:low + sonnet Agent workers for parallel heuristic scans when pages >30.
+- **Labeled-value registry** at `docs/crawls/page-data-registry.jsonl` — append-only, latest-wins-by-`(role, page, label)` via `jq group_by`. Reader protocol excludes 10 finding-label families to prevent feedback on re-run.
+- **Cross-page invariants** — `.ui-audit.json` declares `invariants` (`equal`/`gte`/`lte` with tolerance), `event_invariants` (`required_props`/`forbidden_props`/`scope`), `role_invariants` (`equal`/`viewer_null`/`gte`), plus `totals` parent/child sums, `placeholder_patterns`, `role_leak_patterns`.
+- **Interactive element coverage** — enumerates every ARIA-role + native interactive element per page; runs 6 static checks (NO_LABEL, DEAD_HREF, EMPTY_HANDLER, TABINDEX_POSITIVE, TABINDEX_NEGATIVE_VISIBLE, NO_FOCUS_STATE) + destructive-classifier-gated safe-click pass + CLICK_ERROR capture.
+- **Analytics event consistency** — 3-layer interception (`window.dataLayer` push proxy + `navigator.sendBeacon` wrap + network filter for Segment/PostHog/Amplitude/GA4). Cross-page event drift detection + `event_invariants` with 20-key PII auto-escalation list (CRITICAL on `user_email`/`password`/`ssn`/`token`/etc leaked in analytics).
+- **Per-permissions-role audit matrix** — 5 roles (anonymous/viewer/member/admin/superadmin) via env-var credentials, scripted login with R9 sentinel check after every role transition, storageState harvest at `.auth/<role>.json`, HTML-source role-leak scan. Loop matrix = `(role, page)` per tick, 2-pass termination, R10 ETA gate (`--yes`/`--ci` bypass on >60min runs).
+- **6 data-quality flags**: NULL_VALUE + PLACEHOLDER + NEGATIVE_COUNT (inline Phase 2) + FORMAT_MISMATCH + STALE_ZERO + BROKEN_TOTAL (Phase 4 reducers).
+- **Vercel Web Interface Guidelines heuristics** — Category 9 (URL reflects filter/tab/pagination state, consumes click records) + Category 16 (NUMERIC_COLUMN_NOT_TABULAR via `getComputedStyle(cell).fontVariantNumeric` + WRITTEN_OUT_COUNT regex scan).
+- **Self-contained fixture test** (`skills/ui-audit/tests/run-fixture.sh`) — python3 static server + synthetic HTML fixture + shell assertions for 6 numeric + 3 interactive + 2 event + 4 quality + 2 heuristic scenarios. Runs without Claude Code or Playwright MCP.
+- **Phase 7 LOOP MATRIX** — role×page cursor persisted in `docs/crawls/latest-tick.json.ui_audit_matrix`; `matrix_idle: true` after pass-2 completion.
+- **Prompt-injection defense** on Phase 5 sonnet worker spawn — page-key sanitization at config-load (reject control chars) + `---BEGIN/END PAGE LIST---` delimiters with literal-interpretation framing in prompt.
+
+### Changed
+
+- `skills/browse/reference.md` — `latest-tick.json` schema gains `page_data_registry` field so browse can observe ui-audit state in one read.
+- `skills/_shared/session-protocol.md` — conflict matrix adds 3 ui-audit rows (BLOCK self / WARN vs browse-loop / OK vs sprint-dev).
+- `.claude-plugin/skill-registry.json` — ui-audit entry, category `quality`, `dependencies: ["browse"]`, `maturity: "experimental"`.
+- `skills/sprint-review/SKILL.md` — Invariant 5 floor bumped 7→8 (ui-audit/reference.md carries an agent-prompt template).
+- Plugin skill count: 33 → 35 (ui-audit; one skill-review housekeeping).
+
+### Fixed
+
+Review auto-fixes that landed this cycle and hardened the design:
+
+- Fixture `awk /dev/stdin <<<"$HTML"` bug — would silently null-out interactive assertions on WSL (sprint-7 pattern review).
+- Safety-rule verb-list divergence — SKILL.md Rule 1 and `DESTRUCTIVE_LABELS` regex now share the full 24-verb list (sprint-7 security review).
+- `--yes` / `--ci` arg-parse gap — ETA-gate flags now documented in Phase 0.1 mode table with explicit env-var export (sprint-7 security review).
+- dataLayer proxy circular-ref crash — wrapped in try/catch; original `_push` always called last (sprint-7 security review).
+- PII auto-escalation list expanded from 8 → 20 keys with substring match (`phone`, `address`, `dob`, `ip_address`, passport, reset codes, etc).
+- Phase 3 reducer exclude-label divergence — CONSISTENCY + FLAPPING reducers now share the 10-label canonical exclude set (sprint-8 pattern review).
+- URL-token capture in Cat 9 findings — `scrub_url` helper redacts `token|session|auth|key|secret|password|reset|code|nonce|state|access_token|refresh_token` values before emission; state-change signal preserved via symmetric redaction (sprint-8 security review).
+- Worker malformed-JSON silent-drop — Phase 5 coordinator now validates each spawned worker's output with `jq -c '.'` and preserves malformed output as `.malformed.<ts>` with CONFIG_ERROR (sprint-8 security review).
+- placeholder_patterns ReDoS guard — rejects patterns >200 chars or containing nested quantifiers at config-load (sprint-8 housekeeping).
+
+### Closed capabilities
+
+9 new capabilities (CAP-008..CAP-016), all tracked in `docs/roadmap/capability-index.json`:
+
+| ID | Title |
+|---|---|
+| CAP-008 | Scaffold skills/ui-audit/ |
+| CAP-009 | Page data extraction + labeled-value registry |
+| CAP-010 | Consistency + invariant evaluator + FLAPPING/STALE/NULL_TRANSITION |
+| CAP-011 | Data-quality flags (6 flags, 3 reducers + 3 inline) |
+| CAP-012 | UI/UX heuristic audit (Vercel Cat 9 + 16) |
+| CAP-013 | Reporter (markdown + stdout + activity-feed) |
+| CAP-014 | Interactive element coverage (buttons/links/tabs) |
+| CAP-015 | Analytics event consistency |
+| CAP-016 | Per-permissions-role audit matrix |
+
+---
+
 ## [1.5.0] — 2026-04-18
 
 ### Caveman Full Absorption

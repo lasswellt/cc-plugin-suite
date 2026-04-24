@@ -1,6 +1,6 @@
 {
   "name": "blitz",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Production-grade development skills for Vue.js, Nuxt, and GCP Firebase projects. Includes sprint workflows, code review, performance profiling, release management, dependency health, documentation generation, migration support, and self-improvement loops.",
   "author": {
     "name": "lasswellt"
@@ -8,5 +8,17 @@
   "homepage": "https://github.com/lasswellt/blitz",
   "repository": "https://github.com/lasswellt/blitz",
   "license": "MIT",
-  "keywords": ["vue", "nuxt", "firebase", "sprint", "development-workflow", "quality-metrics", "release-management", "documentation", "migration", "performance", "dependency-health"]
+  "keywords": [
+    "vue",
+    "nuxt",
+    "firebase",
+    "sprint",
+    "development-workflow",
+    "quality-metrics",
+    "release-management",
+    "documentation",
+    "migration",
+    "performance",
+    "dependency-health"
+  ]
 }
