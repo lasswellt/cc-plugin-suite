@@ -254,7 +254,44 @@ Once per page (after I.1 + I.3 + I.4), append one aggregate JSONL:
 {"ts":"<ISO>","role":"<role>","page":"<path>","label":"interactive_audit_summary","raw":null,"parsed":null,"hash":"<sha8>","selector":null,"tick":<n>,"detail":{"total":<n>,"labeled":<n>,"dead_href":<n>,"no_handler":<n>,"tabindex_broken":<n>,"no_focus_state":<n>,"safe_clicked":<n>,"click_errors":<n>}}
 ```
 
-<!-- Per-element checks + safe-click procedures fill in via S7-002 and S7-003 (Waves 1 and 2). -->
+### I.3 Per-element checks (6 static + 1 probe)
+
+Applied to each element returned by I.1. Findings emit as `button_finding` JSONL lines with `detail: {issue, element_label, tag, tabindex, selector_snip, severity}`.
+
+| Check | Condition | Severity |
+|---|---|---|
+| `NO_LABEL` | `label == null \|\| label === ''` AND `visible && !ariaHidden` | HIGH (WCAG 2.1 AA) |
+| `DEAD_HREF` | `hrefOrOnclick === '#' \|\| hrefOrOnclick === 'javascript:void(0)'` | MED |
+| `EMPTY_HANDLER` | Native `<button>` or `[role=button]` AND `onclick === ''` attribute AND not inside a `<form>` | MED |
+| `TABINDEX_POSITIVE` | `parseInt(tabindex,10) >= 1` | MED |
+| `TABINDEX_NEGATIVE_VISIBLE` | `tabindex === '-1'` AND `visible && !ariaHidden` (**R7: re-check after 500ms settle**) | MED |
+| `NO_FOCUS_STATE` | Focus probe (see I.4) returns no visible focus indicator | HIGH (WCAG 2.1 AA) |
+
+**R7 mitigation — TABINDEX_NEGATIVE_VISIBLE settle window.** Frameworks (Vue, React, Svelte) inject `tabindex` dynamically on mount. If the initial enumeration finds `tabindex === '-1'` on a visible element, wait 500ms (`browser_wait_for(time: 0.5)`) then re-run enumeration for that element only. If still `-1`, emit the finding. Otherwise, suppress — the framework injected the real value during mount.
+
+### I.4 Focus probe (NO_FOCUS_STATE)
+
+Per-element `browser_evaluate`. Cost is bounded — cap at **10 focus probes per page** (emit `focus_probe_capped` INFO finding with total count if exceeded).
+
+```js
+(selector) => {
+  const el = document.querySelector(selector);
+  if (!el) return {ok: false, reason: 'element-gone'};
+  el.focus();
+  const s = window.getComputedStyle(el);
+  const hasRing =
+    s.outlineWidth !== '0px' ||
+    s.boxShadow !== 'none' ||
+    el.matches(':focus-visible');
+  return {ok: true, hasRing, outlineWidth: s.outlineWidth, boxShadow: s.boxShadow};
+}
+```
+
+If `hasRing === false`, emit `NO_FOCUS_STATE`. If `ok === false`, the element disappeared between enumeration and probe (shadow-DOM timing, route transition) — emit `focus_probe_element_gone` INFO.
+
+<!-- Safe-click classifier + click execution fill via S7-003 (Wave 2). -->
+
+
 
 ---
 
@@ -315,7 +352,55 @@ Layers A + B are injected via `browser_evaluate` immediately after `browser_navi
 
 The count is `window.dataLayer.length` at inject time — those earlier entries are captured but lack the spy's timestamps.
 
-<!-- Registry schema + drain procedure fill via S7-006; drift + event_invariants via S7-007. -->
+### E.3 Registry schema — `analytics_event` lines
+
+Each captured event becomes one JSONL line in `docs/crawls/page-data-registry.jsonl`. Keyed by `(page, action_trigger)` — the trigger encodes what caused the fire.
+
+```jsonl
+{"ts":"<ISO>","role":"<role>","page":"<path>","label":"analytics_event","raw":"<JSON.stringify payload>","parsed":null,"hash":"<sha8 of sorted-key props>","selector":null,"tick":<n>,"detail":{"event_name":"<name>","layer":"dataLayer|beacon|network","action_trigger":"<trigger>","props":<object>}}
+```
+
+**`action_trigger` values** (finite set):
+
+| Value | When to use |
+|---|---|
+| `page_load` | Events captured in the drain before any safe-click (initial render) |
+| `click:<label>` | Events captured within 1s of a safe-click on an element with `<label>` |
+| `tab:<label>` | Tab-switch drain |
+| `scroll` | Reserved for future scroll-triggered-event support |
+| `timer:<ms>` | Reserved for future delayed-event support |
+| `manual` | Fallback when no action can be attributed |
+
+### E.4 Drain cadence
+
+Drain twice per page:
+1. **Initial drain** — after `browser_navigate` + 1s settle, drain with `action_trigger: "page_load"`. Captures page-view + any auto-fired init events.
+2. **Per-click drain** — after each safe-click (Phase INTERACTIVE § I.5), wait 1s, drain with `action_trigger: "click:<label>"`. Captures click-attributed events.
+
+Drain is non-destructive to the page — events have already reached their original transports:
+
+```js
+(() => {
+  const log = window.__auditEventLog || [];
+  window.__auditEventLog = [];
+  return log;
+})()
+```
+
+### E.5 Props hash (drift detection)
+
+Hash the props object with **key-sorted JSON** so prop order doesn't cause false drift:
+
+```bash
+# Given a props JSON object, compute the 8-char hash.
+HASH=$(printf '%s' "$PROPS_JSON" | jq --sort-keys -c . | (sha256sum 2>/dev/null || shasum -a 256) | cut -c1-8)
+```
+
+Write `hash` on the JSONL line. Phase 3 drift detection (see § E.6 — S7-007) groups events by `event_name` and flags differing hashes across pages.
+
+<!-- Cross-page drift reducer + event_invariants evaluator fill via S7-007 (Wave 2). -->
+
+
 
 ---
 
@@ -359,7 +444,95 @@ AUDIT_SUPERADMIN_EMAIL / AUDIT_SUPERADMIN_PASS
 
 ETA gate (R10) applies only to `full` (multi-role × all-pages × 2min/tick). Smoke and single-role are not gated — they are bounded under 1 hour by construction.
 
-<!-- Login + storageState + sentinel procedures fill via S7-010 (Wave 1). -->
+### R.3 Scripted login (default path)
+
+Default transition between roles: log out → navigate to login → fill credentials from env → submit → wait for success landmark. Reliable across all cookie types (HttpOnly, SameSite, Secure). ~5s per transition.
+
+```
+browser_navigate(baseUrl + "/login")
+browser_evaluate:
+  document.querySelector(SELECTORS.email).value = process.env.AUDIT_<ROLE>_EMAIL;
+  document.querySelector(SELECTORS.password).value = process.env.AUDIT_<ROLE>_PASS;
+  document.querySelector(SELECTORS.submit).click();
+browser_wait_for(text: SELECTORS.success_landmark, time: 5)
+```
+
+Selectors are overridable via `.ui-audit.json[login_flow]`:
+
+```json
+"login_flow": {
+  "login_path": "/login",
+  "email_selector":    "input[name=email]",
+  "password_selector": "input[name=password]",
+  "submit_selector":   "button[type=submit]",
+  "success_landmark":  "Dashboard",
+  "profile_path":      "/profile",
+  "profile_email_selector": "[data-user-email], .user-email"
+}
+```
+
+### R.4 storageState harvest + restore (opt-in fast path)
+
+Opt in via `--fast-role-switch` flag. Harvest after successful login:
+
+```js
+(() => ({
+  localStorage:   Object.fromEntries(Object.entries(localStorage)),
+  sessionStorage: Object.fromEntries(Object.entries(sessionStorage)),
+  cookies:        document.cookie,
+  harvested_at:   new Date().toISOString()
+}))()
+```
+
+Write the result to `.auth/<role>.json` (add `/.auth/` to `.gitignore`).
+
+Restore path:
+
+```
+browser_navigate(baseUrl)   # must be same-origin for cookie injection
+browser_evaluate: replay localStorage + sessionStorage via setItem loop;
+                  for each cookie pair: document.cookie = "k=v; path=/"
+```
+
+**Limitation:** `document.cookie = ...` only sets non-HttpOnly cookies. Session cookies from most real auth systems are HttpOnly and cannot be injected this way. If the post-restore sentinel (R.5) fails, fall back to scripted login automatically.
+
+### R.5 R9 sentinel check (MANDATORY)
+
+After every role transition (both scripted-login and storageState-restore paths), sentinel-check that the skill is actually logged in as the expected role:
+
+```
+browser_navigate(baseUrl + SELECTORS.profile_path)
+EMAIL = browser_evaluate:
+  document.querySelector(SELECTORS.profile_email_selector)?.textContent?.trim() || null
+assert EMAIL === process.env.AUDIT_<ROLE>_EMAIL
+```
+
+**On mismatch** (EMAIL !== expected) **or null**:
+- Emit finding `ROLE_SWITCH_FAILED` with severity CRITICAL
+- Record `{expected_role: <name>, observed_email: <masked-or-null>}`
+- **Abort the role's audit** — do not proceed to Phase 2 extraction for this role
+- Continue to the next role
+
+Anonymous role skips R.5 entirely.
+
+### R.6 Inter-role storage cleanup
+
+Before the next role's login, clear all persistent state to prevent session contamination (R9):
+
+```js
+(() => {
+  localStorage.clear();
+  sessionStorage.clear();
+  // Clear cookies by setting expired versions of every pair
+  document.cookie.split(';').forEach(c => {
+    const [name] = c.split('=').map(s => s.trim());
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+  });
+})()
+```
+
+Note: this clears same-origin non-HttpOnly cookies only. HttpOnly session cookies are cleared by the target app's logout flow (if the auth flow uses one). If the target app doesn't have a logout endpoint, the scripted-login re-auth in R.3 overwrites the session cookie on success.
+
 <!-- role_invariants evaluator fills via S7-011 (Wave 2). -->
 <!-- Role-leak scan fills via S7-012 (Wave 2). -->
 

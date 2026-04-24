@@ -46,6 +46,22 @@ Configured parent/child relationship: sum of declared child values != parent tot
 
 ---
 
+## Interactive-element checks (CAP-014 / E-010 / sprint-7)
+
+These are orthogonal to data-quality flags — they target interactive elements, not labeled values. Findings surface as `button_finding` registry lines. Full detection procedures in `skills/ui-audit/reference.md` § Phase INTERACTIVE § I.3.
+
+| Check | Severity | Section |
+|---|---|---|
+| `NO_LABEL` | HIGH | I.3 (WCAG 2.1 AA) |
+| `DEAD_HREF` | MED | I.3 |
+| `EMPTY_HANDLER` | MED | I.3 |
+| `TABINDEX_POSITIVE` | MED | I.3 |
+| `TABINDEX_NEGATIVE_VISIBLE` | MED | I.3 (R7 500ms settle) |
+| `NO_FOCUS_STATE` | HIGH | I.4 (WCAG 2.1 AA) |
+| `CLICK_ERROR` | CRITICAL | § I.5 (console/network errors within 1s of safe-click) |
+
+---
+
 ## Integration with reporter
 
 The Phase 6 reporter (skills/ui-audit/reference.md § REPORT) consumes quality-flag findings as:

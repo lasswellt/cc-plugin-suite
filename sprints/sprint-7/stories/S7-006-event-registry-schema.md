@@ -3,7 +3,7 @@ id: S7-006
 title: "Event registry schema + drain → append + action-trigger keying"
 epic: E-011
 capability: CAP-015
-status: planned
+status: done
 priority: P0
 points: 2
 depends_on: [S7-005]

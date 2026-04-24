@@ -3,7 +3,7 @@ id: S7-010
 title: "Scripted login + storageState harvest/restore + R9 session-contamination sentinel"
 epic: E-012
 capability: CAP-016
-status: planned
+status: done
 priority: P0
 points: 3
 depends_on: [S7-009]

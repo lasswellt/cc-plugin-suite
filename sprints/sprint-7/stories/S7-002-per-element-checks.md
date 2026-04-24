@@ -3,7 +3,7 @@ id: S7-002
 title: "6 per-element checks (NO_LABEL, DEAD_HREF, EMPTY_HANDLER, TABINDEX_POSITIVE, TABINDEX_NEGATIVE_VISIBLE, NO_FOCUS_STATE) + R7 settle window"
 epic: E-010
 capability: CAP-014
-status: planned
+status: done
 priority: P0
 points: 2
 depends_on: [S7-001]
