@@ -262,7 +262,7 @@ Reads `.ui-audit.json[invariants]`. For each invariant, fetches the `parsed` val
 
 ```bash
 jq --slurpfile cfg .ui-audit.json --slurpfile reg "${SESSION_TMP_DIR}/reduced.json" -n '
-  def lookup(src; $reg): $reg[0] | map(select(.page == src.page and .label == src.key)) | first;
+  def lookup($src; $r): $r | map(select(.page == $src.page and .label == $src.key)) | first;
   def cmp_equal($a; $b; $tol): ($a != null and $b != null) and (($a - $b) | fabs) <= $tol;
   def cmp_gte($a; $b; $tol):   ($a != null and $b != null) and ($a + $tol) >= $b;
   def cmp_lte($a; $b; $tol):   ($a != null and $b != null) and ($a - $tol) <= $b;
@@ -273,7 +273,7 @@ jq --slurpfile cfg .ui-audit.json --slurpfile reg "${SESSION_TMP_DIR}/reduced.js
       description,
       check,
       tolerance: (.tolerance // 0),
-      values: (.sources | map({ page, key, obs: lookup(.; [$reg]) })),
+      values: (.sources | map({ page, key, obs: lookup(.; $reg[0]) })),
     })
   | map(
       . as $inv |

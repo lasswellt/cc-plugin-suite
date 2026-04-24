@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<!-- Fixture for skills/ui-audit/tests/run-fixture.sh.
+     3 hash-routed pages, each exposing 2 labeled values via data-metric + data-badge.
+     Intentional mismatch on open_invoices between /#/dashboard and /#/invoices to trigger INV-001. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ui-audit fixture</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; }
+    section { display: none; }
+    section:target { display: block; }
+    nav a { margin-right: 1rem; }
+    .value, .revenue-total, .badge { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="#/dashboard">Dashboard</a>
+    <a href="#/invoices">Invoices</a>
+    <a href="#/billing">Billing</a>
+  </nav>
+
+  <!-- Default: show dashboard on load if no hash -->
+  <section id="/dashboard" style="display:block">
+    <h1>Dashboard</h1>
+    <div>
+      Open invoices:
+      <span data-metric="open-invoices"><span class="value">47</span></span>
+    </div>
+    <div>
+      Plan: <span data-user-plan>Pro</span>
+    </div>
+  </section>
+
+  <section id="/invoices">
+    <h1>Invoices</h1>
+    <div class="invoice-list">
+      <!-- Intentional mismatch: dashboard says 47, this badge says 46. -->
+      <span class="badge">46</span>
+    </div>
+    <div>Plan: <span data-user-plan>Pro</span></div>
+  </section>
+
+  <section id="/billing">
+    <h1>Billing</h1>
+    <div>Plan: <span data-user-plan>Pro</span></div>
+    <div>Revenue total: <span class="revenue-total">$12,340</span></div>
+  </section>
+
+  <script>
+    // Hide default section when a hash is present
+    function refresh() {
+      const hash = location.hash || '#/dashboard';
+      document.querySelectorAll('section').forEach(s => {
+        s.style.display = (s.id === hash.slice(1)) ? 'block' : 'none';
+      });
+    }
+    window.addEventListener('hashchange', refresh);
+    refresh();
+  </script>
+</body>
+</html>

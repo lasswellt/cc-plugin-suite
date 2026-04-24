@@ -1,0 +1,44 @@
+{
+  "_comment": "Fixture config for skills/ui-audit/tests/run-fixture.sh. Declares 6 labels across 3 pages + 1 invariant that MUST fail (intentional 47 vs 46 mismatch on open_invoices).",
+  "baseUrl": "http://localhost:18765",
+  "pages": {
+    "/#/dashboard": {
+      "open_invoices": { "selector": "[data-metric='open-invoices'] .value", "type": "number" },
+      "plan_tier":     { "selector": "[data-user-plan]",                      "type": "text" }
+    },
+    "/#/invoices": {
+      "open_invoices": { "selector": ".invoice-list .badge",                  "type": "count" },
+      "plan_tier":     { "selector": "[data-user-plan]",                      "type": "text" }
+    },
+    "/#/billing": {
+      "plan_tier":     { "selector": "[data-user-plan]",                      "type": "text" },
+      "revenue_total": { "selector": ".revenue-total",                        "type": "currency" }
+    }
+  },
+  "invariants": [
+    {
+      "id": "INV-001",
+      "description": "Open-invoice count matches dashboard + invoices (MUST FAIL in fixture — 47 vs 46).",
+      "sources": [
+        {"page": "/#/dashboard", "key": "open_invoices"},
+        {"page": "/#/invoices",  "key": "open_invoices"}
+      ],
+      "check": "equal",
+      "tolerance": 0
+    },
+    {
+      "id": "INV-002",
+      "description": "Plan tier matches across all pages (MUST PASS in fixture — all three say 'Pro').",
+      "sources": [
+        {"page": "/#/dashboard", "key": "plan_tier"},
+        {"page": "/#/invoices",  "key": "plan_tier"},
+        {"page": "/#/billing",   "key": "plan_tier"}
+      ],
+      "check": "equal",
+      "tolerance": 0
+    }
+  ],
+  "event_invariants": [],
+  "role_invariants": [],
+  "role_leak_patterns": []
+}

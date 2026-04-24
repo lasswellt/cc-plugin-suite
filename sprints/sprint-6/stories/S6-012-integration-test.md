@@ -3,7 +3,7 @@ id: S6-012
 title: "Integration test — fixture page + seeded labels + e2e verification"
 epic: E-008
 capability: CAP-009
-status: planned
+status: done
 priority: P0
 points: 2
 depends_on: [S6-007, S6-008, S6-009, S6-011]
