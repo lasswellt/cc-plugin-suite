@@ -21,6 +21,8 @@
     <a href="#/billing">Billing</a>
     <a href="#/interactive">Interactive</a>
     <a href="#/events">Events</a>
+    <a href="#/quality">Quality</a>
+    <a href="#/heuristic">Heuristic</a>
   </nav>
 
   <!-- Default: show dashboard on load if no hash -->
@@ -59,6 +61,42 @@
     <a id="dead-link" href="#">dead</a>
     <input id="bad-tabindex" type="text" tabindex="5" aria-label="tab5">
     <a id="destructive-link" href="/delete/all" class="danger">Delete everything</a>
+  </section>
+
+  <!-- Quality-flag fixture (S8-009). Three seeded triggers:
+       - TBD placeholder → PLACEHOLDER (configured pattern)
+       - static 0 paired with seed history → STALE_ZERO
+       - 3 row_total=100 + footer_total=301 (off-by-one) → BROKEN_TOTAL -->
+  <section id="/quality">
+    <h1>Quality</h1>
+    <div>Status: <span class="tbd">TBD</span></div>
+    <div>Open tickets: <span class="stale-zero">0</span></div>
+    <table class="totals-table">
+      <tbody>
+        <tr><td>Row 1</td><td class="row-total">100</td></tr>
+        <tr><td>Row 2</td><td class="row-total">100</td></tr>
+        <tr><td>Row 3</td><td class="row-total">100</td></tr>
+      </tbody>
+      <tfoot>
+        <tr><td>Total</td><td class="footer-total">301</td></tr>
+      </tfoot>
+    </table>
+  </section>
+
+  <!-- Heuristic-category fixture (S8-009). Cat 16 sub-checks:
+       - numeric table column with NO tabular-nums → NUMERIC_COLUMN_NOT_TABULAR
+       - written-out count in a paragraph → WRITTEN_OUT_COUNT -->
+  <section id="/heuristic">
+    <h1>Heuristic</h1>
+    <p>You have three items in your cart.</p>
+    <table class="non-tabular">
+      <thead><tr><th>Name</th><th>Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Alice</td><td>1234</td></tr>
+        <tr><td>Bob</td><td>42</td></tr>
+        <tr><td>Carol</td><td>999</td></tr>
+      </tbody>
+    </table>
   </section>
 
   <!-- Events fixture (S7-008). Three inline dataLayer pushes across sections with:

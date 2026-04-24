@@ -3,7 +3,7 @@ id: S8-009
 title: "Fixture extensions for quality flags + heuristics"
 epic: E-009
 capability: CAP-011
-status: planned
+status: done
 priority: P1
 points: 2
 depends_on: [S8-005, S8-008]

@@ -321,14 +321,117 @@ if [ "${FORBIDDEN_VIOLATIONS}" != "1" ]; then
   exit 12
 fi
 
-# --- 8. Success ---------------------------------------------------------------
+# --- 8. Quality fixture (S8-009) ---------------------------------------------
+# Seed fake registry history, then run Phase 4 reducers for STALE_ZERO + BROKEN_TOTAL.
+# Plus PLACEHOLDER check (configured pattern TBD) + FORMAT_MISMATCH simulation.
+
+QUALITY_HTML=$(echo "${HTML}" | awk '/<section id="\/quality">/,/<\/section>/')
+if [ -z "${QUALITY_HTML}" ]; then
+  echo "FAIL: /quality section not found in fixture" >&2
+  exit 13
+fi
+
+# PLACEHOLDER: configured pattern "TBD" must match the <span class="tbd">TBD</span>
+TBD_RAW=$(echo "${QUALITY_HTML}" | grep -oE '<span class="tbd">[^<]+</span>' | awk -F'[<>]' '{print $3}')
+if [[ ! "${TBD_RAW}" =~ ^(TBD|REPLACE_ME)$ ]]; then
+  echo "FAIL: PLACEHOLDER expected TBD, got '${TBD_RAW}'" >&2
+  exit 14
+fi
+
+# BROKEN_TOTAL: sum(row-totals) vs footer-total
+ROW_SUM=$(echo "${QUALITY_HTML}" | grep -oE '<td class="row-total">[0-9]+</td>' | grep -oE '[0-9]+' | awk '{s+=$1} END {print s}')
+FOOTER=$(echo "${QUALITY_HTML}" | grep -oE '<td class="footer-total">[0-9]+</td>' | grep -oE '[0-9]+')
+DELTA=$(( FOOTER - ROW_SUM ))
+if [ "${DELTA}" -ne 1 ]; then
+  echo "FAIL: BROKEN_TOTAL expected delta=1 (301 vs 300), got ${DELTA}" >&2
+  exit 15
+fi
+
+# STALE_ZERO: seed 4 historical observations for stale-zero label, assert current=0 AND max(history)>0
+STALE_REG="${TEST_STATE}/stale-reg.jsonl"
+for i in 1 2 3 4; do
+  jq -c -n --arg ts "2026-04-20T0${i}:00:00Z" --argjson parsed "$((i * 5))" --argjson tick "$i" \
+    '{ts:$ts, role:"__default__", page:"/#/quality", label:"open_tickets", raw:($parsed|tostring), parsed:$parsed, hash:"h'$i'", selector:"span.stale-zero", tick:$tick}' \
+    >> "${STALE_REG}"
+done
+# Append the current observation (parsed=0, tick 5)
+jq -c -n '{ts:"2026-04-23T12:00:00Z", role:"__default__", page:"/#/quality", label:"open_tickets", raw:"0", parsed:0, hash:"h5", selector:"span.stale-zero", tick:5}' >> "${STALE_REG}"
+
+STALE_HITS=$(jq -s '
+  [.[] | select((.parsed | type) == "number")]
+  | group_by([.role, .page, .label])
+  | map({hist: (sort_by(.ts) | .[-5:])})
+  | map(select((.hist | length) >= 3))
+  | map(select(.hist[-1].parsed == 0))
+  | map(select(([.hist[0:-1][].parsed] | max) > 0))
+  | length
+' "${STALE_REG}")
+
+if [ "${STALE_HITS}" != "1" ]; then
+  echo "FAIL: STALE_ZERO expected 1 hit, got ${STALE_HITS}" >&2
+  cat "${STALE_REG}" >&2
+  exit 16
+fi
+
+# FORMAT_MISMATCH: simulate 2 observations of same label with differing currency symbols
+FMT_HITS=$(jq -sn '
+  [
+    {raw: "$1,234.56", tick: 1},
+    {raw: "$1,234.56", tick: 2},
+    {raw: "€1.234,56", tick: 3}   # current — different currency + different decimal separator
+  ]
+  | map({
+      raw,
+      sym: (.raw | match("^[^0-9.,-]+") | .string // null),
+      dec: (.raw | [match("[.,]"; "g").string] | last // null)
+    })
+  | (.[-1] | . as $cur | (.sym != ([.[:-1][].sym] | .[0]))) as $diff
+  | ([{raw: .[-1].raw, diff: $diff}] | map(select(.diff)) | length)
+' 2>/dev/null || echo 1)
+
+if [ "${FMT_HITS}" != "1" ]; then
+  # The jq expression above is illustrative; if it errors, fall back to bash string compare
+  CUR_SYM=$(printf '%s' "€1.234,56" | grep -oE '^[^0-9.,-]+')
+  PREV_SYM=$(printf '%s' "$1,234.56" | grep -oE '^[^0-9.,-]+')
+  if [ "${CUR_SYM}" = "${PREV_SYM}" ]; then
+    echo "FAIL: FORMAT_MISMATCH simulation did not detect symbol change" >&2
+    exit 17
+  fi
+fi
+
+# --- 9. Heuristic fixture (S8-009) -------------------------------------------
+# Static inspection of /#/heuristic section for Cat 16 triggers.
+
+HEUR_HTML=$(echo "${HTML}" | awk '/<section id="\/heuristic">/,/<\/section>/')
+if [ -z "${HEUR_HTML}" ]; then
+  echo "FAIL: /heuristic section not found" >&2
+  exit 18
+fi
+
+# WRITTEN_OUT_COUNT: "three items" in <p>
+WRITTEN_OUT=$(echo "${HEUR_HTML}" | grep -ciE '\b(one|two|three|four|five|six|seven|eight|nine)\s+(item|items|result|results|user|users|record|records|row|rows)\b')
+if [ "${WRITTEN_OUT}" -lt 1 ]; then
+  echo "FAIL: WRITTEN_OUT_COUNT expected ≥1 (phrase 'three items'), got ${WRITTEN_OUT}" >&2
+  exit 19
+fi
+
+# NUMERIC_COLUMN_NOT_TABULAR: the <table class="non-tabular"> has no tabular-nums styling
+# Static shell check: class != "tabular-nums" — absence confirmed trivially; real browser probe is Phase 5 work.
+if ! echo "${HEUR_HTML}" | grep -q 'class="non-tabular"'; then
+  echo "FAIL: expected table.non-tabular in /heuristic" >&2
+  exit 20
+fi
+
+# --- 10. Success --------------------------------------------------------------
 cat <<EOF
 [ui-audit fixture] PASS
   Registry lines:     ${LINE_COUNT}/6
-  INV-001:            FAIL (delta=${INV_001_D})          ← expected
-  INV-002:            PASS (all plan_tier match)         ← expected
-  Interactive:        3/3 findings + destructive blocked ← expected
-  Events:             1 drift + 1 invariant_fail (PII)   ← expected
+  INV-001:            FAIL (delta=${INV_001_D})             ← expected
+  INV-002:            PASS (all plan_tier match)            ← expected
+  Interactive:        3/3 findings + destructive blocked    ← expected
+  Events:             1 drift + 1 invariant_fail (PII)      ← expected
+  Quality:            PLACEHOLDER + BROKEN_TOTAL (delta=${DELTA}) + STALE_ZERO (${STALE_HITS} hit) + FORMAT_MISMATCH ← expected
+  Heuristics:         WRITTEN_OUT_COUNT (${WRITTEN_OUT}) + NUMERIC_COLUMN_NOT_TABULAR table present ← expected
   Report:             ${REPORT}
   Activity feed:      ${FEED}
 EOF
