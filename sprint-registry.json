@@ -27,7 +27,7 @@
         "E-004"
       ],
       "phase": 2,
-      "phase_name": "Runtime Propagation \u2014 Write-Site Directive + Review Format",
+      "phase_name": "Runtime Propagation — Write-Site Directive + Review Format",
       "story_count": 4,
       "stories": [
         "S3-001",
@@ -112,7 +112,7 @@
         "E-002"
       ],
       "phase": 1,
-      "phase_name": "Foundation \u2014 Directive Coverage + File Compression",
+      "phase_name": "Foundation — Directive Coverage + File Compression",
       "story_count": 5,
       "stories": [
         "S2-001",
@@ -229,6 +229,39 @@
       },
       "auto_injected_entries": 0,
       "absorption_complete": true
+    },
+    {
+      "number": 6,
+      "status": "planned",
+      "planned_date": "2026-04-24T00:44:10Z",
+      "epics": [
+        "E-008"
+      ],
+      "capabilities": [
+        "CAP-008",
+        "CAP-009",
+        "CAP-010",
+        "CAP-013"
+      ],
+      "story_count": 13,
+      "stories": [
+        "S6-001",
+        "S6-002",
+        "S6-003",
+        "S6-004",
+        "S6-005",
+        "S6-006",
+        "S6-007",
+        "S6-008",
+        "S6-009",
+        "S6-010",
+        "S6-011",
+        "S6-012",
+        "S6-013"
+      ],
+      "ac_coverage": "23/23",
+      "planner_session": "sprint-plan-4e3c67f0",
+      "carry_forward_from_sprint_5": []
     }
   ]
 }

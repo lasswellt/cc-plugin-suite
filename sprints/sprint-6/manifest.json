@@ -1,0 +1,37 @@
+{
+  "sprint": 6,
+  "status": "planned",
+  "created": "2026-04-24T00:35:24Z",
+  "epics": [
+    "E-008"
+  ],
+  "capabilities": [
+    "CAP-008",
+    "CAP-009",
+    "CAP-010",
+    "CAP-013"
+  ],
+  "carry_forward": [],
+  "story_count": 13,
+  "planner_session": "sprint-plan-4e3c67f0",
+  "stories": [
+    "S6-001",
+    "S6-002",
+    "S6-003",
+    "S6-004",
+    "S6-005",
+    "S6-006",
+    "S6-007",
+    "S6-008",
+    "S6-009",
+    "S6-010",
+    "S6-011",
+    "S6-012",
+    "S6-013"
+  ],
+  "ac_coverage": "23/23",
+  "planned_date": "2026-04-24T00:44:10Z",
+  "waived_ac_count": 0,
+  "spidr_splits": [],
+  "registry_entries_touched": []
+}
