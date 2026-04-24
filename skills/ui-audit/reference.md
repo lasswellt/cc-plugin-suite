@@ -925,6 +925,98 @@ NULL_TRANSITION is detectable at `len(hist) >= 2`.
 
 <!-- Phase 5 coordinator here. Rule sources in PATTERNS.md. Full body lands in E-009. For sprint-6: no-op stub — emits INFO "heuristics not yet implemented — see E-009". -->
 
+## Phase 7 — LOOP MATRIX (role × page cadence)
+
+Active when mode is `--loop`. One `(role, page)` pair per tick. State-machine per tick:
+
+```
+LOAD_AUTH[current_role]
+  → NAVIGATE[current_page]
+  → EXTRACT        (Phase 2)
+  → QUALITY        (Phase 4 inline flags)
+  → EVENT_DRAIN    (Phase EVENTS § E.4 — post-page drain only, no clicks in pure loop)
+  → INVARIANTS     (Phase 3 numeric + Phase EVENTS § E.6/E.7 event + Phase ROLE § R.7 role)
+  → WRITE[role,page]  (registry lines)
+  → ADVANCE CURSOR
+  → NEXT
+```
+
+### 7.1 `latest-tick.json` extension — `ui_audit_matrix` block
+
+Top-level `ui_audit_matrix` alongside `page_data_registry`:
+
+```json
+"ui_audit_matrix": {
+  "mode": "role_matrix | single_role | single_page",
+  "pass": 1,
+  "current_role": "<name>",
+  "current_page_idx": 4,
+  "pages": ["<path>", ...],
+  "roles_complete": ["anonymous", "viewer"],
+  "roles_pending": ["admin", "member", "superadmin"],
+  "matrix_started": "<ISO-8601>",
+  "eta_seconds": 12000,
+  "matrix_idle": false
+}
+```
+
+Persisted at the END of each tick so `/loop`'s next fresh context can resume. `matrix_idle: true` signals the 2-pass cycle is complete — subsequent ticks no-op.
+
+### 7.2 ETA gate (R10)
+
+On `full` mode entry:
+
+```bash
+ROLES_ACTIVE=$(count roles with env vars present)
+PAGES=$(len .ui-audit.json[pages])
+ETA_SECONDS=$((ROLES_ACTIVE * PAGES * 120))
+ETA_MIN=$((ETA_SECONDS / 60))
+
+echo "[ui-audit] ETA for full matrix: ${ROLES_ACTIVE} roles × ${PAGES} pages × 2min = ${ETA_MIN} minutes"
+
+if [ "${ETA_SECONDS}" -gt 3600 ]; then
+  if [ "${UI_AUDIT_YES:-}" = "1" ] || [ "${UI_AUDIT_CI:-}" = "1" ] \
+     || [ "${CLAUDE_CODE_AUTONOMY:-}" = "high" ] || [ "${CLAUDE_CODE_AUTONOMY:-}" = "full" ]; then
+    echo "[ui-audit] Proceeding (--yes or --ci set, or autonomy=high/full)"
+  else
+    echo "[ui-audit] ETA exceeds 1 hour. Pass --yes for interactive, --ci for automation."
+    exit 1
+  fi
+fi
+```
+
+`--yes` / `--ci` are parsed in SKILL.md Phase 0.1 and exported to the shell env before reference.md procedures run. They are equivalent except for audit trail: `--ci` also writes one `ci_run` activity-feed event at start.
+
+### 7.3 2-pass termination
+
+- **Pass 1** (`ui_audit_matrix.pass = 1`): seeds the registry. Every `(role, page)` visited once. FLAPPING is not evaluable (needs ≥3 observations) — skip that classifier.
+- **Pass 2** (`ui_audit_matrix.pass = 2`): re-visits every pair to detect drift. Phase 3 FLAPPING/STALE now has enough history to classify.
+- **After pass 2**: set `matrix_idle: true`. Subsequent ticks read this field first and exit immediately with `matrix_idle` log event. Re-running requires deleting `ui_audit_matrix` from `latest-tick.json` (documented recovery step).
+
+### 7.4 Cursor advancement
+
+```
+# Pseudocode
+if (current_page_idx + 1) < len(pages):
+  current_page_idx += 1
+else:
+  current_page_idx = 0
+  roles_complete.append(current_role)
+  current_role = roles_pending.shift()
+  if current_role === undefined:
+    if pass < 2:
+      pass += 1
+      current_role = roles_complete[0]
+      roles_pending = roles_complete[1:]
+      roles_complete = []
+    else:
+      matrix_idle = true
+```
+
+Each tick writes `latest-tick.json` BEFORE exiting so interruption mid-tick doesn't lose the cursor (pairs may be re-run but nothing is silently skipped).
+
+---
+
 ## Phase 6 — REPORT
 
 Aggregates every finding emitted by Phases 3 (divergence + invariant + tick-diff), 4 (quality flags), and 5 (heuristics — E-009 territory but this reporter accepts its findings today). Writes markdown + stdout + activity-feed completion event.

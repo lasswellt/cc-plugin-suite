@@ -3,7 +3,7 @@ id: S7-013
 title: "Loop matrix cadence — (role,page) tick cycle + latest-tick.json extension + R10 ETA/--ci gating"
 epic: E-012
 capability: CAP-016
-status: planned
+status: done
 priority: P0
 points: 3
 depends_on: [S7-009, S7-010, S7-011, S7-012]

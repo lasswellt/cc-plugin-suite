@@ -226,12 +226,109 @@ jq -c -n --arg ts "${TS}" --arg sid fixture \
 
 tail -1 "${FEED}" | jq -e '.event == "invariant_fail"' >/dev/null || { echo "FAIL: activity-feed did not log invariant_fail" >&2; exit 7; }
 
-# --- 6. Success ---------------------------------------------------------------
+# --- 6. Interactive-element fixture (S7-004) ---------------------------------
+# Parse the /#/interactive section and apply the 4 static checks from reference.md § I.3.
+# Assertions: exactly 1×NO_LABEL, 1×DEAD_HREF, 1×TABINDEX_POSITIVE, and destructive link isSafe=false.
+
+INTERACTIVE_HTML=$(awk '/<section id="\/interactive">/,/<\/section>/' /dev/stdin <<<"${HTML}")
+if [ -z "${INTERACTIVE_HTML}" ]; then
+  echo "FAIL: /interactive section not found in fixture" >&2
+  exit 8
+fi
+
+NO_LABEL_COUNT=$(echo "${INTERACTIVE_HTML}" | grep -cE '<button[^>]*></button>' || true)
+DEAD_HREF_COUNT=$(echo "${INTERACTIVE_HTML}" | grep -cE 'href="#"' || true)
+TABINDEX_POSITIVE_COUNT=$(echo "${INTERACTIVE_HTML}" | grep -cE 'tabindex="[1-9]' || true)
+DESTRUCTIVE_REGEX='delete|remove|logout|sign.?out|cancel|submit|pay|confirm|save|update|apply|publish|send|subscribe|unsubscribe|create|add|archive|disable|revoke|destroy|drop|purge|reset|terminate'
+DESTRUCTIVE_COUNT=$(echo "${INTERACTIVE_HTML}" | grep -ciE "(>(${DESTRUCTIVE_REGEX})[^<]*<|href=\"[^\"]*/(logout|delete|remove|signout|destroy)[^\"]*\")" || true)
+
+if [ "${NO_LABEL_COUNT}" -ne 1 ]; then
+  echo "FAIL: interactive expected 1 NO_LABEL, got ${NO_LABEL_COUNT}" >&2
+  exit 9
+fi
+if [ "${DEAD_HREF_COUNT}" -ne 1 ]; then
+  echo "FAIL: interactive expected 1 DEAD_HREF, got ${DEAD_HREF_COUNT}" >&2
+  exit 9
+fi
+if [ "${TABINDEX_POSITIVE_COUNT}" -ne 1 ]; then
+  echo "FAIL: interactive expected 1 TABINDEX_POSITIVE, got ${TABINDEX_POSITIVE_COUNT}" >&2
+  exit 9
+fi
+if [ "${DESTRUCTIVE_COUNT}" -lt 1 ]; then
+  echo "FAIL: destructive classifier did not detect the 'Delete everything' link" >&2
+  exit 9
+fi
+
+# --- 7. Events fixture (S7-008) ----------------------------------------------
+# Parse the #event-fires <script> block, synthesize 3 analytics_event registry lines,
+# assert 1×event_drift (page_view differing hashes) + 1×event_invariant_fail (user_email forbidden).
+
+EVENTS_SCRIPT=$(echo "${HTML}" | awk '/<script id="event-fires">/,/<\/script>/')
+if [ -z "${EVENTS_SCRIPT}" ]; then
+  echo "FAIL: #event-fires script not found in fixture" >&2
+  exit 10
+fi
+
+EVENT_REG="${TEST_STATE}/event-registry.jsonl"
+hash_props() {
+  printf '%s' "$1" | jq --sort-keys -c . 2>/dev/null | (sha256sum 2>/dev/null || shasum -a 256) | cut -c1-8
+}
+
+# Emit 3 registry lines matching the 3 fixture pushes
+EMIT_EVENT() {
+  local page="$1" event_name="$2" props_json="$3"
+  local hash; hash=$(hash_props "${props_json}")
+  jq -c -n \
+    --arg ts "${TS}" --arg role __default__ --arg page "${page}" \
+    --arg raw "${props_json}" --arg hash "${hash}" \
+    --arg ev "${event_name}" --argjson props "${props_json}" \
+    '{ts:$ts, role:$role, page:$page, label:"analytics_event", raw:$raw, parsed:null, hash:$hash, selector:null, tick:1, detail:{event_name:$ev, layer:"dataLayer", action_trigger:"page_load", props:$props}}' \
+    >> "${EVENT_REG}"
+}
+
+EMIT_EVENT "/events-a" "page_view" '{"page_path":"/events-a","page_title":"Events A"}'
+EMIT_EVENT "/events-b" "page_view" '{"page_path":"/events-b","page_title":"Events B","user_email":"leaked@example.com"}'
+EMIT_EVENT "/events"   "cta_click" '{"cta_label":"Upgrade","cta_location":"hero"}'
+
+# Drift detection (from reference.md § E.6): page_view fires on 2 pages with differing hashes → 1 drift.
+DRIFT=$(jq -s '
+  [.[] | select(.label == "analytics_event")]
+  | group_by(.detail.event_name)
+  | map({event_name: .[0].detail.event_name,
+         pages: (group_by(.page) | map(max_by(.ts)) | map({page, hash}))})
+  | map(select(.pages | length > 1))
+  | map(select((.pages | map(.hash) | unique | length) > 1))
+  | length
+' "${EVENT_REG}")
+
+if [ "${DRIFT}" != "1" ]; then
+  echo "FAIL: expected 1 event_drift (page_view /events-a vs /events-b), got ${DRIFT}" >&2
+  cat "${EVENT_REG}" >&2
+  exit 11
+fi
+
+# event_invariant evaluation for EV-001 (required: page_path+page_title; forbidden: user_email).
+# Manually enumerate the 2 page_view events and assert exactly 1 has user_email (the violation).
+FORBIDDEN_VIOLATIONS=$(jq -s '
+  [.[] | select(.label=="analytics_event" and .detail.event_name=="page_view")]
+  | map(select(.detail.props | has("user_email")))
+  | length
+' "${EVENT_REG}")
+
+if [ "${FORBIDDEN_VIOLATIONS}" != "1" ]; then
+  echo "FAIL: expected 1 event_invariant_fail (user_email forbidden on /events-b), got ${FORBIDDEN_VIOLATIONS}" >&2
+  cat "${EVENT_REG}" >&2
+  exit 12
+fi
+
+# --- 8. Success ---------------------------------------------------------------
 cat <<EOF
 [ui-audit fixture] PASS
   Registry lines:     ${LINE_COUNT}/6
-  INV-001:            FAIL (delta=${INV_001_D})   ← expected
-  INV-002:            PASS (all plan_tier match)  ← expected
+  INV-001:            FAIL (delta=${INV_001_D})          ← expected
+  INV-002:            PASS (all plan_tier match)         ← expected
+  Interactive:        3/3 findings + destructive blocked ← expected
+  Events:             1 drift + 1 invariant_fail (PII)   ← expected
   Report:             ${REPORT}
   Activity feed:      ${FEED}
 EOF

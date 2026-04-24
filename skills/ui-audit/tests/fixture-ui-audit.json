@@ -38,7 +38,15 @@
       "tolerance": 0
     }
   ],
-  "event_invariants": [],
+  "event_invariants": [
+    {
+      "id": "EV-001",
+      "event_name": "page_view",
+      "required_props": ["page_path", "page_title"],
+      "forbidden_props": ["user_email"],
+      "scope": "all_pages"
+    }
+  ],
   "role_invariants": [],
   "role_leak_patterns": []
 }

@@ -19,6 +19,8 @@
     <a href="#/dashboard">Dashboard</a>
     <a href="#/invoices">Invoices</a>
     <a href="#/billing">Billing</a>
+    <a href="#/interactive">Interactive</a>
+    <a href="#/events">Events</a>
   </nav>
 
   <!-- Default: show dashboard on load if no hash -->
@@ -46,6 +48,35 @@
     <h1>Billing</h1>
     <div>Plan: <span data-user-plan>Pro</span></div>
     <div>Revenue total: <span class="revenue-total">$12,340</span></div>
+  </section>
+
+  <!-- Interactive-element fixture (S7-004). Exactly 5 elements with known issues:
+       1 clean baseline, 1 NO_LABEL, 1 DEAD_HREF, 1 TABINDEX_POSITIVE, 1 destructive (MUST NOT click). -->
+  <section id="/interactive">
+    <h1>Interactive</h1>
+    <button id="clean-btn" aria-label="Click me">Click me</button>
+    <button id="unlabeled-btn"></button>
+    <a id="dead-link" href="#">dead</a>
+    <input id="bad-tabindex" type="text" tabindex="5" aria-label="tab5">
+    <a id="destructive-link" href="/delete/all" class="danger">Delete everything</a>
+  </section>
+
+  <!-- Events fixture (S7-008). Three inline dataLayer pushes across sections with:
+       - intentional drift: page_view fires on /events-a and /events-b with differing props
+       - forbidden prop leak: /events-b includes user_email
+       - clean: cta_click with required cta_label + cta_location -->
+  <section id="/events">
+    <h1>Events fixture — synthesized pushes</h1>
+    <p>Loading this section triggers three <code>window.dataLayer.push</code> calls visible to the audit simulator.</p>
+    <script id="event-fires">
+      window.dataLayer = window.dataLayer || [];
+      // Page A: clean page_view (baseline)
+      window.dataLayer.push({event: "page_view", page_path: "/events-a", page_title: "Events A"});
+      // Page B: same event name, different props (drift) + forbidden user_email (PII leak)
+      window.dataLayer.push({event: "page_view", page_path: "/events-b", page_title: "Events B", user_email: "leaked@example.com"});
+      // Clean cta_click (baseline for event_invariants PASS)
+      window.dataLayer.push({event: "cta_click", cta_label: "Upgrade", cta_location: "hero"});
+    </script>
   </section>
 
   <script>
