@@ -415,7 +415,7 @@ MUST appear in every `skills/*/reference.md` that contains an agent-prompt templ
 Audit command (sprint-review runs this in Phase 3.6):
 
 ```bash
-EXPECTED=7  # 7 UNSAFE reference.md files known to carry agent prompts
+EXPECTED=8  # UNSAFE reference.md files known to carry agent prompts (7 core + ui-audit/reference.md added in sprint-8)
 PRESENT=$(grep -l 'OUTPUT STYLE: terse-technical per /_shared/terse-output.md\|OUTPUT STYLE: lite per /_shared/terse-output.md\|OUTPUT STYLE: full per /_shared/terse-output.md\|OUTPUT STYLE: ultra per /_shared/terse-output.md' skills/*/reference.md | wc -l)
 [ "$PRESENT" -ge "$EXPECTED" ] || echo "Invariant 5 FAIL: $PRESENT / $EXPECTED snippets present"
 ```
