@@ -3,7 +3,7 @@ id: S6-011
 title: "Phase 6 REPORTER — ui-audit-report.md + stdout + activity-feed"
 epic: E-008
 capability: CAP-013
-status: planned
+status: done
 priority: P0
 points: 2
 depends_on: [S6-004, S6-008, S6-009, S6-010]

@@ -407,7 +407,133 @@ NULL_TRANSITION is detectable at `len(hist) >= 2`.
 
 ## Phase 6 — REPORT
 
-<!-- Procedures filled in by S6-011 (wave 6). -->
+Aggregates every finding emitted by Phases 3 (divergence + invariant + tick-diff), 4 (quality flags), and 5 (heuristics — E-009 territory but this reporter accepts its findings today). Writes markdown + stdout + activity-feed completion event.
+
+### 6.1 Collect findings
+
+Findings are written into the same `docs/crawls/page-data-registry.jsonl` file as observations; the reducer filters them out by `label` (see § 3.1). For the report, we do the inverse — select finding lines only, grouped by severity.
+
+```bash
+jq -s '
+  [.[] | select(.label == "invariant_fail"
+              or .label == "cross-page-divergence"
+              or .label == "tick_diff"
+              or .label == "quality_flag"
+              or .label == "heuristic")]
+  | group_by(.detail.severity // "INFO")
+' docs/crawls/page-data-registry.jsonl > "${SESSION_TMP_DIR}/findings-by-severity.json"
+```
+
+### 6.2 Compute severity defaults (sprint-6 baseline)
+
+Reporter maps findings without explicit `detail.severity` using this table. Producers may override.
+
+| Finding source | Label | Default severity |
+|---|---|---|
+| Invariant FAIL | `invariant_fail` | HIGH |
+| Cross-page divergence (unsuppressed) | `cross-page-divergence` | HIGH |
+| FLAPPING | `tick_diff` with `state: FLAPPING` | MED |
+| STALE | `tick_diff` with `state: STALE` | LOW |
+| NULL_TRANSITION | `tick_diff` with `state: NULL_TRANSITION` | HIGH |
+| CHANGED | `tick_diff` with `state: CHANGED` | INFO |
+| NULL_VALUE (quality flag) | `quality_flag` with `flag: NULL_VALUE` | HIGH (if label declared), MED otherwise |
+| PLACEHOLDER | `quality_flag` with `flag: PLACEHOLDER` | HIGH |
+| NEGATIVE_COUNT | `quality_flag` with `flag: NEGATIVE_COUNT` | HIGH |
+| Heuristic | `heuristic` | From producer (see PATTERNS.md tiers) |
+
+### 6.3 Write `docs/crawls/ui-audit-report.md`
+
+Overwrite — each run replaces. Idempotent modulo timestamp.
+
+```markdown
+# ui-audit report
+
+**Generated:** <ts>
+**Mode:** <mode>
+**Roles scanned:** <roles>
+**Pages scanned:** <count>
+**Ticks in this run:** <count>
+
+## Summary
+
+| Severity | Count |
+|---|---|
+| CRITICAL | <n> |
+| HIGH | <n> |
+| MED | <n> |
+| LOW | <n> |
+| INFO | <n> |
+
+## Critical
+
+<per-finding entry>
+
+## High
+
+<per-finding entry>
+
+## Med
+
+<per-finding entry>
+
+## Low
+
+<per-finding entry>
+
+## Info
+
+<collapsed unless --verbose>
+
+---
+
+## Per-finding entry format
+
+- **[<severity>] <label>**
+  - Where: `<page>:<target_label>` OR `<file>:<line>` (heuristics)
+  - Detail: <one-line summary from finding.detail>
+  - First seen: tick <n>
+  - Last seen: tick <n>
+```
+
+### 6.4 Stdout summary
+
+Print to stdout (captured by the orchestrator log):
+
+```
+[ui-audit] complete.
+  Severity:  CRITICAL=<n>  HIGH=<n>  MED=<n>  LOW=<n>  INFO=<n>
+  Invariants evaluated: <n>, failed: <n>
+  Pages scanned: <n>  Ticks: <n>
+  Report: docs/crawls/ui-audit-report.md
+  Top 3 invariant failures (by severity × age):
+    1. INV-NNN: <description>   (pages: ...)
+    2. ...
+    3. ...
+```
+
+Top-3 selection: sort `invariant_fail` findings by `(severity-rank desc, first-seen-tick asc)`, take 3. If fewer than 3 invariant failures, pad with top cross-page divergences.
+
+### 6.5 Activity-feed `skill_complete`
+
+```jsonl
+{"ts":"<ts>","session":"<sid>","skill":"ui-audit","event":"skill_complete","message":"ui-audit <mode> complete","detail":{"mode":"<mode>","findings_critical":<n>,"findings_high":<n>,"findings_med":<n>,"findings_low":<n>,"findings_info":<n>,"invariants_evaluated":<n>,"invariants_failed":<n>,"pages_visited":<n>,"tick_count":<n>,"report_path":"docs/crawls/ui-audit-report.md"}}
+```
+
+### 6.6 Mode exceptions
+
+- `consistency` mode: no `pages_visited` (no extraction). `tick_count = 0` (evaluating existing registry). Report identical shape.
+- `data` mode: no Phase 3/5 output. Report skipped; stdout summary shows extraction counts only. Activity-feed event still written with null invariant fields.
+- `--loop` mode: Phase 6 emits a rolling report each tick (same path, overwritten). `skill_complete` event is emitted once per tick with `mode: "loop-tick"`; a final `skill_complete` with `mode: "loop-matrix-complete"` fires when the full (role × page) matrix has been visited twice (pass 1 seeds registry, pass 2 detects drift).
+
+### 6.7 Idempotence
+
+Rerunning `consistency` mode on an unchanged registry produces byte-identical report content (only the `**Generated:**` timestamp differs). Reporter must sort findings deterministically:
+1. By severity (CRITICAL > HIGH > MED > LOW > INFO)
+2. Then by `target_label` alphabetically
+3. Then by `page` alphabetically
+4. Then by `tick` ascending
+
+
 
 ---
 
