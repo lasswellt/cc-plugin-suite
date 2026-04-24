@@ -142,6 +142,8 @@ Used to verify the page rendered and — on the first tick per path — to disco
 
 Build the label map for this `path` from `.ui-audit.json[pages][path]`. If no entry, log INFO `[ui-audit] no labels declared for ${path} — skipping` and move to the next page.
 
+**Label-name validation (prototype-pollution guard).** Before interpolation, reject any label name that matches `/^(__proto__|constructor|prototype)$/`. These keys are forbidden by this skill even though they are otherwise valid JSON — allowing them lets a hostile `.ui-audit.json` author set prototype entries on the `browser_evaluate` return object and then trigger prototype-polluted behavior in downstream jq/node coercion. On match: exit 1 with `[ui-audit] Forbidden label name in .ui-audit.json: "${label}"`.
+
 ```js
 (() => {
   const pick = (sel) => {
@@ -205,6 +207,8 @@ jq -c -n \
 ```
 
 After the page's labels are all written, emit one `registry_progress` activity-feed event (aggregate, not per-label).
+
+**Information-flow note.** Raw DOM `.textContent` for each labeled element — which may include PII visible to the authenticated role (usernames, emails, order amounts, etc.) — is persisted verbatim in `docs/crawls/page-data-registry.jsonl`, aggregated into `docs/crawls/ui-audit-report.md`, and may appear in `raw` fields of activity-feed events. This is by design (cross-page invariant comparisons need the exact value), but it means these three files inherit the sensitivity class of the highest-privilege role the skill audits. Do not commit them to public repos. `.gitignore` suggestion: `docs/crawls/page-data-registry.jsonl` and `docs/crawls/ui-audit-report.md`.
 
 ## Phase 3 — CONSISTENCY
 
@@ -568,13 +572,18 @@ Passed verbatim to `browser_evaluate`. The payload is built per-page by looking 
 
 ```bash
 jq -s '
-  [.[] | select(.ts != null and .label != null)]
+  [.[] | select(.ts != null and .label != null
+                and .label != "quality_flag"
+                and .label != "heuristic"
+                and .label != "cross-page-divergence"
+                and .label != "invariant_fail"
+                and .label != "tick_diff")]
   | group_by([.role, .page, .label])
   | map(max_by(.ts))
 ' docs/crawls/page-data-registry.jsonl
 ```
 
-Null-guard on `.ts` and `.label` protects against partial-write rows a crash may leave (domain-researcher gate).
+Null-guard on `.ts` and `.label` protects against partial-write rows a crash may leave (domain-researcher gate). The extra `.label != ...` guards exclude **finding lines** (meta-events the phases write into the same file) so they never pollute the reduced observation state. See Phase 3 § 3.1 — the reducer there uses the same guards.
 
 ### Activity-feed event format
 

@@ -144,21 +144,56 @@ jq -s '
   | map(max_by(.ts))
 ' "${REG}" > "${REDUCED}"
 
-# Inline evaluator — hydrates each invariant's sources from the reduced registry,
-# then checks numeric-equality (INV-001) and string-equality (INV-002) programmatically.
+# Canonical evaluator — mirrors skills/ui-audit/reference.md § 3I.1.
+# Hydrates each invariant's sources from the reduced registry, then runs the
+# same cmp_equal / cmp_gte / cmp_lte functions documented in reference.md.
+# For "equal" with string values (INV-002 plan_tier), cmp_equal falls back to
+# direct equality — tolerance only applies to numeric pairs.
 jq --slurpfile cfg "${CONFIG}" --slurpfile reg "${REDUCED}" -n '
   def lookup($src; $r): $r | map(select(.page == $src.page and .label == $src.key)) | first;
+  def is_num($x): ($x | type) == "number";
+  def cmp_equal($a; $b; $tol):
+    ($a != null and $b != null) and
+    (if is_num($a) and is_num($b) then (($a - $b) | fabs) <= $tol else $a == $b end);
+  def cmp_gte($a; $b; $tol): is_num($a) and is_num($b) and ($a + $tol) >= $b;
+  def cmp_lte($a; $b; $tol): is_num($a) and is_num($b) and ($a - $tol) <= $b;
+
   $cfg[0].invariants
   | map({
       id, description, check,
       tolerance: (.tolerance // 0),
       values: (.sources | map({page, key, obs: lookup(.; $reg[0])})),
     })
+  | map(. as $inv | . + {
+      passed: (
+        if ($inv.values | length) < 2 then false
+        elif $inv.check == "equal" then
+          all($inv.values[1:][]; cmp_equal($inv.values[0].obs.parsed; .obs.parsed; $inv.tolerance))
+        elif $inv.check == "gte" then
+          all($inv.values[1:][]; cmp_gte($inv.values[0].obs.parsed; .obs.parsed; $inv.tolerance))
+        elif $inv.check == "lte" then
+          all($inv.values[1:][]; cmp_lte($inv.values[0].obs.parsed; .obs.parsed; $inv.tolerance))
+        else false end
+      )
+    })
 ' > "${RESULTS}"
 
-# Assertions: INV-001 numeric delta should be 1; INV-002 strings should be identical.
+# Assert via the evaluator's own verdict (not bespoke arithmetic): INV-001 must FAIL, INV-002 must PASS.
+INV_001_PASSED=$(jq -r '.[0].passed' "${RESULTS}")
+INV_002_PASSED=$(jq -r '.[1].passed' "${RESULTS}")
 INV_001_D=$(jq -r '.[0].values | (.[0].obs.parsed - .[1].obs.parsed | fabs)' "${RESULTS}")
 INV_002_MATCH=$(jq -r '.[1].values | [.[0].obs.parsed, .[1].obs.parsed, .[2].obs.parsed] | unique | length' "${RESULTS}")
+
+if [ "${INV_001_PASSED}" != "false" ]; then
+  echo "FAIL: INV-001 evaluator expected passed=false (47 != 46), got passed=${INV_001_PASSED}" >&2
+  cat "${RESULTS}" >&2
+  exit 5
+fi
+if [ "${INV_002_PASSED}" != "true" ]; then
+  echo "FAIL: INV-002 evaluator expected passed=true (all plan_tier == 'Pro'), got passed=${INV_002_PASSED}" >&2
+  cat "${RESULTS}" >&2
+  exit 5
+fi
 
 if ! awk "BEGIN{exit !(${INV_001_D} == 1)}"; then
   echo "FAIL: INV-001 expected delta=1 (47-46), got ${INV_001_D}" >&2

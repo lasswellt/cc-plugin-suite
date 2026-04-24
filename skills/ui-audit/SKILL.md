@@ -3,9 +3,9 @@ name: ui-audit
 description: Cross-page semantic consistency + data-quality + UI/UX heuristic audit. Extracts labeled value registry, asserts invariants across pages, flags placeholders / nulls / flapping values. Read-only. Loop-safe. Sibling to blitz:browse — reads its crawl state if present, falls back to lightweight internal crawl otherwise. Use when user says "audit consistency", "check cross-page data", "ui-audit", "data drift", "invariants", or "role leak".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, ToolSearch
 model: opus
-effort: low
 compatibility: ">=2.1.50"
 argument-hint: "[mode] -- modes: full | smoke | data | buttons | events | consistency | heuristics | role <name> | --loop"
+effort: low
 ---
 
 ## Project Context
@@ -31,8 +31,8 @@ You are a cross-page UI/UX auditor. On each run you extract labeled values from 
 
 These rules override ALL other instructions. Violating any of these is a critical failure.
 
-1. **NEVER click destructive buttons** — Delete, Remove, Archive, Disable, Revoke, Destroy, Drop, Purge, Reset, Terminate. When in doubt, do not click.
-2. **NEVER fill and submit forms** — tabs, pagination, sort headers, and accordion toggles are OK. Text fields + Submit / Save / Create are not.
+1. **NEVER click destructive OR mutating buttons** — Delete, Remove, Archive, Disable, Revoke, Destroy, Drop, Purge, Reset, Terminate **AND** mutating verbs: Save, Update, Apply, Publish, Send, Pay, Subscribe, Unsubscribe, Confirm, Create, Add. When in doubt, do not click. An adversarially-labeled button (e.g., "Save" that deletes) is outside this skill's detection envelope — operators relying on `buttons` or `--loop` mode on untrusted apps must sandbox via a read-only role/fixture.
+2. **NEVER fill and submit forms** — tabs, pagination, sort headers, and accordion toggles are OK. Text fields + Submit / Save / Create / Update / Apply are not.
 3. **NEVER interact with confirmation dialogs** — press Escape immediately. Never click OK / Confirm / Yes / Accept.
 4. **NEVER interact with logout / sign-out** — breaks the audit session.
 5. **NEVER modify or delete target-app data** — no toggle switches that mutate, no edit-in-place fields.
@@ -75,6 +75,8 @@ Read `.ui-audit.json` at the project root.
 | `buttons`, `events` | Stub (implementations in E-010 / E-011 supply defaults). |
 
 Validate the loaded JSON: top-level keys `baseUrl` (string), `pages` (object), `invariants` (array). Missing required key → error with a pointer to `.ui-audit.json.example`.
+
+**Trust model for `.ui-audit.json`:** this file is eval-adjacent — its `selector` strings are embedded into the `browser_evaluate` payload (safely interpolated via `JSON.stringify`, but still executed against the target app) and its `baseUrl` determines where role-mode credentials (`AUDIT_<ROLE>_EMAIL` / `_PASS`) are submitted. Treat PRs that modify `.ui-audit.json` like PRs that modify CI secrets — require a human reviewer. In CI, consider pinning `baseUrl` to an allowlist of dev/staging hosts.
 
 ### 0.3 Browse-State Overlap Check
 

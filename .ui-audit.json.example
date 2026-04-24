@@ -14,7 +14,7 @@
       "open_invoices": { "selector": ".invoice-list .badge",                "type": "count" }
     },
     "/billing": {
-      "plan_tier":     { "selector": "header [data-plan]",                  "type": "text" }
+      "plan_tier":     { "selector": "[data-user-plan]",                    "type": "text" }
     }
   },
 
