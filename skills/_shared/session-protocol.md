@@ -248,6 +248,9 @@ Logged operations: `session_start`, `session_end`, `lock_acquired`, `lock_releas
 | browse (loop) | sprint-dev | WARN — browse may fix files sprint-dev is editing |
 | browse (loop) | code-sweep (fix) | WARN — both may fix same files |
 | browse (full/smoke/page) | browse (full/smoke/page) | OK — read-only, session-scoped |
+| ui-audit | ui-audit | **BLOCK** — shared page-data-registry writer |
+| ui-audit | browse (loop) | WARN — both write docs/crawls/; ui-audit reads state browse may be mutating |
+| ui-audit | sprint-dev | OK — read-only on source, only writes docs/crawls/ and .cc-sessions/ |
 
 ---
 

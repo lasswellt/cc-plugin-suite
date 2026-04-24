@@ -3,7 +3,7 @@ id: S6-002
 title: "Register ui-audit in skill-registry.json + add session-protocol conflict rows"
 epic: E-008
 capability: CAP-008
-status: planned
+status: done
 priority: P0
 points: 1
 depends_on: [S6-001]

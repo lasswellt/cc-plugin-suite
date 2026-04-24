@@ -1,0 +1,53 @@
+{
+  "_comment_top": "Example blitz:ui-audit configuration. Copy to .ui-audit.json and edit. See skills/ui-audit/SKILL.md + reference.md for the full schema.",
+
+  "baseUrl": "http://localhost:3000",
+
+  "_comment_pages": "Label map — per page, declare the labeled values ui-audit should extract. Each value has a CSS selector + a type. Types: 'text' (keep raw string), 'number' (coerce via Number(raw.replace(/[^\\d.-]/g,''))), 'currency' (strip currency + separators then Number), 'count' (parseInt).",
+  "pages": {
+    "/dashboard": {
+      "open_invoices": { "selector": "[data-metric='open-invoices'] .value", "type": "number" },
+      "total_revenue": { "selector": ".revenue-total",                      "type": "currency" },
+      "plan_tier":     { "selector": "[data-user-plan]",                    "type": "text" }
+    },
+    "/invoices": {
+      "open_invoices": { "selector": ".invoice-list .badge",                "type": "count" }
+    },
+    "/billing": {
+      "plan_tier":     { "selector": "header [data-plan]",                  "type": "text" }
+    }
+  },
+
+  "_comment_invariants": "Cross-page numeric/text invariants. check: 'equal' (all sources within tolerance), 'gte' (first source >= every other within tolerance), 'lte' (mirror).",
+  "invariants": [
+    {
+      "id": "INV-001",
+      "description": "Open-invoice count matches between /dashboard and /invoices.",
+      "sources": [
+        { "page": "/dashboard", "key": "open_invoices" },
+        { "page": "/invoices",  "key": "open_invoices" }
+      ],
+      "check": "equal",
+      "tolerance": 0
+    },
+    {
+      "id": "INV-002",
+      "description": "User's plan tier matches between dashboard and billing header.",
+      "sources": [
+        { "page": "/dashboard", "key": "plan_tier" },
+        { "page": "/billing",   "key": "plan_tier" }
+      ],
+      "check": "equal",
+      "tolerance": 0
+    }
+  ],
+
+  "_comment_event_invariants": "Skeleton for E-011 CAP-015. Analytics event schemas that must fire consistently across pages. required_props: prop keys that must be present. forbidden_props: must NOT be present. scope: 'all_pages' | 'pages_with_cta' | explicit page list.",
+  "event_invariants": [],
+
+  "_comment_role_invariants": "Skeleton for E-012 CAP-016. Per-role cross-page invariants. check: 'equal' (values match across roles), 'viewer_null' (non-admin roles see null / access-denied), 'gte' (admin count >= viewer count).",
+  "role_invariants": [],
+
+  "_comment_role_leak_patterns": "Skeleton for E-012 CAP-016. Regex patterns (as strings) that must NOT appear in rendered HTML when logged in as a non-admin role. Example: ['data-admin-only', 'admin\\\\.panel'].",
+  "role_leak_patterns": []
+}

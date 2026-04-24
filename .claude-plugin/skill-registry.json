@@ -224,6 +224,17 @@
       "maturity": "stable"
     },
     {
+      "name": "ui-audit",
+      "category": "quality",
+      "description": "Cross-page semantic consistency + data-quality + UI/UX heuristic audit. Extracts labeled value registry, asserts invariants across pages, flags placeholders/nulls/flapping values. Reads blitz:browse crawl state when present, falls back to internal crawl otherwise. Loop-safe.",
+      "model": "opus",
+      "modifies_code": false,
+      "uses_agents": true,
+      "uses_sessions": true,
+      "dependencies": ["browse"],
+      "maturity": "experimental"
+    },
+    {
       "name": "dep-health",
       "category": "quality",
       "description": "Audits npm dependencies for vulnerabilities, outdated packages, and license compliance",

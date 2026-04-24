@@ -3,7 +3,7 @@ id: S6-003
 title: "Author .ui-audit.json.example with three invariant blocks"
 epic: E-008
 capability: CAP-008
-status: planned
+status: done
 priority: P1
 points: 1
 depends_on: [S6-001]

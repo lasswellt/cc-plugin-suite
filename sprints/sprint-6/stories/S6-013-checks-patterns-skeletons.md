@@ -3,7 +3,7 @@ id: S6-013
 title: "CHECKS.md + PATTERNS.md skeletons (placeholders for E-009)"
 epic: E-008
 capability: CAP-008
-status: planned
+status: done
 priority: P2
 points: 1
 depends_on: [S6-001]

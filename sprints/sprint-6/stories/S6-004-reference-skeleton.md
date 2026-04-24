@@ -3,7 +3,7 @@ id: S6-004
 title: "Write skills/ui-audit/reference.md skeleton — 6 phase procedures + schemas"
 epic: E-008
 capability: CAP-008
-status: planned
+status: done
 priority: P0
 points: 2
 depends_on: [S6-001]
