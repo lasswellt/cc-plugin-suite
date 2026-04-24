@@ -1,5 +1,5 @@
 {
-  "generated": "2026-04-18T09:45:00Z",
+  "generated": "2026-04-23T23:51:46Z",
   "mode": "full",
   "scope_note": "Narrow scope: only ingests docs/_research/2026-04-18_caveman-full-absorption.md and docs/_research/2026-04-18_runtime-artifact-terse-propagation.md. Older research docs are historical and reconciled as shipped via sprint-1 or superseded.",
   "source_documents": [
@@ -14,6 +14,13 @@
       "type": "architecture",
       "capabilities_extracted": 2,
       "scope_entries": 5
+    },
+    {
+      "path": "docs/_research/2026-04-23_ui-audit-skill.md",
+      "type": "architecture",
+      "capabilities_extracted": 9,
+      "scope_entries": 0,
+      "scope_note": "Doc has line-1 no-registry waiver and per-line waivers on 4 illustrative runtime calcs. No artifact-count commitments."
     }
   ],
   "capabilities": [
@@ -96,7 +103,9 @@
       ],
       "complexity": "low",
       "domain_hint": "directive-propagation",
-      "dependencies_hint": ["CAP-001"],
+      "dependencies_hint": [
+        "CAP-001"
+      ],
       "research_needed": false,
       "scope_metric": [
         {
@@ -126,7 +135,9 @@
       ],
       "complexity": "low",
       "domain_hint": "output-shaping",
-      "dependencies_hint": ["CAP-003"],
+      "dependencies_hint": [
+        "CAP-003"
+      ],
       "research_needed": false,
       "scope_metric": [
         {
@@ -152,7 +163,9 @@
       ],
       "complexity": "medium",
       "domain_hint": "output-shaping",
-      "dependencies_hint": ["CAP-003"],
+      "dependencies_hint": [
+        "CAP-003"
+      ],
       "research_needed": false,
       "scope_metric": [
         {
@@ -193,7 +206,9 @@
       ],
       "complexity": "medium",
       "domain_hint": "content-optimization",
-      "dependencies_hint": ["CAP-003"],
+      "dependencies_hint": [
+        "CAP-003"
+      ],
       "research_needed": false,
       "scope_metric": [
         {
@@ -217,7 +232,11 @@
       ],
       "complexity": "low",
       "domain_hint": "directive-propagation",
-      "dependencies_hint": ["CAP-003", "CAP-005", "CAP-006"],
+      "dependencies_hint": [
+        "CAP-003",
+        "CAP-005",
+        "CAP-006"
+      ],
       "research_needed": false,
       "scope_metric": [
         {
@@ -226,6 +245,222 @@
           "target": 2
         }
       ]
+    },
+    {
+      "id": "CAP-008",
+      "title": "Scaffold blitz:ui-audit skill — SKILL.md, reference.md, config loader, session wiring",
+      "source_document": "docs/_research/2026-04-23_ui-audit-skill.md",
+      "source_anchor": "#6-implementation-sketch",
+      "document_type": "architecture",
+      "description": "Create skills/ui-audit/ with SKILL.md (frontmatter: model=opus, effort=low), reference.md, CHECKS.md, PATTERNS.md. Implement Phase 0 (session register + arg parse + mode routing) and Phase 1 (load browse state from docs/crawls/ or lightweight internal crawl). Load and validate .ui-audit.json config (invariants + event_invariants + role_invariants blocks). Add conflict-matrix row to session-protocol.md. Register in .claude-plugin/skill-registry.json.",
+      "user_value": "Foundational skill shell. Without this, no subsequent ui-audit capability can run. Provides the file layout, mode routing (full|smoke|data|buttons|events|consistency|heuristics|role <name>|--loop), and state-loading contract.",
+      "acceptance_criteria": [
+        "skills/ui-audit/SKILL.md and reference.md exist with opus+effort:low frontmatter",
+        "skills/ui-audit/CHECKS.md and PATTERNS.md exist",
+        ".claude-plugin/skill-registry.json contains ui-audit entry with category=quality, modifies_code=false",
+        "session-protocol.md conflict matrix includes ui-audit rows",
+        ".ui-audit.json.example at repo root with all three invariant blocks",
+        "Mode routing implemented for 9 declared modes",
+        "Phase 0 + Phase 1 executable against a project with prior browse state"
+      ],
+      "complexity": "medium",
+      "domain_hint": "ui-audit",
+      "dependencies_hint": [],
+      "research_needed": false,
+      "scope_metric": null
+    },
+    {
+      "id": "CAP-009",
+      "title": "Page data extraction + labeled-value registry (Phase 2)",
+      "source_document": "docs/_research/2026-04-23_ui-audit-skill.md",
+      "source_anchor": "#3-2-extraction-technique-playwright-mcp",
+      "document_type": "architecture",
+      "description": "Implement Phase 2 extraction: per-page browser_navigate + browser_snapshot (render confirm) + browser_evaluate with label-map returning object literal. Append JSONL lines to docs/crawls/page-data-registry.jsonl with {ts, role, page, label, raw, parsed, hash, selector, tick, detail}. Role field defaults __default__ for backward compat. Hash raw for tick-diff. 1-line schema addition to browse/reference.md exposing page_data_registry path in latest-tick.json.",
+      "user_value": "Turns every page visit into labeled semantic data that downstream invariants can reason about. Ground truth via DOM .textContent avoids a11y-tree truncation.",
+      "acceptance_criteria": [
+        "Extraction phase runs browser_evaluate with user-declared label map",
+        "One JSONL line per (role, page, label) observation written to docs/crawls/page-data-registry.jsonl",
+        "Each line includes raw, parsed (Number coerced), hash, selector, tick, role",
+        "browse/reference.md latest-tick.json schema includes page_data_registry field",
+        "Integration test: 3 pages × 2 labels = 6 registry lines"
+      ],
+      "complexity": "medium",
+      "domain_hint": "ui-audit",
+      "dependencies_hint": [
+        "CAP-008"
+      ],
+      "research_needed": false,
+      "scope_metric": null
+    },
+    {
+      "id": "CAP-010",
+      "title": "Consistency check + invariant evaluator + flapping/stale detection",
+      "source_document": "docs/_research/2026-04-23_ui-audit-skill.md",
+      "source_anchor": "#3-3-registry-invariants",
+      "document_type": "architecture",
+      "description": "Implement Phase 3: reduce page-data-registry.jsonl via jq group_by(.label); flag cross-page mismatches unless covered by declared invariant with tolerance. Evaluate .ui-audit.json invariants (checks: equal, gte, lte). Tick-over-tick hash diff → STABLE/CHANGED/STALE/FLAPPING/NULL_TRANSITION taxonomy. Emit invariant_fail events to activity feed.",
+      "user_value": "The core 'dashboard says 47 but list page says 46' detector. Fills the gap no visual-regression tool addresses.",
+      "acceptance_criteria": [
+        "jq reducer groups by label, detects cross-page divergence",
+        "equal/gte/lte invariant checks evaluate correctly",
+        "Tolerance honored on numeric checks",
+        "FLAPPING detected after ≥3 ticks of oscillation",
+        "STALE detected on revert within 2 ticks",
+        "invariant_fail events written to .cc-sessions/activity-feed.jsonl",
+        "Test: seeded registry with known divergence produces expected findings"
+      ],
+      "complexity": "medium",
+      "domain_hint": "ui-audit",
+      "dependencies_hint": [
+        "CAP-009"
+      ],
+      "research_needed": false,
+      "scope_metric": null
+    },
+    {
+      "id": "CAP-011",
+      "title": "Data-quality flags — null, placeholder, format, stale-zero, broken-total, negative-count",
+      "source_document": "docs/_research/2026-04-23_ui-audit-skill.md",
+      "source_anchor": "#3-4-data-quality-checks-per-value-in-extraction-js",
+      "document_type": "architecture",
+      "description": "Phase 4 quality checks. In-extraction JS applies regex for placeholders, null detection, negative counts, format-mismatch against prior observations for same label. Broken-total computed from declared parent/child label relationships in config. Stale-zero compares to registry history.",
+      "user_value": "Catches data corruption early — a bug that makes a value render as null or zero is flagged, not silently passed.",
+      "acceptance_criteria": [
+        "6 quality flags implemented: NULL_VALUE, PLACEHOLDER, FORMAT_MISMATCH, STALE_ZERO, BROKEN_TOTAL, NEGATIVE_COUNT",
+        "Placeholder regex configurable in .ui-audit.json",
+        "Broken-total requires parent/child label declaration in config",
+        "Findings include page:label:flag format"
+      ],
+      "complexity": "medium",
+      "domain_hint": "ui-audit",
+      "dependencies_hint": [
+        "CAP-009"
+      ],
+      "research_needed": false,
+      "scope_metric": null
+    },
+    {
+      "id": "CAP-012",
+      "title": "UI/UX heuristic audit — Vercel rules + severity tiers + a11y",
+      "source_document": "docs/_research/2026-04-23_ui-audit-skill.md",
+      "source_anchor": "#3-6-ideas-borrowed-from-referenced-skills",
+      "document_type": "brand_ux",
+      "description": "Phase 5: load Vercel Web Interface Guidelines from upstream URL (or vendored copy in PATTERNS.md) and evaluate categories 9 (Nav+State) and 16 (Content+Copy, tabular-nums) against DOM snapshots. Apply UX Pro Max severity ladder CRITICAL/HIGH/MED/LOW. Parallelize via sonnet Agent workers when page count >30.",
+      "user_value": "Catches Vercel-guideline violations and a11y issues alongside data checks — single audit pass covers data + design.",
+      "acceptance_criteria": [
+        "Vercel rules source vendored in PATTERNS.md with upstream URL comment",
+        "Categories 9 and 16 evaluation implemented",
+        "Severity tiering CRITICAL/HIGH/MED/LOW applied to findings",
+        "Spawned sonnet workers pass model: sonnet explicitly",
+        "Inline execution when page count ≤30; parallel when >30"
+      ],
+      "complexity": "medium",
+      "domain_hint": "ui-audit",
+      "dependencies_hint": [
+        "CAP-009"
+      ],
+      "research_needed": false,
+      "scope_metric": null
+    },
+    {
+      "id": "CAP-013",
+      "title": "Audit reporter — markdown report + stdout summary + activity-feed log",
+      "source_document": "docs/_research/2026-04-23_ui-audit-skill.md",
+      "source_anchor": "#phase-6-report",
+      "document_type": "architecture",
+      "description": "Phase 6: write docs/crawls/ui-audit-report.md with findings grouped by severity, file:line for code-citable, page:label for registry findings. Stdout summary: counts by severity + top 3 invariant failures. Append skill_complete event to activity-feed with finding counts.",
+      "user_value": "Makes findings actionable. Without a report, registry drift is invisible.",
+      "acceptance_criteria": [
+        "docs/crawls/ui-audit-report.md written on every run",
+        "Findings grouped by severity tier",
+        "Stdout summary includes counts + top 3 invariant failures",
+        "skill_complete event appended to .cc-sessions/activity-feed.jsonl with detail block"
+      ],
+      "complexity": "low",
+      "domain_hint": "ui-audit",
+      "dependencies_hint": [
+        "CAP-010",
+        "CAP-011",
+        "CAP-012"
+      ],
+      "research_needed": false,
+      "scope_metric": null
+    },
+    {
+      "id": "CAP-014",
+      "title": "Interactive element coverage — every button/link/tab enumerated + audited",
+      "source_document": "docs/_research/2026-04-23_ui-audit-skill.md",
+      "source_anchor": "#3-7-interactive-element-coverage-every-button-link-tab",
+      "document_type": "feature_spec",
+      "description": "Enumerate every ARIA-role + native interactive element per page via browser_evaluate. Per-element checks: NO_LABEL, DEAD_HREF, EMPTY_HANDLER, TABINDEX_POSITIVE, TABINDEX_NEGATIVE_VISIBLE, NO_FOCUS_STATE. Safe-click classifier filters destructive labels/hrefs before any browser_click. Per-page coverage summary line written to registry.",
+      "user_value": "Catches unlabeled buttons, dead links, missing keyboard reachability — the long tail of a11y + UX bugs structural checks miss.",
+      "acceptance_criteria": [
+        "browser_evaluate enumeration returns all interactive elements with {tag, role, label, tabindex, hrefOrOnclick, outerSnip}",
+        "6 per-element checks produce findings in page:button_label:issue format",
+        "Destructive-click classifier gates safe-click pass",
+        "TABINDEX_MISSING check re-runs after 500ms settle window (R7 mitigation)",
+        "Per-page interactive_audit_summary line appended to registry"
+      ],
+      "complexity": "medium",
+      "domain_hint": "ui-audit",
+      "dependencies_hint": [
+        "CAP-008",
+        "CAP-013"
+      ],
+      "research_needed": false,
+      "scope_metric": null
+    },
+    {
+      "id": "CAP-015",
+      "title": "Analytics event consistency — dataLayer + sendBeacon + network interception",
+      "source_document": "docs/_research/2026-04-23_ui-audit-skill.md",
+      "source_anchor": "#3-8-analytics-event-consistency-every-event-matches-across-pages",
+      "document_type": "feature_spec",
+      "description": "Three-layer event interception: window.dataLayer push proxy + navigator.sendBeacon wrap + network-level filter (Segment/PostHog/Amplitude/GA4). Drain __auditEventLog after each action. Registry label=analytics_event, keyed (page, action_trigger) → {event_name, props}. Cross-page drift via jq group_by(.detail.event_name) + props_hash compare. .ui-audit.json event_invariants block: required_props, forbidden_props, scope.",
+      "user_value": "Catches 'same user action fires different event schemas on different pages' — a class of analytics bugs that ship to prod and silently corrupt dashboards.",
+      "acceptance_criteria": [
+        "dataLayer proxy + sendBeacon wrap installed immediately after browser_navigate",
+        "Network-level filter captures Segment/PostHog/Amplitude/GA4 hosts",
+        "Event log drained after each action; registry lines written with event_name, layer, props",
+        "Cross-page drift detection via jq",
+        "event_invariants with required_props/forbidden_props/scope evaluated",
+        "EVENTS_BEFORE_SPY flag when dataLayer non-empty at inject time (R8 mitigation)"
+      ],
+      "complexity": "high",
+      "domain_hint": "ui-audit",
+      "dependencies_hint": [
+        "CAP-008",
+        "CAP-013"
+      ],
+      "research_needed": false,
+      "scope_metric": null
+    },
+    {
+      "id": "CAP-016",
+      "title": "Per-permissions-role audit matrix — 5-role harness + role invariants + leak detection",
+      "source_document": "docs/_research/2026-04-23_ui-audit-skill.md",
+      "source_anchor": "#3-9-per-permissions-role-audit-matrix-every-page-every-role",
+      "document_type": "feature_spec",
+      "description": "Multi-role audit: anonymous + viewer + member + admin + superadmin via env-var-provisioned test users. storageState pattern adapted for Playwright MCP (harvest via browser_evaluate, restore via replay login or localStorage injection). Registry role field namespaces observations. .ui-audit.json role_invariants: equal, viewer_null, gte checks. HTML source scan for role-leak patterns. Loop cycles (role, page) pairs. ETA warning + --yes/--ci gating on full matrix runs.",
+      "user_value": "Catches privilege-boundary bugs (admin data leaking to viewer), role-specific UX regressions, and per-role data divergence. No mainstream tool does this.",
+      "acceptance_criteria": [
+        "5 roles configured via AUDIT_<ROLE>_EMAIL/_PASS env vars; skip-if-absent",
+        "Scripted login flow per role with storageState harvest + write to .auth/<role>.json",
+        "Sentinel check after role switch (R9 mitigation)",
+        "Registry role field present; __default__ backward compat preserved",
+        "role_invariants checks: equal, viewer_null, gte — all evaluate correctly",
+        "Role-leak scan with configurable patterns in role_leak_patterns",
+        "latest-tick.json extended: mode, current_role, current_page_idx, roles_complete, roles_pending",
+        "ETA warning printed upfront; --yes/--ci gate on >60 min runs (R10 mitigation)"
+      ],
+      "complexity": "high",
+      "domain_hint": "ui-audit",
+      "dependencies_hint": [
+        "CAP-008",
+        "CAP-013"
+      ],
+      "research_needed": false,
+      "scope_metric": null
     }
   ],
   "dedup_log": [

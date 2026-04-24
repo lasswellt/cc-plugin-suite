@@ -1,12 +1,14 @@
 {
-  "generated": "2026-04-18T09:45:00Z",
+  "generated": "2026-04-23T23:52:15Z",
   "epics": [
     {
       "id": "E-001",
       "phase": 1,
       "title": "Directive coverage — agents + SKILL.md + shared protocols",
-      "capabilities": ["CAP-001"],
-      "status": "pending",
+      "capabilities": [
+        "CAP-001"
+      ],
+      "status": "done",
       "stories": [
         {
           "id": "E001-S01",
@@ -43,8 +45,10 @@
       "id": "E-002",
       "phase": 1,
       "title": "Wave-2 compression — 7 SAFE reference.md + 12 research docs",
-      "capabilities": ["CAP-002"],
-      "status": "pending",
+      "capabilities": [
+        "CAP-002"
+      ],
+      "status": "done",
       "stories": [
         {
           "id": "E002-S01",
@@ -73,8 +77,10 @@
       "id": "E-003",
       "phase": 2,
       "title": "Runtime write-phase directive — 8 SKILL.md + 7 UNSAFE reference.md",
-      "capabilities": ["CAP-003"],
-      "status": "pending",
+      "capabilities": [
+        "CAP-003"
+      ],
+      "status": "done",
       "stories": [
         {
           "id": "E003-S01",
@@ -103,8 +109,10 @@
       "id": "E-004",
       "phase": 2,
       "title": "Review-format absorption — caveman-review in sprint-review + review",
-      "capabilities": ["CAP-004"],
-      "status": "pending",
+      "capabilities": [
+        "CAP-004"
+      ],
+      "status": "done",
       "stories": [
         {
           "id": "E004-S01",
@@ -114,7 +122,9 @@
           "registry_id": "cf-2026-04-18-review-format-absorption"
         }
       ],
-      "registry_entries": ["cf-2026-04-18-review-format-absorption"],
+      "registry_entries": [
+        "cf-2026-04-18-review-format-absorption"
+      ],
       "coverage": 0.0,
       "acceptance_criteria_met": 0,
       "carry_forward_count": 1
@@ -123,8 +133,10 @@
       "id": "E-005",
       "phase": 3,
       "title": "Intensity state + LITE gating + activity-feed rule",
-      "capabilities": ["CAP-005"],
-      "status": "pending",
+      "capabilities": [
+        "CAP-005"
+      ],
+      "status": "done",
       "stories": [
         {
           "id": "E005-S01",
@@ -169,8 +181,10 @@
       "id": "E-006",
       "phase": 3,
       "title": "Agent-prompt boilerplate dedup",
-      "capabilities": ["CAP-006"],
-      "status": "pending",
+      "capabilities": [
+        "CAP-006"
+      ],
+      "status": "done",
       "stories": [
         {
           "id": "E006-S01",
@@ -194,7 +208,9 @@
           "registry_id": "cf-2026-04-18-agent-prompt-boilerplate"
         }
       ],
-      "registry_entries": ["cf-2026-04-18-agent-prompt-boilerplate"],
+      "registry_entries": [
+        "cf-2026-04-18-agent-prompt-boilerplate"
+      ],
       "coverage": 0.0,
       "acceptance_criteria_met": 0,
       "carry_forward_count": 1
@@ -203,8 +219,10 @@
       "id": "E-007",
       "phase": 4,
       "title": "Enforcement upgrade — WARNING to BLOCKER",
-      "capabilities": ["CAP-007"],
-      "status": "pending",
+      "capabilities": [
+        "CAP-007"
+      ],
+      "status": "done",
       "stories": [
         {
           "id": "E007-S01",
@@ -221,10 +239,94 @@
           "registry_id": "cf-2026-04-18-spawn-protocol-warning-upgrade"
         }
       ],
-      "registry_entries": ["cf-2026-04-18-spawn-protocol-warning-upgrade"],
+      "registry_entries": [
+        "cf-2026-04-18-spawn-protocol-warning-upgrade"
+      ],
       "coverage": 0.0,
       "acceptance_criteria_met": 0,
       "carry_forward_count": 1
+    },
+    {
+      "id": "E-008",
+      "phase": 5,
+      "title": "ui-audit skill foundation — scaffold + extraction + consistency + reporter",
+      "capabilities": [
+        "CAP-008",
+        "CAP-009",
+        "CAP-010",
+        "CAP-013"
+      ],
+      "status": "pending",
+      "registry_entries": [],
+      "coverage": 0.0,
+      "acceptance_criteria_met": 0,
+      "carry_forward_count": 0,
+      "depends_on": []
+    },
+    {
+      "id": "E-009",
+      "phase": 5,
+      "title": "ui-audit data-quality flags + UI/UX heuristic audit",
+      "capabilities": [
+        "CAP-011",
+        "CAP-012"
+      ],
+      "status": "pending",
+      "registry_entries": [],
+      "coverage": 0.0,
+      "acceptance_criteria_met": 0,
+      "carry_forward_count": 0,
+      "depends_on": [
+        "E-008"
+      ]
+    },
+    {
+      "id": "E-010",
+      "phase": 6,
+      "title": "ui-audit interactive-element coverage (every button/link/tab)",
+      "capabilities": [
+        "CAP-014"
+      ],
+      "status": "pending",
+      "registry_entries": [],
+      "coverage": 0.0,
+      "acceptance_criteria_met": 0,
+      "carry_forward_count": 0,
+      "depends_on": [
+        "E-008"
+      ]
+    },
+    {
+      "id": "E-011",
+      "phase": 6,
+      "title": "ui-audit analytics-event consistency (dataLayer/sendBeacon/network)",
+      "capabilities": [
+        "CAP-015"
+      ],
+      "status": "pending",
+      "registry_entries": [],
+      "coverage": 0.0,
+      "acceptance_criteria_met": 0,
+      "carry_forward_count": 0,
+      "depends_on": [
+        "E-008"
+      ]
+    },
+    {
+      "id": "E-012",
+      "phase": 6,
+      "title": "ui-audit per-permissions-role audit matrix (5-role + invariants + leak detection)",
+      "capabilities": [
+        "CAP-016"
+      ],
+      "status": "pending",
+      "registry_entries": [],
+      "coverage": 0.0,
+      "acceptance_criteria_met": 0,
+      "carry_forward_count": 0,
+      "depends_on": [
+        "E-008"
+      ]
     }
   ]
 }
