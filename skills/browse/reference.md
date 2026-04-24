@@ -526,6 +526,7 @@ Snapshot of the most recent tick for quick status checks.
   "status": "crawling",
   "circuit_breaker_cooldown": 0,
   "consecutive_fix_failures": 0,
+  "page_data_registry": null,
   "updated_at": "2026-03-27T05:25:00Z"
 }
 ```
@@ -536,6 +537,8 @@ Snapshot of the most recent tick for quick status checks.
 - `complete` — All pages visited and clean
 - `auth_lost` — Authentication expired, needs user intervention
 - `server_down` — Dev server unreachable
+
+**Field `page_data_registry`:** path string to `docs/crawls/page-data-registry.jsonl` if `blitz:ui-audit` has run in this project, else `null`. Browse does not read or write this field — `blitz:ui-audit` owns it. Present here so overlap detection (ui-audit × browse-loop) can observe prior extraction state in one read.
 
 ---
 

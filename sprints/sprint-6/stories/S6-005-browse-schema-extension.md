@@ -3,7 +3,7 @@ id: S6-005
 title: "Add page_data_registry field to browse/reference.md latest-tick.json schema"
 epic: E-008
 capability: CAP-009
-status: planned
+status: done
 priority: P1
 points: 1
 depends_on: []

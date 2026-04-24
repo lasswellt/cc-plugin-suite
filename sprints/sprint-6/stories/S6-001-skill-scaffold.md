@@ -3,7 +3,7 @@ id: S6-001
 title: "Scaffold skills/ui-audit/SKILL.md with frontmatter, argument parsing, Phase 0"
 epic: E-008
 capability: CAP-008
-status: planned
+status: done
 priority: P0
 points: 3
 depends_on: []
