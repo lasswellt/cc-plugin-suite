@@ -3,7 +3,7 @@ id: S8-003
 title: "BROKEN_TOTAL evaluator — parent/child relationship config + sum check"
 epic: E-009
 capability: CAP-011
-status: planned
+status: done
 priority: P0
 points: 2
 depends_on: []

@@ -3,7 +3,7 @@ id: S8-002
 title: "STALE_ZERO detector — current parsed=0 but history non-zero"
 epic: E-009
 capability: CAP-011
-status: planned
+status: done
 priority: P0
 points: 1
 depends_on: []

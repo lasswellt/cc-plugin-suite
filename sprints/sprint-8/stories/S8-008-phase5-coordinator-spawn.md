@@ -3,7 +3,7 @@ id: S8-008
 title: "Phase 5 coordinator — severity tiering + parallel sonnet spawn when pages >30"
 epic: E-009
 capability: CAP-012
-status: planned
+status: done
 priority: P0
 points: 2
 depends_on: [S8-006, S8-007]

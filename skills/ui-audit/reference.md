@@ -185,7 +185,7 @@ HASH=$(printf '%s' "${RAW:-}" | (sha256sum 2>/dev/null || shasum -a 256) | cut -
 Inline quality flags (Phase 4 subset — full catalog in `CHECKS.md`):
 
 - `NULL_VALUE` — `RAW` is null or empty.
-- `PLACEHOLDER` — `RAW` matches `/lorem|TODO|FIXME|N\/A|--|\?\?\?|xxx|placeholder|fpo|coming soon/i`.
+- `PLACEHOLDER` — `RAW` matches the compiled union of `BUILTIN_PATTERN` (`/lorem|TODO|FIXME|N\/A|--|\?\?\?|xxx|placeholder|fpo|coming soon/i`) and any user-supplied `.ui-audit.json.placeholder_patterns` (compiled once at config-load with try/catch — malformed pattern emits `CONFIG_ERROR` finding at start, doesn't crash). See S8-004 for the configurable-patterns contract.
 - `NEGATIVE_COUNT` — `LABEL_TYPE == count && PARSED < 0`.
 
 Each flag emits an additional JSONL line with `label: "quality_flag"` and `detail: {flag, target_label, severity}` (schema in `CHECKS.md`).
@@ -291,7 +291,7 @@ If `hasRing === false`, emit `NO_FOCUS_STATE`. If `ok === false`, the element di
 
 ### I.5 Safe-click pass
 
-After enumeration + static checks + focus probe, the skill may click elements that pass both the destructive classifier AND a type heuristic. Post-click, it captures any console error or 4xx/5xx network response attributed to that click as a `CLICK_ERROR` finding.
+After enumeration + static checks + focus probe, the skill may click elements that pass both the destructive classifier AND a type heuristic. Post-click, it captures any console error or 4xx/5xx network response attributed to that click as a `CLICK_ERROR` finding. It also captures `window.location.href` before and after the click — consumed by Phase 5 § 5.3 (Vercel Cat 9 URL-reflects-state heuristic).
 
 **Destructive-label classifier.** Keep in sync with `SKILL.md` Safety Rule 1 — same verb list.
 
@@ -317,8 +317,10 @@ Extensible via `.ui-audit.json[interactive_click_allowlist]: [<css-selector>, ..
 
 ```
 START_TS = now()
+URL_BEFORE = browser_evaluate: window.location.href
 browser_click(element)
 browser_wait_for(time: 1)     # 1s for post-click events to settle
+URL_AFTER = browser_evaluate: window.location.href
 CONSOLE = browser_console_messages(since = START_TS)
 NETWORK = browser_network_requests(since = START_TS, static: false, requestBody: false)
 ERRORS = CONSOLE.filter(m => m.level === 'error')
@@ -326,6 +328,8 @@ NET_FAIL = NETWORK.filter(r => r.status >= 400 || r.status === 0)
 if (ERRORS.length > 0 || NET_FAIL.length > 0) {
   emit CLICK_ERROR finding with {label, severity: "CRITICAL", errors: ERRORS, network: NET_FAIL}
 }
+# Always emit the click record (even on success) so Phase 5 Cat 9 can read url_before/url_after.
+emit click_record with {label, element_type, url_before: URL_BEFORE, url_after: URL_AFTER, ts: START_TS}
 ```
 
 **Click cap.** Max 10 safe clicks per page. On hit: emit `safe_click_capped` INFO with `{capped_at: 10, remaining: <count>}`.
@@ -929,11 +933,297 @@ NULL_TRANSITION is detectable at `len(hist) >= 2`.
 
 ## Phase 4 — QUALITY
 
-<!-- Phase 4 coordinator here. Per-flag detection details in CHECKS.md. Full body lands in E-009. For sprint-6: basic NULL_VALUE / PLACEHOLDER / NEGATIVE_COUNT run inline during Phase 2; this phase aggregates those findings into the report bundle. -->
+Runs in `full`, `smoke`, `data`, `role <name>`, and `--loop` modes. Skipped in `consistency`-only and `heuristics`-only.
+
+Per-flag detection catalog in `CHECKS.md`. This section documents the coordinator that runs them all and hands results to the reporter. Three inline flags (NULL_VALUE, PLACEHOLDER, NEGATIVE_COUNT) are already written by Phase 2 extraction (sprint-6). The three reducer flags (FORMAT_MISMATCH, STALE_ZERO, BROKEN_TOTAL) run here.
+
+### 4.1 Inline flag collection
+
+Phase 2 extraction already appends `quality_flag` JSONL lines for NULL_VALUE, PLACEHOLDER, NEGATIVE_COUNT. Phase 4 reads them back via the registry latest-wins reducer (filtered to `label == "quality_flag"`). No re-detection — the inline pass owns ground truth.
+
+### 4.2 FORMAT_MISMATCH reducer (numeric + currency format drift)
+
+Detects when a `(role, page, label)` changes rendered format across observations (decimal separator flip, currency symbol vanish, thousands separator swap, negative style change). Requires ≥2 observations per key with `type ∈ {number, currency}`.
+
+```bash
+jq -s '
+  [.[] | select(.label != null
+                and .label != "quality_flag"
+                and .label != "heuristic"
+                and .label != "cross-page-divergence"
+                and .label != "invariant_fail"
+                and .label != "tick_diff"
+                and .label != "analytics_event")]
+  | group_by([.role, .page, .label])
+  | map({key: {role:.[0].role, page:.[0].page, label:.[0].label},
+         hist: (sort_by(.ts) | .[-4:])})
+  | map(select((.hist | length) >= 2))
+' docs/crawls/page-data-registry.jsonl > "${SESSION_TMP_DIR}/quality-history.json"
+```
+
+For each history entry, extract the format tuple from `raw`:
+
+```bash
+extract_fmt() {
+  local raw="$1"
+  local sym=$(printf '%s' "$raw" | sed -E 's/^[[:space:]]*([^0-9[:space:].,-]+).*/\1/;t;d')
+  local last_sep=$(printf '%s' "$raw" | grep -oE '[.,]' | tail -1)
+  local neg_style="null"
+  [[ "$raw" =~ ^\( ]] && neg_style="parens"
+  [[ "$raw" =~ ^- ]] && neg_style="leading-minus"
+  [[ "$raw" =~ -$ ]] && neg_style="trailing-minus"
+  jq -n --arg s "$sym" --arg d "$last_sep" --arg n "$neg_style" \
+    '{currency_symbol: ($s // null), decimal_sep: ($d // null), negative_style: $n}'
+}
+```
+
+For each key, compute the MODE tuple of `hist[0..-2]` (all but the latest). Compare to `hist[-1]`'s tuple. Divergence → FORMAT_MISMATCH finding:
+
+```jsonl
+{"ts":"<ISO>","role":"<r>","page":"<p>","label":"quality_flag","raw":null,"parsed":null,"hash":"<sha8>","selector":null,"tick":<n>,"detail":{"flag":"FORMAT_MISMATCH","target_label":"<label>","severity":"MED","current_fmt":{...},"mode_fmt":{...}}}
+```
+
+**Known false-positive case:** observations with no separators (`"42"`) have null decimal_sep and null currency_symbol — skip comparing those, not enough signal. Document as inherent.
+
+### 4.3 STALE_ZERO reducer
+
+Current `parsed === 0` AND `max(history[0..-2].parsed) > 0` over the last 5 observations. Requires ≥3 observations for a `(role, page, label)` with `type ∈ {number, count, currency}`.
+
+```bash
+jq -s '
+  [.[] | select(.ts != null and .label != null
+                and (.parsed | type) == "number")]
+  | group_by([.role, .page, .label])
+  | map({key: {role:.[0].role, page:.[0].page, label:.[0].label},
+         hist: (sort_by(.ts) | .[-5:])})
+  | map(select((.hist | length) >= 3))
+  | map(select(.hist[-1].parsed == 0))
+  | map(. as $g | select(($g.hist[0:-1] | map(.parsed) | max) > 0)
+       | . + {last_non_zero: ($g.hist[0:-1] | map(select(.parsed > 0)) | last)})
+' docs/crawls/page-data-registry.jsonl > "${SESSION_TMP_DIR}/stale-zero.json"
+```
+
+Each match → STALE_ZERO finding severity MED with detail `{target_label, current_tick, last_non_zero_tick, last_non_zero_value}`.
+
+### 4.4 BROKEN_TOTAL evaluator (declared totals only)
+
+Reads `.ui-audit.json.totals[]`. For each declared total: resolve `parent` + `children` against the reduced registry, sum children's `parsed`, compare to parent `parsed` with `tolerance` (default 0.01).
+
+```bash
+jq --slurpfile cfg .ui-audit.json --slurpfile reg "${SESSION_TMP_DIR}/reduced.json" -n '
+  def lookup($src; $r):
+    $r | map(select((.role // "__default__") == ($src.role // "__default__")
+                    and .page == $src.page
+                    and .label == $src.key));
+  ($cfg[0].totals // [])
+  | map({
+      id,
+      description,
+      tolerance: (.tolerance // 0.01),
+      parent: (lookup(.parent; $reg[0]) | first),
+      children_sum: ([.children[] | lookup(.; $reg[0])[] | .parsed] | add // 0)
+    })
+  | map(. as $t | . + {
+      passed: (
+        $t.parent != null
+        and ($t.parent.parsed != null)
+        and (($t.parent.parsed - $t.children_sum) | fabs) <= $t.tolerance
+      ),
+      delta: (if $t.parent != null and ($t.parent.parsed != null)
+              then (($t.parent.parsed - $t.children_sum) | fabs)
+              else null end)
+    })
+' > "${SESSION_TMP_DIR}/broken-total-results.json"
+```
+
+Each failed total → BROKEN_TOTAL finding severity HIGH with detail `{total_id, parent_value: parent.parsed, children_sum, delta, tolerance}`.
+
+**Repeat-per-row note.** `children[].key` may resolve to multiple observations if extraction emitted one registry line per row (e.g., multiple rows with `label: "row_total"` at different `selector`s). The lookup above collects all matches; the sum is across all of them. Per-row label extraction is a known-gap extension point — the current single-selector-per-label contract means all rows must share one selector (e.g., `.row-total`) and all matched elements get summed in a single `browser_evaluate` call. If the extraction single-selector contract is insufficient, carve a follow-up story to support `"selector": "...", "all": true` in the label schema.
+
+### 4.5 Aggregation + reporter handoff
+
+After § 4.1–4.4 run, aggregate counts per `(flag, severity)`:
+
+```bash
+jq -s '
+  [.[] | select(.label == "quality_flag")]
+  | group_by(.detail.flag)
+  | map({
+      flag: .[0].detail.flag,
+      severity: .[0].detail.severity,
+      count: length,
+      last_tick: (map(.tick) | max)
+    })
+' docs/crawls/page-data-registry.jsonl > "${SESSION_TMP_DIR}/quality-summary.json"
+```
+
+Activity-feed event at phase end:
+
+```jsonl
+{"ts":"<ISO>","session":"<sid>","skill":"ui-audit","event":"quality_pass_complete","message":"Phase 4 complete — <N> findings","detail":{"total_findings":<n>,"by_flag":{"NULL_VALUE":<n>,"PLACEHOLDER":<n>,"FORMAT_MISMATCH":<n>,"STALE_ZERO":<n>,"BROKEN_TOTAL":<n>,"NEGATIVE_COUNT":<n>}}}
+```
+
+Reporter (Phase 6) already accepts `quality_flag`-labeled findings by severity — no reporter changes needed.
+
+### 4.6 Idempotence
+
+Phase 4 is a pure reducer over the registry. Re-running on an unchanged registry emits identical findings (modulo ts on the activity-feed event). No browser calls. Safe to re-run during `consistency` mode.
+
+### 4.7 Parallelization
+
+When `pages.length > 30`, run § 4.2 / 4.3 / 4.4 reducers in parallel via backgrounded jq processes; else sequential. The cost difference is modest (jq is fast) — parallelize only for very large registries (>100k lines).
+
 
 ## Phase 5 — HEURISTICS
 
-<!-- Phase 5 coordinator here. Rule sources in PATTERNS.md. Full body lands in E-009. For sprint-6: no-op stub — emits INFO "heuristics not yet implemented — see E-009". -->
+Runs in `heuristics` and `full` modes. Skipped elsewhere.
+
+Rule sources in `PATTERNS.md`. This section documents the coordinator that dispatches category checks + severity tier mapping + parallelization decision.
+
+### 5.1 Category dispatcher
+
+Reads `.ui-audit.json.heuristics.enabled_categories` (default: `["nav_state", "content_copy"]`, i.e., Vercel 9 + 16). Categories not listed are skipped. Unknown names emit `CONFIG_ERROR` finding at start, not crash.
+
+### 5.2 Scale decision — inline vs parallel spawn
+
+```
+if pages.length <= 30:
+  run each enabled category inline (sequential)
+else:
+  spawn one sonnet Agent per category, all in one assistant message, run_in_background: true
+  wait for each worker's output file, then merge
+```
+
+**Canonical spawn snippet (for >30-page runs)** — copy verbatim (research doc §6.1). `model: "sonnet"` is LOAD-BEARING — omitting it re-introduces the `[1m]` context crash documented in `feedback_skill_model_1m_inheritance.md`. See also `spawn-protocol.md` §7 for the OUTPUT STYLE snippet the prompt must include.
+
+```
+Agent(
+  description: "ui-audit heuristic-<category>",
+  subagent_type: "general-purpose",
+  model: "sonnet",
+  prompt: <<PROMPT
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers,
+pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths,
+commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version
+numbers. No preamble. No trailing summary of work already evident in the diff or tool
+output. Format: fragments OK.
+
+You run the <category> heuristic over the following pages: <page list>.
+Per-page procedure: <see reference.md § 5.<cat-sec>>.
+Write findings to: ${SESSION_TMP_DIR}/heuristic-<category>-findings.jsonl.
+
+Budget: max 15 file reads, max 25 tool calls, max 300-line output.
+PROMPT,
+  run_in_background: true,
+)
+```
+
+### 5.3 Category 9 — URL reflects filter/tab/pagination state (`nav_state`)
+
+Vercel Web Interface Guidelines Category 9: stateful UI must be deep-linkable. Reloading must restore state. Clicking a tab or applying a filter must change the URL.
+
+**Procedure.** Phase 5 consumes click records from Phase INTERACTIVE § I.5 (which must capture `url_before` and `url_after` on every safe-click). For each safe-clicked tab / sort header / pagination / accordion:
+
+```
+if url_before === url_after:
+  emit STATE_NOT_IN_URL finding severity HIGH
+  detail: {page, element_label, element_type, url_before, url_after}
+```
+
+**Required Phase INTERACTIVE update.** Phase INTERACTIVE § I.5 currently captures console errors + network failures on safe-click. It must also capture `window.location.href` before and after the click. This is a small addition to the post-click bundle:
+
+```js
+// In Phase INTERACTIVE § I.5 click-execution block, extend the capture:
+URL_BEFORE = browser_evaluate: window.location.href
+browser_click(element)
+browser_wait_for(time: 1)
+URL_AFTER = browser_evaluate: window.location.href
+// ... existing console + network capture ...
+emit finding with {url_before: URL_BEFORE, url_after: URL_AFTER, ...existing_fields}
+```
+
+Add the two-line capture to § I.5 — 3-line addition total.
+
+**Known false-positive case:** modal-open / accordion-expand widgets that legitimately don't change URL. Operators allowlist via `.ui-audit.json.heuristics.url_exempt_element_types: ["modal","accordion"]` (default empty). Elements matching these types get a `STATE_NOT_IN_URL_EXEMPT` INFO finding instead of HIGH.
+
+### 5.4 Category 16 — Numerals for counts + tabular-nums (`content_copy`)
+
+Vercel Category 16: use numerals (`3 items` not `three items`) and `font-variant-numeric: tabular-nums` on numeric table columns.
+
+**Sub-check 16a — NUMERIC_COLUMN_NOT_TABULAR** (severity MED):
+
+```js
+// browser_evaluate per page
+const threshold = 0.7;  // configurable via .ui-audit.json.heuristics.tabular_column_threshold
+const findings = [];
+document.querySelectorAll('table').forEach((table, tIdx) => {
+  const rows = [...table.querySelectorAll('tbody tr')];
+  if (rows.length < 2) return;
+  const colCount = rows[0].children.length;
+  for (let c = 0; c < colCount; c++) {
+    const cells = rows.map(r => r.children[c]).filter(Boolean);
+    const numericCount = cells.filter(td => /^-?\d/.test(td.textContent.trim())).length;
+    if (numericCount / cells.length >= threshold) {
+      // Numeric column — check tabular-nums
+      const fvn = window.getComputedStyle(cells[0]).fontVariantNumeric;
+      if (!fvn.includes('tabular-nums')) {
+        findings.push({
+          table_index: tIdx,
+          column_index: c,
+          cells_sampled: cells.length,
+          numeric_ratio: numericCount / cells.length,
+          computed_font_variant_numeric: fvn
+        });
+      }
+    }
+  }
+});
+return findings;
+```
+
+Each finding → `heuristic` JSONL line severity MED with `detail.rule_id: "vercel-cat-16-tabular-nums"`.
+
+**Sub-check 16b — WRITTEN_OUT_COUNT** (severity LOW):
+
+```js
+// browser_evaluate per page
+const RE = /\b(one|two|three|four|five|six|seven|eight|nine)\s+(item|items|result|results|user|users|record|records|row|rows|row|entry|entries|notification|notifications)\b/gi;
+const findings = [];
+document.querySelectorAll('h1,h2,h3,h4,h5,h6,p,li,th,td').forEach(el => {
+  const text = el.textContent || '';
+  let m;
+  while ((m = RE.exec(text)) !== null) {
+    findings.push({
+      element_selector: el.tagName.toLowerCase(),
+      matched: m[0],
+      context: text.slice(Math.max(0, m.index - 20), m.index + m[0].length + 20)
+    });
+  }
+});
+return findings;
+```
+
+Each match → `heuristic` JSONL line severity LOW with `detail.rule_id: "vercel-cat-16-numerals-for-counts"`. High false-positive rate by design (catches idioms) — LOW severity so it's informational, not gating.
+
+**Short-circuit.** Pages with no `<table>` skip 16a; pages with no text content skip 16b. Detected via `browser_snapshot` on first-tick-per-page (already used elsewhere for render-confirm).
+
+### 5.5 Severity tier table
+
+| Tier | When | Blocks sprint-review? |
+|---|---|---|
+| CRITICAL | WCAG 2.1 AA failures that block usability (contrast < 4.5:1, touch target < 44×44pt) — reserved for future categories | Yes — fails heuristics pass |
+| HIGH | STATE_NOT_IN_URL (Cat 9), NO_LABEL / NO_FOCUS_STATE (Phase INTERACTIVE) | Yes |
+| MED | NUMERIC_COLUMN_NOT_TABULAR (Cat 16a), DEAD_HREF / TABINDEX_* (Phase INTERACTIVE) | Warn |
+| LOW | WRITTEN_OUT_COUNT (Cat 16b) | Info |
+
+Reporter (Phase 6) already groups by severity tier — the coordinator just ensures `detail.severity` is set on every emitted `heuristic` line.
+
+### 5.6 Aggregation + activity-feed event
+
+```jsonl
+{"ts":"<ISO>","session":"<sid>","skill":"ui-audit","event":"heuristic_pass_complete","message":"Phase 5 complete — <N> findings","detail":{"total_findings":<n>,"by_category":{"nav_state":<n>,"content_copy":<n>},"by_severity":{"CRITICAL":<n>,"HIGH":<n>,"MED":<n>,"LOW":<n>}}}
+```
+
 
 ## Phase 7 — LOOP MATRIX (role × page cadence)
 

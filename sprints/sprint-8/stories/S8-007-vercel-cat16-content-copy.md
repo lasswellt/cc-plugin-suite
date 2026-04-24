@@ -3,7 +3,7 @@ id: S8-007
 title: "Vercel Category 16 heuristic — tabular-nums + numerals for counts"
 epic: E-009
 capability: CAP-012
-status: planned
+status: done
 priority: P1
 points: 2
 depends_on: []

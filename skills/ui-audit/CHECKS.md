@@ -12,37 +12,37 @@ Findings produced by this module surface as `page:label:FLAG` in `docs/crawls/ui
 
 The extracted `parsed` value is `null` — the selector matched nothing, or matched an element with empty `.textContent`. Fires once per (role, page, label). Severity: HIGH when the label is declared in `.ui-audit.json` and the page is declared; MED otherwise.
 
-<!-- TODO(E-009 / CAP-011): detection procedure — inline in extraction JS after .textContent.trim() coercion; emit flag when (raw === null || raw === '') and the label was declared for this page. -->
+**Detection:** inline in Phase 2 § 2.4 extraction JS — emits when `raw === null || raw === ''` for a declared label. Implemented in sprint-6. See `skills/ui-audit/reference.md § Phase 2 § 2.4`.
 
 ## PLACEHOLDER
 
-Raw text matches a placeholder regex. Default pattern: `/lorem|TODO|FIXME|N\/A|--|\?\?\?|xxx|placeholder|fpo|coming soon/i`. Configurable via `.ui-audit.json[placeholder_patterns]`. Severity: HIGH (production placeholder leakage).
+Raw text matches a placeholder regex. Default pattern: `/lorem|TODO|FIXME|N\/A|--|\?\?\?|xxx|placeholder|fpo|coming soon/i`. Configurable via `.ui-audit.json[placeholder_patterns]` (array of regex strings — compiled at config-load with try/catch; malformed regex emits CONFIG_ERROR, not crash). Severity: HIGH (production placeholder leakage).
 
-<!-- TODO(E-009 / CAP-011): detection — inline in extraction JS; run regex against raw before type-coercion. -->
+**Detection:** inline in Phase 2 § 2.4 extraction JS against the compiled union of built-in + user patterns. See `reference.md § Phase 2 § 2.4` + `§ Phase 4 § 4.1` (aggregation).
 
 ## FORMAT_MISMATCH
 
-The raw string's format (currency symbol, decimal separator, thousands separator, date format) differs from every prior observation of the same label on any page. Fires after ≥2 prior ticks for the same (page, label). Severity: MED.
+The raw string's format (currency symbol, decimal separator, thousands separator, negative style) differs from the mode of prior observations of the same `(role, page, label)`. Fires after ≥2 observations. Severity: MED.
 
-<!-- TODO(E-009 / CAP-011): reducer — jq over registry history for the (page, label); normalize to {currency_symbol, decimal_sep, thousands_sep, date_fmt} shape; compare latest to the historical mode. -->
+**Detection:** reducer in Phase 4 § 4.2 — jq over registry history + bash format-tuple extraction (`extract_fmt`). See `reference.md § Phase 4 § 4.2`.
 
 ## STALE_ZERO
 
-`parsed === 0` but the latest-wins registry history for the same (role, page, label) has ≥1 non-zero observation. Suggests cache miss or silent fetch failure rendered a placeholder zero. Severity: MED.
+`parsed === 0` but the latest-wins registry history for the same `(role, page, label)` has ≥1 non-zero observation over the prior 5 ticks. Requires ≥3 observations. Suggests cache miss or silent fetch failure rendered a placeholder zero. Severity: MED.
 
-<!-- TODO(E-009 / CAP-011): reducer — check registry history per (role, page, label); flag when current is 0 AND max(history.parsed) > 0. -->
+**Detection:** reducer in Phase 4 § 4.3. See `reference.md § Phase 4 § 4.3`.
 
 ## BROKEN_TOTAL
 
-Configured parent/child relationship: sum of declared child values != parent total within tolerance. Requires author to declare `{parent: "<label>", children: ["<label1>", "<label2>"], tolerance: 0}` in `.ui-audit.json[totals]`. Severity: HIGH.
+Configured parent/child relationship: sum of declared child `parsed` values != parent `parsed` within `tolerance` (default 0.01). Requires author to declare a `totals[]` entry in `.ui-audit.json` with `{id, parent:{page,key}, children:[{page,key}], tolerance}`. Severity: HIGH.
 
-<!-- TODO(E-009 / CAP-011): evaluator — jq over latest-wins registry state; for each declared total, sum children.parsed and compare to parent.parsed with tolerance. Emits one finding per violated total. -->
+**Detection:** evaluator in Phase 4 § 4.4 — jq over reduced registry snapshot. `children[].key` may resolve to multiple observations per page (one per row); all matches are summed. See `reference.md § Phase 4 § 4.4`.
 
 ## NEGATIVE_COUNT
 
 `parsed < 0` on a label whose type is `count`. Counts should not be negative in a healthy UI. Severity: HIGH.
 
-<!-- TODO(E-009 / CAP-011): detection — inline in extraction JS; for labels with type='count', flag when Number.isFinite(parsed) && parsed < 0. -->
+**Detection:** inline in Phase 2 § 2.4 extraction JS — emitted when `LABEL_TYPE == 'count' && Number.isFinite(parsed) && parsed < 0`. Implemented in sprint-6.
 
 ---
 

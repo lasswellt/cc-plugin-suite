@@ -42,6 +42,26 @@
     }
   ],
 
+  "_comment_placeholder_patterns": "Optional — array of regex strings to add to the built-in PLACEHOLDER detection (TODO/FIXME/Lorem/etc). Use for project-specific placeholders like 'TBD', 'REPLACE_ME'. Compiled once at config-load with try/catch — malformed regex emits CONFIG_ERROR at start.",
+  "placeholder_patterns": ["TBD", "REPLACE_ME"],
+
+  "_comment_totals": "Optional — declare parent/child total relationships for BROKEN_TOTAL detection. children.key can resolve to multiple observations per page (e.g., one per row). tolerance allows sub-cent rounding (default 0.01 if omitted).",
+  "totals": [
+    {
+      "id": "T-001",
+      "description": "Invoice row totals sum to footer total",
+      "parent":   {"page": "/invoices", "key": "footer_total"},
+      "children": [{"page": "/invoices", "key": "row_total"}],
+      "tolerance": 0.01
+    }
+  ],
+
+  "_comment_heuristics": "Optional — Phase 5 heuristics config. enabled_categories defaults to ['nav_state','content_copy'] (Vercel 9 + 16). tabular_column_threshold: fraction of cells that must match /^-?\\d/ for a column to be classified numeric (default 0.7).",
+  "heuristics": {
+    "enabled_categories": ["nav_state", "content_copy"],
+    "tabular_column_threshold": 0.7
+  },
+
   "_comment_event_invariants": "Skeleton for E-011 CAP-015. Analytics event schemas that must fire consistently across pages. required_props: prop keys that must be present. forbidden_props: must NOT be present. scope: 'all_pages' | 'pages_with_cta' | explicit page list.",
   "event_invariants": [],
 

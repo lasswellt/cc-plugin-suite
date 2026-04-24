@@ -3,7 +3,7 @@ id: S8-004
 title: "Configurable placeholder_patterns in .ui-audit.json"
 epic: E-009
 capability: CAP-011
-status: planned
+status: done
 priority: P1
 points: 1
 depends_on: []

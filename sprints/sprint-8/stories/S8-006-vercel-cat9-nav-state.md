@@ -3,7 +3,7 @@ id: S8-006
 title: "Vercel Category 9 heuristic — URL reflects filter/tab/pagination state"
 epic: E-009
 capability: CAP-012
-status: planned
+status: done
 priority: P0
 points: 2
 depends_on: []

@@ -3,7 +3,7 @@ id: S8-001
 title: "FORMAT_MISMATCH detector — separator/currency drift vs history"
 epic: E-009
 capability: CAP-011
-status: planned
+status: done
 priority: P0
 points: 2
 depends_on: []

@@ -3,7 +3,7 @@ id: S8-005
 title: "Phase 4 coordinator — aggregate inline + reducer findings, emit to reporter"
 epic: E-009
 capability: CAP-011
-status: planned
+status: done
 priority: P0
 points: 2
 depends_on: [S8-001, S8-002, S8-003]
