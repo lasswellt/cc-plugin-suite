@@ -365,7 +365,7 @@
     },
     {
       "number": 8,
-      "status": "planned",
+      "status": "reviewed",
       "planned_date": "2026-04-24T02:07:45Z",
       "epics": [
         "E-009"
@@ -389,7 +389,39 @@
       "ac_coverage": "9/9",
       "planner_session": "sprint-plan-f9fb7660",
       "planner_mode": "research-reuse",
-      "carry_forward_from_sprint_7": []
+      "carry_forward_from_sprint_7": [],
+      "started_date": "2026-04-24T02:15:05Z",
+      "dev_session": "sprint-dev-b0d58424",
+      "completed_date": "2026-04-24T02:19:44Z",
+      "stories_completed": 9,
+      "stories_blocked": 0,
+      "integration_issues": 0,
+      "review_date": "2026-04-24T02:26:08Z",
+      "review_status": "PASS",
+      "review_session": "sprint-review-d9cf80cb",
+      "quality_gates": {
+        "type_check": null,
+        "lint": null,
+        "tests": true,
+        "build": null
+      },
+      "findings": {
+        "critical": 0,
+        "major": 0,
+        "minor": 3,
+        "info": 3
+      },
+      "auto_fixes_applied": 6,
+      "stories_reviewed": 9,
+      "stories_done": 9,
+      "stories_incomplete": 0,
+      "registry_invariants": {
+        "i1": "pass",
+        "i2": "pass-vacuous",
+        "i3": "pass-vacuous",
+        "i4": "pass-no-op",
+        "i5": "pass"
+      }
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "sprint": 8,
-  "status": "review",
+  "status": "reviewed",
   "created": "2026-04-24T02:04:39Z",
   "epics": [
     "E-009"
@@ -34,5 +34,7 @@
   "completed_date": "2026-04-24T02:19:44Z",
   "stories_completed": 9,
   "stories_blocked": 0,
-  "integration_issues": 0
+  "integration_issues": 0,
+  "review_date": "2026-04-24T02:26:08Z",
+  "review_status": "PASS"
 }

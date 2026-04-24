@@ -89,6 +89,8 @@ Read `.ui-audit.json` at the project root.
 
 Validate the loaded JSON: top-level keys `baseUrl` (string), `pages` (object), `invariants` (array). Missing required key → error with a pointer to `.ui-audit.json.example`.
 
+**Page-key sanitization (spawn-safety).** After parse, iterate `Object.keys(pages)`. Reject any key containing `\n`, `\r`, `\x00`, or other control characters; such keys cannot pass through `Agent` spawn prompts safely (they break instruction framing). On match: emit `CONFIG_ERROR` finding with `detail.issue: "invalid_page_key_control_chars"`, remove the entry, and continue. Page keys that look URL-like (start with `/` or `#/`) are expected and safe; arbitrary strings are allowed but sanitized.
+
 **Trust model for `.ui-audit.json`:** this file is eval-adjacent — its `selector` strings are embedded into the `browser_evaluate` payload (safely interpolated via `JSON.stringify`, but still executed against the target app) and its `baseUrl` determines where role-mode credentials (`AUDIT_<ROLE>_EMAIL` / `_PASS`) are submitted. Treat PRs that modify `.ui-audit.json` like PRs that modify CI secrets — require a human reviewer. In CI, consider pinning `baseUrl` to an allowlist of dev/staging hosts.
 
 ### 0.3 Browse-State Overlap Check
