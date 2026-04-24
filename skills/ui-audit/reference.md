@@ -289,7 +289,50 @@ Per-element `browser_evaluate`. Cost is bounded — cap at **10 focus probes per
 
 If `hasRing === false`, emit `NO_FOCUS_STATE`. If `ok === false`, the element disappeared between enumeration and probe (shadow-DOM timing, route transition) — emit `focus_probe_element_gone` INFO.
 
-<!-- Safe-click classifier + click execution fill via S7-003 (Wave 2). -->
+### I.5 Safe-click pass
+
+After enumeration + static checks + focus probe, the skill may click elements that pass both the destructive classifier AND a type heuristic. Post-click, it captures any console error or 4xx/5xx network response attributed to that click as a `CLICK_ERROR` finding.
+
+**Destructive-label classifier.** Keep in sync with `SKILL.md` Safety Rule 1 — same verb list.
+
+```js
+const DESTRUCTIVE_LABELS = /delete|remove|logout|sign.?out|cancel|submit|pay|confirm|save|update|apply|publish|send|subscribe|unsubscribe|create|add|archive|disable|revoke|destroy|drop|purge|reset|terminate/i;
+const DESTRUCTIVE_HREF   = /\/logout|\/delete|\/remove|\/signout|\/destroy/i;
+const isSafe = !DESTRUCTIVE_LABELS.test(label ?? '') && !DESTRUCTIVE_HREF.test(hrefOrOnclick ?? '');
+```
+
+**Type heuristic.** Only these element types are clicked even when `isSafe` is true:
+
+| Allowed type | Detection rule |
+|---|---|
+| ARIA tab | `role === 'tab'` OR ancestor has `role=tablist` |
+| Pagination | text matches `/^(next|prev|previous|first|last|page \d+|\d+)$/i` |
+| Sort header | element is `<th>` or `[role=columnheader]` with click handler |
+| Accordion toggle | `[aria-expanded]` attribute present |
+| Expander / "Show more" | text matches `/^(show more|show less|expand|collapse|more|less|view all|see more)$/i` |
+
+Extensible via `.ui-audit.json[interactive_click_allowlist]: [<css-selector>, ...]` (doc-only; default empty). Operators can widen the allow-list for project-specific widgets, but both the destructive classifier AND the allow-list must pass.
+
+**Execution per safe click.**
+
+```
+START_TS = now()
+browser_click(element)
+browser_wait_for(time: 1)     # 1s for post-click events to settle
+CONSOLE = browser_console_messages(since = START_TS)
+NETWORK = browser_network_requests(since = START_TS, static: false, requestBody: false)
+ERRORS = CONSOLE.filter(m => m.level === 'error')
+NET_FAIL = NETWORK.filter(r => r.status >= 400 || r.status === 0)
+if (ERRORS.length > 0 || NET_FAIL.length > 0) {
+  emit CLICK_ERROR finding with {label, severity: "CRITICAL", errors: ERRORS, network: NET_FAIL}
+}
+```
+
+**Click cap.** Max 10 safe clicks per page. On hit: emit `safe_click_capped` INFO with `{capped_at: 10, remaining: <count>}`.
+
+**Safety invariant.** An element reaches the click path only if it passes `isSafe === true` AND matches the type heuristic AND is not in a modal/dialog AND is not inside `[aria-disabled=true]`. A single-gate bypass is a CRITICAL bug.
+
+
 
 
 
@@ -398,7 +441,59 @@ HASH=$(printf '%s' "$PROPS_JSON" | jq --sort-keys -c . | (sha256sum 2>/dev/null 
 
 Write `hash` on the JSONL line. Phase 3 drift detection (see § E.6 — S7-007) groups events by `event_name` and flags differing hashes across pages.
 
-<!-- Cross-page drift reducer + event_invariants evaluator fill via S7-007 (Wave 2). -->
+### E.6 Cross-page event drift (undeclared)
+
+Same `event_name` firing on multiple pages with differing `hash` values (key-sorted props) → auto-flag as `event_drift`, severity MED.
+
+```bash
+jq -s '
+  [.[] | select(.label == "analytics_event")]
+  | group_by(.detail.event_name)
+  | map({
+      event_name: .[0].detail.event_name,
+      pages: (group_by(.page)
+              | map(max_by(.ts))
+              | map({page, hash, props: .detail.props}))
+    })
+  | map(select(.pages | length > 1))
+  | map(select((.pages | map(.hash) | unique | length) > 1))
+' docs/crawls/page-data-registry.jsonl
+```
+
+Each result row → one `event_drift` finding:
+
+```jsonl
+{"ts":"<ISO>","role":"<role>","page":"<comma-joined-pages>","label":"event_drift","raw":null,"parsed":null,"hash":"<sha8 of event_name>","selector":null,"tick":<n>,"detail":{"event_name":"<name>","severity":"MED","observations":[{"page","hash","props"},...]}}
+```
+
+### E.7 `event_invariants` evaluator (declared)
+
+Reads `.ui-audit.json[event_invariants][]`. Schema:
+
+```json
+{
+  "id": "EV-001",
+  "event_name": "page_view",
+  "required_props": ["page_path", "page_title"],
+  "forbidden_props": ["user_email", "password", "ssn", "credit_card", "token"],
+  "scope": "all_pages | pages_with_cta | [<explicit page list>]"
+}
+```
+
+**Scope resolution:**
+- `all_pages` → every page visited this run
+- `pages_with_cta` → pages where ≥1 safe-click was performed OR ≥1 label was declared
+- explicit array → literal path list
+
+**Evaluation.** For each invariant, for each in-scope page, for each `analytics_event` with matching `event_name`:
+- **Required-props check:** `props` object has every key in `required_props`. Missing → violation.
+- **Forbidden-props check:** `props` object has NO key in `forbidden_props`. Any match → violation.
+
+Severity HIGH by default. **PII auto-escalation to CRITICAL:** any violation involving a forbidden-prop from the set `{user_email, password, ssn, credit_card, token, session_id, auth_token, api_key}` is CRITICAL regardless of declared severity. This catches real PII leaks in analytics payloads.
+
+Each violation → `event_invariant_fail` finding + activity-feed event.
+
+
 
 
 
@@ -533,8 +628,101 @@ Before the next role's login, clear all persistent state to prevent session cont
 
 Note: this clears same-origin non-HttpOnly cookies only. HttpOnly session cookies are cleared by the target app's logout flow (if the auth flow uses one). If the target app doesn't have a logout endpoint, the scripted-login re-auth in R.3 overwrites the session cookie on success.
 
-<!-- role_invariants evaluator fills via S7-011 (Wave 2). -->
-<!-- Role-leak scan fills via S7-012 (Wave 2). -->
+### R.7 `role_invariants` evaluator
+
+Reads `.ui-audit.json[role_invariants][]`. Schema:
+
+```json
+{
+  "id": "ROLE-001",
+  "description": "<what privilege boundary this asserts>",
+  "sources": [
+    {"role": "admin",  "page": "/users", "key": "user_count"},
+    {"role": "viewer", "page": "/users", "key": "user_count"}
+  ],
+  "check": "equal | viewer_null | gte",
+  "tolerance": 0
+}
+```
+
+**Check semantics:**
+
+| `check` | Meaning | Severity on fail |
+|---|---|---|
+| `equal` | All sources' `parsed` values identical within tolerance (own-data invariant — "my email matches regardless of who's viewing") | HIGH |
+| `viewer_null` | First source (admin-tier) non-null AND every non-first source null (privilege boundary — "viewer must not see admin-only data") | CRITICAL on boundary breach |
+| `gte` | First source `parsed` ≥ every other within tolerance (partial-visibility — "admin sees ≥ everything viewer sees") | HIGH |
+
+**Evaluator jq script.** Mirrors the Phase 3 invariant evaluator shape (sprint-6 § 3I.1). The `$src` variable-binding idiom is load-bearing — don't re-introduce the filter-arg bug from sprint-6's first draft.
+
+```bash
+jq --slurpfile cfg .ui-audit.json --slurpfile reg "${SESSION_TMP_DIR}/reduced.json" -n '
+  def lookup($src; $r):
+    $r | map(select(.role == $src.role and .page == $src.page and .label == $src.key)) | first;
+  def is_num($x): ($x | type) == "number";
+  def cmp_equal($a; $b; $tol):
+    ($a != null and $b != null) and
+    (if is_num($a) and is_num($b) then (($a - $b) | fabs) <= $tol else $a == $b end);
+  def cmp_gte($a; $b; $tol): is_num($a) and is_num($b) and ($a + $tol) >= $b;
+
+  $cfg[0].role_invariants // []
+  | map({
+      id, description, check,
+      tolerance: (.tolerance // 0),
+      values: (.sources | map({role, page, key, obs: lookup(.; $reg[0])})),
+    })
+  | map(. as $inv | . + {
+      passed: (
+        if ($inv.values | length) < 2 then false
+        elif $inv.check == "equal" then
+          all($inv.values[1:][]; cmp_equal($inv.values[0].obs.parsed; .obs.parsed; $inv.tolerance))
+        elif $inv.check == "gte" then
+          all($inv.values[1:][]; cmp_gte($inv.values[0].obs.parsed; .obs.parsed; $inv.tolerance))
+        elif $inv.check == "viewer_null" then
+          ($inv.values[0].obs.parsed != null)
+          and all($inv.values[1:][]; .obs == null or .obs.parsed == null)
+        else false end
+      )
+    })
+' > "${SESSION_TMP_DIR}/role-invariant-results.json"
+```
+
+**`viewer_null` sub-cases:**
+- Admin value PRESENT AND every viewer value `null`/absent → **PASS** (healthy privilege boundary).
+- Admin value PRESENT AND any viewer value PRESENT → **FAIL CRITICAL** (privilege breach — viewer sees what admin sees).
+- Admin value `null` → **distinct finding `ADMIN_OBS_MISSING`** (not a viewer_null fail; don't conflate — the admin observation itself is what's wrong).
+
+**Emit events:** `role_invariant_fail` (HIGH or CRITICAL) / `role_invariant_pass` (verbose only). Findings written as `label: "role_invariant_fail"` JSONL lines.
+
+### R.8 Role-leak HTML scan
+
+Even when admin-only UI is hidden from the viewport, its DOM/script markup may leak into the HTML source — an SSR/hydration bug that reveals feature flags. Coarse but cheap backstop.
+
+**Runs only when the current role is non-admin AND not anonymous.** Anonymous is skipped because there is no baseline comparison available; `role_invariants` (§ R.7) handles anonymous-vs-authenticated cases directly.
+
+**Default patterns** (built-in, always on):
+
+```js
+const BUILTIN_PATTERNS = [
+  /data-admin-only/i,
+  /admin.?panel/i,
+  /<script[^>]*>[\s\S]*?admin[\s\S]*?<\/script>/i,
+];
+```
+
+**Extensible via** `.ui-audit.json[role_leak_patterns]: [<regex-string>, ...]`. Regexes are compiled with `new RegExp(str, 'i')` inside a try/catch — a malformed pattern emits a `CONFIG_ERROR` finding instead of crashing the skill.
+
+**Execution per page per non-admin role:**
+
+```
+browser_evaluate: document.documentElement.outerHTML
+matches = [...BUILTIN_PATTERNS, ...compiled_custom_patterns].filter(re => re.test(html));
+if (matches.length > 0) {
+  emit ROLE_LEAK finding with {role, page, matched_patterns: matches.map(r => r.source), severity: "CRITICAL"};
+}
+```
+
+`ROLE_LEAK` severity is always CRITICAL — a positive match means admin-only markup reached a non-admin user's HTML payload, regardless of whether it was visible.
 
 ---
 

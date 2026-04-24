@@ -3,7 +3,7 @@ id: S7-003
 title: "Safe-click classifier + click execution + click-error capture"
 epic: E-010
 capability: CAP-014
-status: planned
+status: done
 priority: P0
 points: 2
 depends_on: [S7-002]

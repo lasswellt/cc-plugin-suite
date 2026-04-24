@@ -3,7 +3,7 @@ id: S7-011
 title: "role_invariants evaluator (equal / viewer_null / gte) + activity-feed events"
 epic: E-012
 capability: CAP-016
-status: planned
+status: done
 priority: P0
 points: 2
 depends_on: [S7-010]

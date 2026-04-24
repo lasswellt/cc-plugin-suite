@@ -3,7 +3,7 @@ id: S7-012
 title: "Role-leak HTML scan (configurable patterns, CRITICAL severity)"
 epic: E-012
 capability: CAP-016
-status: planned
+status: done
 priority: P1
 points: 1
 depends_on: [S7-010]

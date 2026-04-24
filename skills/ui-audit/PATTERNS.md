@@ -60,6 +60,38 @@ Anti-patterns worth auto-flagging: Inter / Roboto / Space Grotesk typefaces, `#3
 
 ---
 
+## Role-leak patterns (CAP-016 / E-012 / sprint-7)
+
+Regex patterns that trigger a `ROLE_LEAK` finding (always CRITICAL) when they match rendered HTML while logged in as a non-admin role. Full procedure in `skills/ui-audit/reference.md` § Phase ROLE § R.8.
+
+### Built-in defaults (always active)
+
+| Pattern | What it catches |
+|---|---|
+| `/data-admin-only/i` | Elements tagged with admin-only attribute the app forgot to strip server-side |
+| `/admin.?panel/i` | String references to admin-panel class/component names in the rendered DOM |
+| `/<script[^>]*>[\s\S]*?admin[\s\S]*?<\/script>/i` | Inline scripts mentioning admin — often leaked feature-flag bootstraps |
+
+### Extension contract
+
+Add project-specific patterns via `.ui-audit.json`:
+
+```json
+"role_leak_patterns": [
+  "data-superadmin",
+  "InternalDashboard",
+  "\\\\bsudo-token\\\\b"
+]
+```
+
+Each entry is compiled with `new RegExp(str, 'i')`. Malformed regex → `CONFIG_ERROR` finding at skill start (not runtime crash).
+
+**Scope:** scan runs per-page for every authenticated non-admin role. Anonymous is excluded (no authenticated baseline to compare against; use `role_invariants` instead).
+
+**False positives:** expected and tolerable. The scan is intentionally coarse. Operators tune the extension list iteratively — each false positive is a one-line config change.
+
+---
+
 ## Integration with reporter
 
 The Phase 5 heuristics pass consumes rules from the sources above and emits findings in:

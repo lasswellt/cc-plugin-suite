@@ -3,7 +3,7 @@ id: S7-007
 title: "Cross-page event drift detection + event_invariants evaluator (required/forbidden/scope)"
 epic: E-011
 capability: CAP-015
-status: planned
+status: done
 priority: P0
 points: 2
 depends_on: [S7-006]
