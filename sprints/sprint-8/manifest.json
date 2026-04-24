@@ -1,0 +1,33 @@
+{
+  "sprint": 8,
+  "status": "planned",
+  "created": "2026-04-24T02:04:39Z",
+  "epics": [
+    "E-009"
+  ],
+  "capabilities": [
+    "CAP-011",
+    "CAP-012"
+  ],
+  "carry_forward": [],
+  "story_count": 9,
+  "planner_session": "sprint-plan-f9fb7660",
+  "planner_mode": "research-reuse",
+  "research_source": "docs/_research/2026-04-23_ui-audit-skill.md",
+  "stories": [
+    "S8-001",
+    "S8-002",
+    "S8-003",
+    "S8-004",
+    "S8-005",
+    "S8-006",
+    "S8-007",
+    "S8-008",
+    "S8-009"
+  ],
+  "ac_coverage": "9/9",
+  "planned_date": "2026-04-24T02:07:45Z",
+  "waived_ac_count": 0,
+  "spidr_splits": [],
+  "registry_entries_touched": []
+}

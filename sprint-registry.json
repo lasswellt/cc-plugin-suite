@@ -362,6 +362,34 @@
         "i4": "pass-no-op",
         "i5": "pass"
       }
+    },
+    {
+      "number": 8,
+      "status": "planned",
+      "planned_date": "2026-04-24T02:07:45Z",
+      "epics": [
+        "E-009"
+      ],
+      "capabilities": [
+        "CAP-011",
+        "CAP-012"
+      ],
+      "story_count": 9,
+      "stories": [
+        "S8-001",
+        "S8-002",
+        "S8-003",
+        "S8-004",
+        "S8-005",
+        "S8-006",
+        "S8-007",
+        "S8-008",
+        "S8-009"
+      ],
+      "ac_coverage": "9/9",
+      "planner_session": "sprint-plan-f9fb7660",
+      "planner_mode": "research-reuse",
+      "carry_forward_from_sprint_7": []
     }
   ]
 }
