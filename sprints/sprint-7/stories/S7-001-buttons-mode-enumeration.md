@@ -12,8 +12,8 @@ files:
   - skills/ui-audit/SKILL.md
   - skills/ui-audit/reference.md
 verify:
-  - "grep -q 'buttons.*interactive' skills/ui-audit/SKILL.md || grep -q 'Phase INTERACTIVE' skills/ui-audit/reference.md"
-  - "grep -qE 'role=\"(button|link|checkbox|radio|tab|menuitem|combobox|listbox|switch|slider|spinbutton)\"' skills/ui-audit/reference.md"
+  - "grep -q 'Phase INTERACTIVE' skills/ui-audit/reference.md"
+  - "grep -qE \"ROLES.*'button'.*'link'\" skills/ui-audit/reference.md"
   - "grep -q 'interactive_audit_summary' skills/ui-audit/reference.md"
 done: "SKILL.md declares 'buttons' mode behavior; reference.md gains Phase INTERACTIVE section with the ARIA-role + native-HTML enumeration browser_evaluate payload from research doc §3.7."
 ---
