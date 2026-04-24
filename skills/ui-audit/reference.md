@@ -185,7 +185,7 @@ HASH=$(printf '%s' "${RAW:-}" | (sha256sum 2>/dev/null || shasum -a 256) | cut -
 Inline quality flags (Phase 4 subset — full catalog in `CHECKS.md`):
 
 - `NULL_VALUE` — `RAW` is null or empty.
-- `PLACEHOLDER` — `RAW` matches the compiled union of `BUILTIN_PATTERN` (`/lorem|TODO|FIXME|N\/A|--|\?\?\?|xxx|placeholder|fpo|coming soon/i`) and any user-supplied `.ui-audit.json.placeholder_patterns` (compiled once at config-load with try/catch — malformed pattern emits `CONFIG_ERROR` finding at start, doesn't crash). See S8-004 for the configurable-patterns contract.
+- `PLACEHOLDER` — `RAW` matches the compiled union of `BUILTIN_PATTERN` (`/lorem|TODO|FIXME|N\/A|--|\?\?\?|xxx|placeholder|fpo|coming soon/i`) and any user-supplied `.ui-audit.json.placeholder_patterns` (compiled once at config-load with try/catch — malformed pattern emits `CONFIG_ERROR` finding at start, doesn't crash). **ReDoS guard:** before compile, reject any pattern that (a) exceeds 200 characters or (b) contains nested quantifiers `(x+)+` / `(x*)*` / `(x+)*` / `(x*)+` (detected via regex `/\([^)]*[+*][^)]*\)[+*]/`). Rejected patterns emit `CONFIG_ERROR` with `detail.issue: "pattern_redos_risk"` and are not compiled. See S8-004 for the configurable-patterns contract.
 - `NEGATIVE_COUNT` — `LABEL_TYPE == count && PARSED < 0`.
 
 Each flag emits an additional JSONL line with `label: "quality_flag"` and `detail: {flag, target_label, severity}` (schema in `CHECKS.md`).
