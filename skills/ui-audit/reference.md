@@ -352,11 +352,20 @@ All three wrappers call their original transport last — events reach productio
 window.__auditEventLog = [];
 const _push = (window.dataLayer ||= []).push.bind(window.dataLayer);
 window.dataLayer.push = function(...args) {
-  window.__auditEventLog.push({
-    layer: 'dataLayer',
-    ts: Date.now(),
-    payload: JSON.parse(JSON.stringify(args))
-  });
+  // Capture is best-effort — circular DOM refs in args must NEVER block the original push.
+  try {
+    window.__auditEventLog.push({
+      layer: 'dataLayer',
+      ts: Date.now(),
+      payload: JSON.parse(JSON.stringify(args))
+    });
+  } catch (e) {
+    window.__auditEventLog.push({
+      layer: 'dataLayer',
+      ts: Date.now(),
+      payload: '[uncapturable: ' + (e && e.message) + ']'
+    });
+  }
   return _push(...args);
 };
 ```
@@ -489,7 +498,7 @@ Reads `.ui-audit.json[event_invariants][]`. Schema:
 - **Required-props check:** `props` object has every key in `required_props`. Missing → violation.
 - **Forbidden-props check:** `props` object has NO key in `forbidden_props`. Any match → violation.
 
-Severity HIGH by default. **PII auto-escalation to CRITICAL:** any violation involving a forbidden-prop from the set `{user_email, password, ssn, credit_card, token, session_id, auth_token, api_key}` is CRITICAL regardless of declared severity. This catches real PII leaks in analytics payloads.
+Severity HIGH by default. **PII auto-escalation to CRITICAL:** any violation involving a forbidden-prop from the set `{user_email, email, password, ssn, social_security, credit_card, card_number, cvv, token, session_id, auth_token, api_key, phone, phone_number, address, street, dob, date_of_birth, ip_address, ip, passport}` (case-insensitive; matches any prop key containing these substrings) is CRITICAL regardless of declared severity. This catches real PII leaks in analytics payloads. List is conservative — false-positive CRITICALs are easier to down-grade via `.ui-audit.json[pii_suppressions]` than false-negative missed leaks.
 
 Each violation → `event_invariant_fail` finding + activity-feed event.
 
@@ -549,7 +558,7 @@ browser_evaluate:
   document.querySelector(SELECTORS.email).value = process.env.AUDIT_<ROLE>_EMAIL;
   document.querySelector(SELECTORS.password).value = process.env.AUDIT_<ROLE>_PASS;
   document.querySelector(SELECTORS.submit).click();
-browser_wait_for(text: SELECTORS.success_landmark, time: 5)
+browser_wait_for(text: SELECTORS.success_landmark, time: SELECTORS.sentinel_timeout || 10)
 ```
 
 Selectors are overridable via `.ui-audit.json[login_flow]`:
@@ -561,6 +570,7 @@ Selectors are overridable via `.ui-audit.json[login_flow]`:
   "password_selector": "input[name=password]",
   "submit_selector":   "button[type=submit]",
   "success_landmark":  "Dashboard",
+  "sentinel_timeout":  10,
   "profile_path":      "/profile",
   "profile_email_selector": "[data-user-email], .user-email"
 }
@@ -926,6 +936,9 @@ NULL_TRANSITION is detectable at `len(hist) >= 2`.
 <!-- Phase 5 coordinator here. Rule sources in PATTERNS.md. Full body lands in E-009. For sprint-6: no-op stub — emits INFO "heuristics not yet implemented — see E-009". -->
 
 ## Phase 7 — LOOP MATRIX (role × page cadence)
+
+> **Note on section ordering:** Phase 7 appears here (before Phase 6 REPORT in document order) because it references Phase 6 concepts forward. Readers executing in mode-order: numeric phases 0 → 1 → 2 → 3 → 4 → 5 → 6 run first; Phase INTERACTIVE / EVENTS / ROLE / 7 LOOP MATRIX are mode-conditional extensions layered on top. See Phase 6 § 6.6 for how loop mode adjusts reporter cadence.
+
 
 Active when mode is `--loop`. One `(role, page)` pair per tick. State-machine per tick:
 

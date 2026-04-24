@@ -230,7 +230,7 @@ tail -1 "${FEED}" | jq -e '.event == "invariant_fail"' >/dev/null || { echo "FAI
 # Parse the /#/interactive section and apply the 4 static checks from reference.md § I.3.
 # Assertions: exactly 1×NO_LABEL, 1×DEAD_HREF, 1×TABINDEX_POSITIVE, and destructive link isSafe=false.
 
-INTERACTIVE_HTML=$(awk '/<section id="\/interactive">/,/<\/section>/' /dev/stdin <<<"${HTML}")
+INTERACTIVE_HTML=$(awk '/<section id="\/interactive">/,/<\/section>/' <<<"${HTML}")
 if [ -z "${INTERACTIVE_HTML}" ]; then
   echo "FAIL: /interactive section not found in fixture" >&2
   exit 8

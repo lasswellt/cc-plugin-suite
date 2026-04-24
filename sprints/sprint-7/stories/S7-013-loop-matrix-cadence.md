@@ -14,7 +14,7 @@ files:
 verify:
   - "grep -qE 'roles_complete|roles_pending' skills/ui-audit/reference.md"
   - "grep -qE 'ui_audit_matrix|current_role' skills/ui-audit/reference.md"
-  - "grep -qE '--yes|--ci|ETA' skills/ui-audit/SKILL.md"
+  - "grep -qE -- '--yes|--ci|ETA' skills/ui-audit/SKILL.md"
 done: "SKILL.md loop mode expanded: each tick processes one (role,page) pair, state-machine LOAD_AUTH→NAVIGATE→EXTRACT→QUALITY→EVENT_DRAIN→INVARIANTS→WRITE→NEXT; latest-tick.json gains ui_audit_matrix block with current_role/current_page_idx/roles_complete/roles_pending; ETA printed upfront on full mode + --yes/--ci gate at >60min."
 ---
 

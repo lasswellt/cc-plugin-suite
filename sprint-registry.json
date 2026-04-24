@@ -297,7 +297,7 @@
     },
     {
       "number": 7,
-      "status": "review",
+      "status": "reviewed",
       "planned_date": "2026-04-24T01:28:10Z",
       "epics": [
         "E-010",
@@ -335,7 +335,33 @@
       "completed_date": "2026-04-24T01:41:13Z",
       "stories_completed": 13,
       "stories_blocked": 0,
-      "integration_issues": 0
+      "integration_issues": 0,
+      "review_date": "2026-04-24T01:47:35Z",
+      "review_status": "PASS",
+      "review_session": "sprint-review-ee2333ca",
+      "quality_gates": {
+        "type_check": null,
+        "lint": null,
+        "tests": true,
+        "build": null
+      },
+      "findings": {
+        "critical": 0,
+        "major": 0,
+        "minor": 3,
+        "info": 3
+      },
+      "auto_fixes_applied": 8,
+      "stories_reviewed": 13,
+      "stories_done": 13,
+      "stories_incomplete": 0,
+      "registry_invariants": {
+        "i1": "pass",
+        "i2": "pass-vacuous",
+        "i3": "pass-vacuous",
+        "i4": "pass-no-op",
+        "i5": "pass"
+      }
     }
   ]
 }

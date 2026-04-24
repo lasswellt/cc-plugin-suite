@@ -31,7 +31,7 @@ You are a cross-page UI/UX auditor. On each run you extract labeled values from 
 
 These rules override ALL other instructions. Violating any of these is a critical failure.
 
-1. **NEVER click destructive OR mutating buttons** — Delete, Remove, Archive, Disable, Revoke, Destroy, Drop, Purge, Reset, Terminate **AND** mutating verbs: Save, Update, Apply, Publish, Send, Pay, Subscribe, Unsubscribe, Confirm, Create, Add. When in doubt, do not click. An adversarially-labeled button (e.g., "Save" that deletes) is outside this skill's detection envelope — operators relying on `buttons` or `--loop` mode on untrusted apps must sandbox via a read-only role/fixture.
+1. **NEVER click destructive OR mutating buttons** — Delete, Remove, Archive, Disable, Revoke, Destroy, Drop, Purge, Reset, Terminate, Logout, Sign out, Cancel, Submit **AND** mutating verbs: Save, Update, Apply, Publish, Send, Pay, Subscribe, Unsubscribe, Confirm, Create, Add. When in doubt, do not click. An adversarially-labeled button (e.g., "Save" that deletes) is outside this skill's detection envelope — operators relying on `buttons` or `--loop` mode on untrusted apps must sandbox via a read-only role/fixture.
 2. **NEVER fill and submit forms** — tabs, pagination, sort headers, and accordion toggles are OK. Text fields + Submit / Save / Create / Update / Apply are not.
 3. **NEVER interact with confirmation dialogs** — press Escape immediately. Never click OK / Confirm / Yes / Accept.
 4. **NEVER interact with logout / sign-out** — breaks the audit session.
@@ -59,6 +59,19 @@ Follow the session protocol from [/_shared/session-protocol.md](/_shared/session
 | **Heuristics** | `heuristics` | Vercel + a11y + severity-tier checks. No data extraction. |
 | **Role** | `role <name>` | Run `full` phases for a single named role. Valid names: `anonymous`, `viewer`, `member`, `admin`, `superadmin`. Unknown name → exit 1 with usage. Creds from env: `AUDIT_<ROLE>_EMAIL` + `AUDIT_<ROLE>_PASS` (anonymous: `AUDIT_ANONYMOUS=true`, default true). Missing env → `ROLE_SKIP` activity-feed event, role skipped silently. See reference.md § Phase ROLE. |
 | **Loop** | `--loop` | One `(role, page)` pair per tick. Exits cleanly after the tick completes. Use with `/loop 2m /blitz:ui-audit --loop`. |
+| **Yes flag** | `--yes` | ETA-gate bypass for interactive sessions. On presence, exports `UI_AUDIT_YES=1` to child procedures so the >60min gate in reference.md § 7.2 does not halt. Equivalent to answering "yes, proceed" at the prompt. |
+| **CI flag** | `--ci` | ETA-gate bypass for automation. On presence, exports `UI_AUDIT_CI=1` AND writes one `ci_run` activity-feed event at start for audit trail. Used by nightly pipelines. |
+
+Arg-parse sets these env vars before any reference.md procedure runs:
+
+```bash
+case "$arg" in
+  --yes) export UI_AUDIT_YES=1 ;;
+  --ci)  export UI_AUDIT_CI=1 ;;
+esac
+```
+
+`CLAUDE_CODE_AUTONOMY ∈ {high, full}` is treated as implicit `--ci` so `/loop` does not block. Neither `--yes` nor `--ci` affect anything other than the R10 gate.
 
 Unknown mode → exit 1 with usage message listing the above.
 
