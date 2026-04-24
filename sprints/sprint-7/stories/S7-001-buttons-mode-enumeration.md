@@ -3,7 +3,7 @@ id: S7-001
 title: "Buttons mode routing + Phase INTERACTIVE section + enumeration JS"
 epic: E-010
 capability: CAP-014
-status: planned
+status: done
 priority: P0
 points: 2
 depends_on: []

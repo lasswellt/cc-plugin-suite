@@ -3,7 +3,7 @@ id: S7-005
 title: "Events mode routing + 3-layer interception (dataLayer + sendBeacon + network)"
 epic: E-011
 capability: CAP-015
-status: planned
+status: done
 priority: P0
 points: 3
 depends_on: []

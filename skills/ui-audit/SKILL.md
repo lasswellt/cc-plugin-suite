@@ -36,7 +36,7 @@ These rules override ALL other instructions. Violating any of these is a critica
 3. **NEVER interact with confirmation dialogs** — press Escape immediately. Never click OK / Confirm / Yes / Accept.
 4. **NEVER interact with logout / sign-out** — breaks the audit session.
 5. **NEVER modify or delete target-app data** — no toggle switches that mutate, no edit-in-place fields.
-6. **In `role` modes, never create users dynamically** — all role credentials must come from env vars (`AUDIT_<ROLE>_EMAIL` / `_PASS`); skip any role whose env vars are absent.
+6. **In `role` modes, never create users dynamically** — all role credentials must come from env vars (`AUDIT_<ROLE>_EMAIL` / `_PASS`); skip any role whose env vars are absent. Credentials are NEVER logged — not to stdout, not to the activity feed, not to the report. Only the boolean presence of each env var is recorded. Violating this is a CRITICAL security regression.
 
 ---
 
@@ -53,11 +53,11 @@ Follow the session protocol from [/_shared/session-protocol.md](/_shared/session
 | **Full** | `full` or no argument | All configured roles × all pages. Extraction + consistency + quality + heuristics + reporter. |
 | **Smoke** | `smoke` | Only `anonymous` + `admin` roles (or single default role if none configured). All pages. |
 | **Data** | `data` | Extraction + registry write only. No consistency, no heuristics. Current role only. |
-| **Buttons** | `buttons` | Interactive element enumeration + safe-click pass only. (Implementation in E-010.) |
-| **Events** | `events` | Analytics interception pass only. (Implementation in E-011.) |
+| **Buttons** | `buttons` | Enumerate every interactive element per page (ARIA roles + native HTML). Apply 6 per-element checks (NO_LABEL, DEAD_HREF, EMPTY_HANDLER, TABINDEX_POSITIVE, TABINDEX_NEGATIVE_VISIBLE, NO_FOCUS_STATE). Safe-click gating (destructive-label classifier blocks Delete/Save/Submit/etc). Writes `interactive_audit_summary` + `button_finding` registry lines. See reference.md § Phase INTERACTIVE. |
+| **Events** | `events` | Intercept analytics events via 3-layer stack: `window.dataLayer` push proxy + `navigator.sendBeacon` wrap + network-level filter (Segment/PostHog/Amplitude/GA4). Drain per-click + per-page, key by `(page, action_trigger)`, persist to registry. Detect cross-page drift + evaluate `event_invariants` (required_props / forbidden_props / scope). See reference.md § Phase EVENTS. |
 | **Consistency** | `consistency` | Reduce existing registry, evaluate invariants. No browser. Cheap. |
 | **Heuristics** | `heuristics` | Vercel + a11y + severity-tier checks. No data extraction. |
-| **Role** | `role <name>` | Run `full` phases for a single named role. |
+| **Role** | `role <name>` | Run `full` phases for a single named role. Valid names: `anonymous`, `viewer`, `member`, `admin`, `superadmin`. Unknown name → exit 1 with usage. Creds from env: `AUDIT_<ROLE>_EMAIL` + `AUDIT_<ROLE>_PASS` (anonymous: `AUDIT_ANONYMOUS=true`, default true). Missing env → `ROLE_SKIP` activity-feed event, role skipped silently. See reference.md § Phase ROLE. |
 | **Loop** | `--loop` | One `(role, page)` pair per tick. Exits cleanly after the tick completes. Use with `/loop 2m /blitz:ui-audit --loop`. |
 
 Unknown mode → exit 1 with usage message listing the above.
@@ -131,9 +131,21 @@ See `reference.md` § **"Phase 6 — REPORT"** for full procedure. Writes `docs/
 
 ## Loop Mode (`--loop`)
 
-When invoked with `--loop`, Phases 0–1 run normally (session register, config load, state load), then one `(role, page)` pair per tick runs through Phases 2 → 3 → partial 6 (reporter emits a rolling report but does not call `skill_complete` until the full matrix closes). Tick state persists in `.cc-sessions/${SESSION_ID}/tmp/loop-state.json` and `docs/crawls/latest-tick.json` gains `ui_audit_matrix` fields (see reference.md).
+When invoked with `--loop`, Phases 0–1 run normally (session register, config load, state load), then one `(role, page)` pair per tick runs through the state machine:
 
-Budget: tick <2 minutes. Full matrix runtime varies by `|roles| × |pages|`; emit ETA upfront. Recommend nightly CI for full 5-role runs; smoke (anonymous + admin) for PR gates.
+```
+LOAD_AUTH[current_role] → NAVIGATE[current_page] → EXTRACT → QUALITY
+  → EVENT_DRAIN → INVARIANTS (numeric + event + role) → WRITE[role,page]
+  → ADVANCE CURSOR → NEXT
+```
+
+The reporter emits a rolling report each tick but does not call `skill_complete` with `mode: "loop-matrix-complete"` until the full matrix has run twice (pass 1 seeds registry, pass 2 detects drift via § Phase 3 FLAPPING/STALE). After pass 2, the loop enters `matrix_idle` — subsequent ticks are no-ops until the app changes.
+
+Tick state persists in `.cc-sessions/${SESSION_ID}/tmp/loop-state.json` and `docs/crawls/latest-tick.json` gains a `ui_audit_matrix` block (see reference.md § Phase 6 + § Phase ROLE).
+
+Budget: tick <2 minutes. Full matrix runtime varies by `|roles| × |pages|`. ETA printed upfront:
+- **ETA gate (R10):** `full` mode computes `eta = roles_active × len(pages) × 120s`. If `eta > 3600s` (60 min) AND neither `--yes` nor `--ci` flag present, skill exits 1 with a clear message. `CLAUDE_CODE_AUTONOMY ∈ {high, full}` is treated as implicit `--ci` (so `/loop` doesn't block).
+- **Recommended:** nightly CI for full 5-role runs; smoke (anonymous + admin) for PR gates; `role admin` for targeted admin-boundary audits.
 
 ---
 

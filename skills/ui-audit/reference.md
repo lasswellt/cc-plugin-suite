@@ -210,6 +210,161 @@ After the page's labels are all written, emit one `registry_progress` activity-f
 
 **Information-flow note.** Raw DOM `.textContent` for each labeled element — which may include PII visible to the authenticated role (usernames, emails, order amounts, etc.) — is persisted verbatim in `docs/crawls/page-data-registry.jsonl`, aggregated into `docs/crawls/ui-audit-report.md`, and may appear in `raw` fields of activity-feed events. This is by design (cross-page invariant comparisons need the exact value), but it means these three files inherit the sensitivity class of the highest-privilege role the skill audits. Do not commit them to public repos. `.gitignore` suggestion: `docs/crawls/page-data-registry.jsonl` and `docs/crawls/ui-audit-report.md`.
 
+## Phase INTERACTIVE — Every button / link / tab
+
+Runs in `buttons` and `full` modes. Skipped in `data`, `consistency`, `heuristics`, and `events`-only modes.
+
+Per-page procedure: enumerate → 6 static checks → focus probe → safe-click (gated) → summarize.
+
+### I.1 Enumeration (single `browser_evaluate` call)
+
+Returns every ARIA-role + native HTML interactive element on the page. Zero side effects. De-dup via `Set` so an element matching both ARIA role and native tag appears once.
+
+```js
+(() => {
+  const ROLES = ['button','link','checkbox','radio','tab','menuitem','combobox','listbox','switch','slider','spinbutton'];
+  const roleQ = ROLES.map(r => `[role="${r}"]`).join(',');
+  const nativeQ = 'button,a[href],input:not([type=hidden]),select,textarea,[tabindex]';
+  return [...new Set([
+    ...document.querySelectorAll(roleQ),
+    ...document.querySelectorAll(nativeQ),
+  ])].map(el => ({
+    tag:           el.tagName.toLowerCase(),
+    role:          el.getAttribute('role') ?? el.tagName.toLowerCase(),
+    label:         el.getAttribute('aria-label')
+                     ?? el.getAttribute('aria-labelledby')
+                     ?? el.textContent?.trim().slice(0, 80)
+                     ?? el.getAttribute('placeholder')
+                     ?? null,
+    tabindex:      el.getAttribute('tabindex'),
+    hrefOrOnclick: el.getAttribute('href') ?? el.getAttribute('onclick') ?? null,
+    classes:       el.className,
+    outerSnip:     el.outerHTML.slice(0, 120),
+    visible:       !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length),
+    ariaHidden:    el.getAttribute('aria-hidden') === 'true',
+  }));
+})()
+```
+
+### I.2 Per-page summary line
+
+Once per page (after I.1 + I.3 + I.4), append one aggregate JSONL:
+
+```jsonl
+{"ts":"<ISO>","role":"<role>","page":"<path>","label":"interactive_audit_summary","raw":null,"parsed":null,"hash":"<sha8>","selector":null,"tick":<n>,"detail":{"total":<n>,"labeled":<n>,"dead_href":<n>,"no_handler":<n>,"tabindex_broken":<n>,"no_focus_state":<n>,"safe_clicked":<n>,"click_errors":<n>}}
+```
+
+<!-- Per-element checks + safe-click procedures fill in via S7-002 and S7-003 (Waves 1 and 2). -->
+
+---
+
+## Phase EVENTS — Analytics consistency
+
+Runs in `events` and `full` modes. Injects 3 interception layers immediately after `browser_navigate` returns, BEFORE any user interaction.
+
+### E.1 Three-layer interception
+
+All three wrappers call their original transport last — events reach production analytics unchanged.
+
+**Layer A — `window.dataLayer` push proxy** (GA4 / GTM):
+
+```js
+window.__auditEventLog = [];
+const _push = (window.dataLayer ||= []).push.bind(window.dataLayer);
+window.dataLayer.push = function(...args) {
+  window.__auditEventLog.push({
+    layer: 'dataLayer',
+    ts: Date.now(),
+    payload: JSON.parse(JSON.stringify(args))
+  });
+  return _push(...args);
+};
+```
+
+**Layer B — `navigator.sendBeacon` wrap** (GA4 hit transport):
+
+```js
+const _beacon = navigator.sendBeacon.bind(navigator);
+navigator.sendBeacon = function(url, data) {
+  window.__auditEventLog.push({
+    layer: 'beacon',
+    ts: Date.now(),
+    url,
+    body: typeof data === 'string' ? data : '[binary]'
+  });
+  return _beacon(url, data);
+};
+```
+
+**Layer C — Network-level (post-hoc)**. After each action, read `browser_network_requests({static:false, requestBody:true, requestHeaders:false})` and filter POST bodies by hostname. Default filter list:
+
+- `api.segment.io` — Segment
+- `app.posthog.com`, `*.i.posthog.com` — PostHog
+- `api2.amplitude.com`, `*.amplitude.com` — Amplitude
+- `www.google-analytics.com/g/collect`, `/g/collect` — GA4
+
+Extensible via `.ui-audit.json[analytics_hostnames]: [...]` (array of strings; matched as substrings).
+
+### E.2 Activation timing — R8 mitigation
+
+Layers A + B are injected via `browser_evaluate` immediately after `browser_navigate` returns — before the safe-click pass, before any text-settle. If `window.dataLayer.length > 0` at inject time (events fired during initial parse), emit a finding:
+
+```jsonl
+{"label":"analytics_event_warning","detail":{"flag":"EVENTS_BEFORE_SPY","count":<n>,"severity":"LOW"}}
+```
+
+The count is `window.dataLayer.length` at inject time — those earlier entries are captured but lack the spy's timestamps.
+
+<!-- Registry schema + drain procedure fill via S7-006; drift + event_invariants via S7-007. -->
+
+---
+
+## Phase ROLE — Per-permissions-role cycle
+
+Runs in `full`, `smoke`, and `role <name>` modes. Also drives the `(role, page)` cursor in `--loop` mode.
+
+### R.1 Role enumeration + env contract
+
+Five recognized roles, executed in this order:
+
+```
+anonymous → viewer → member → admin → superadmin
+```
+
+Env var contract:
+
+```
+AUDIT_ANONYMOUS=true                  # default true when unset; anonymous needs no creds
+AUDIT_VIEWER_EMAIL     / AUDIT_VIEWER_PASS
+AUDIT_MEMBER_EMAIL     / AUDIT_MEMBER_PASS
+AUDIT_ADMIN_EMAIL      / AUDIT_ADMIN_PASS
+AUDIT_SUPERADMIN_EMAIL / AUDIT_SUPERADMIN_PASS
+```
+
+**Skip-if-absent.** For any non-anonymous role whose `EMAIL` env var is unset (or empty string), emit a `ROLE_SKIP` event and continue:
+
+```jsonl
+{"ts":"<ISO>","session":"<SESSION_ID>","skill":"ui-audit","event":"ROLE_SKIP","message":"Role <name> skipped — env vars absent","detail":{"role":"<name>","missing":["AUDIT_<ROLE>_EMAIL","AUDIT_<ROLE>_PASS"]}}
+```
+
+**No credential logging.** Only `{role, missing: [var names]}` is logged. `EMAIL` and `PASS` values are never written to any file. This is enforced by convention — violators are CRITICAL security regressions per SKILL.md Safety Rule 6.
+
+### R.2 Mode-specific role selection
+
+| Mode | Roles iterated |
+|---|---|
+| `full` | All 5 (minus skipped) |
+| `smoke` | `anonymous` + `admin` (minus skipped) |
+| `role <name>` | Just `<name>` (must not be skipped) |
+
+ETA gate (R10) applies only to `full` (multi-role × all-pages × 2min/tick). Smoke and single-role are not gated — they are bounded under 1 hour by construction.
+
+<!-- Login + storageState + sentinel procedures fill via S7-010 (Wave 1). -->
+<!-- role_invariants evaluator fills via S7-011 (Wave 2). -->
+<!-- Role-leak scan fills via S7-012 (Wave 2). -->
+
+---
+
 ## Phase 3 — CONSISTENCY
 
 Reduces the append-only registry to latest-wins state, detects cross-page value divergence, and feeds the result to the invariant evaluator (next section).

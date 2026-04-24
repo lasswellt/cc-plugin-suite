@@ -3,7 +3,7 @@ id: S7-009
 title: "Role mode routing + env var contract + skip-if-absent"
 epic: E-012
 capability: CAP-016
-status: planned
+status: done
 priority: P0
 points: 2
 depends_on: []
