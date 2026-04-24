@@ -232,7 +232,7 @@
     },
     {
       "number": 6,
-      "status": "planned",
+      "status": "review",
       "planned_date": "2026-04-24T00:44:10Z",
       "epics": [
         "E-008"
@@ -261,7 +261,13 @@
       ],
       "ac_coverage": "23/23",
       "planner_session": "sprint-plan-4e3c67f0",
-      "carry_forward_from_sprint_5": []
+      "carry_forward_from_sprint_5": [],
+      "started_date": "2026-04-24T00:51:47Z",
+      "dev_session": "sprint-dev-332f5c87",
+      "completed_date": "2026-04-24T01:02:08Z",
+      "stories_completed": 13,
+      "stories_blocked": 0,
+      "integration_issues": 0
     }
   ]
 }
