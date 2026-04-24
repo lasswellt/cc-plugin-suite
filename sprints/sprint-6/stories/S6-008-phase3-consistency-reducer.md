@@ -3,7 +3,7 @@ id: S6-008
 title: "Phase 3 CONSISTENCY — jq reducer + cross-page divergence detection"
 epic: E-008
 capability: CAP-010
-status: planned
+status: done
 priority: P0
 points: 2
 depends_on: [S6-004, S6-007]

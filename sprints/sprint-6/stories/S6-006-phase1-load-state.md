@@ -3,7 +3,7 @@ id: S6-006
 title: "Phase 1 LOAD STATE — read browse crawl artifacts or lightweight internal crawl"
 epic: E-008
 capability: CAP-008
-status: planned
+status: done
 priority: P0
 points: 3
 depends_on: [S6-004]

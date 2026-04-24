@@ -3,7 +3,7 @@ id: S6-007
 title: "Phase 2 DATA EXTRACTION — browser_evaluate label executor + JSONL writer"
 epic: E-008
 capability: CAP-009
-status: planned
+status: done
 priority: P0
 points: 3
 depends_on: [S6-004, S6-006]

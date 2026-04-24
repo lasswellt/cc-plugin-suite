@@ -3,7 +3,7 @@ id: S6-010
 title: "Flapping/STALE/NULL_TRANSITION tick-diff taxonomy"
 epic: E-008
 capability: CAP-010
-status: planned
+status: done
 priority: P1
 points: 2
 depends_on: [S6-004, S6-007]
