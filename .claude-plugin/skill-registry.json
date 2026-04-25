@@ -6,7 +6,7 @@
     {
       "name": "ask",
       "category": "orchestrator",
-      "description": "Task intake router — classifies vague requests and dispatches to the right skill(s)",
+      "description": "Task intake router \u2014 classifies vague requests and dispatches to the right skill(s)",
       "model": "opus",
       "modifies_code": false,
       "uses_agents": false,
@@ -17,45 +17,58 @@
     {
       "name": "sprint",
       "category": "orchestrator",
-      "description": "Full sprint cycle orchestrator — plan, implement, review. Supports --loop for use with /loop.",
+      "description": "Full sprint cycle orchestrator \u2014 plan, implement, review. Supports --loop for use with /loop.",
       "model": "opus",
       "modifies_code": false,
       "uses_agents": false,
       "uses_sessions": false,
-      "dependencies": ["sprint-plan", "sprint-dev", "sprint-review"],
+      "dependencies": [
+        "sprint-plan",
+        "sprint-dev",
+        "sprint-review"
+      ],
       "maturity": "stable"
     },
     {
       "name": "implement",
       "category": "orchestrator",
-      "description": "Sprint implementation phase only — routes to sprint-dev",
+      "description": "Sprint implementation phase only \u2014 routes to sprint-dev",
       "model": "opus",
       "modifies_code": false,
       "uses_agents": false,
       "uses_sessions": false,
-      "dependencies": ["sprint-dev"],
+      "dependencies": [
+        "sprint-dev"
+      ],
       "maturity": "stable"
     },
     {
       "name": "review",
       "category": "orchestrator",
-      "description": "Sprint review phase only — routes to sprint-review",
+      "description": "Sprint review phase only \u2014 routes to sprint-review",
       "model": "opus",
       "modifies_code": false,
       "uses_agents": false,
       "uses_sessions": false,
-      "dependencies": ["sprint-review"],
+      "dependencies": [
+        "sprint-review"
+      ],
       "maturity": "stable"
     },
     {
       "name": "ship",
       "category": "orchestrator",
-      "description": "End-to-end shipping workflow — review, completeness gate, quality metrics, release",
+      "description": "End-to-end shipping workflow \u2014 review, completeness gate, quality metrics, release",
       "model": "opus",
       "modifies_code": true,
       "uses_agents": false,
       "uses_sessions": true,
-      "dependencies": ["sprint-review", "completeness-gate", "quality-metrics", "release"],
+      "dependencies": [
+        "sprint-review",
+        "completeness-gate",
+        "quality-metrics",
+        "release"
+      ],
       "maturity": "stable"
     },
     {
@@ -160,7 +173,7 @@
     {
       "name": "browse",
       "category": "core-dev",
-      "description": "Automated browser testing, site crawling, and visual design analysis via Playwright MCP — captures console errors, builds navigational hierarchy, detects design inconsistencies, auto-fixes issues in loop mode",
+      "description": "Automated browser testing, site crawling, and visual design analysis via Playwright MCP \u2014 captures console errors, builds navigational hierarchy, detects design inconsistencies, auto-fixes issues in loop mode",
       "model": "opus",
       "modifies_code": true,
       "uses_agents": false,
@@ -231,7 +244,9 @@
       "modifies_code": false,
       "uses_agents": true,
       "uses_sessions": true,
-      "dependencies": ["browse"],
+      "dependencies": [
+        "browse"
+      ],
       "maturity": "experimental"
     },
     {
@@ -303,7 +318,7 @@
     {
       "name": "quick",
       "category": "core-dev",
-      "description": "Fast ad-hoc changes without full skill ceremony — small fixes, typos, config tweaks",
+      "description": "Fast ad-hoc changes without full skill ceremony \u2014 small fixes, typos, config tweaks",
       "model": "sonnet",
       "modifies_code": true,
       "uses_agents": false,
@@ -314,7 +329,7 @@
     {
       "name": "health",
       "category": "meta",
-      "description": "Plugin health check — verifies hooks, sessions, registry, and structural integrity",
+      "description": "Plugin health check \u2014 verifies hooks, sessions, registry, and structural integrity",
       "model": "sonnet",
       "modifies_code": false,
       "uses_agents": false,
@@ -347,7 +362,7 @@
     {
       "name": "todo",
       "category": "core-dev",
-      "description": "Track development todos and follow-up items — add, list, check, resolve",
+      "description": "Track development todos and follow-up items \u2014 add, list, check, resolve",
       "model": "sonnet",
       "modifies_code": false,
       "uses_agents": false,
@@ -387,13 +402,24 @@
       "uses_sessions": true,
       "dependencies": [],
       "maturity": "beta"
+    },
+    {
+      "name": "code-doctor",
+      "category": "quality",
+      "description": "Framework-API correctness audit for Firestore, VueFire, Vue 3, and Pinia. Detects anti-patterns, misuse, dead exports, and duplication candidates. Read-only by default; --fix applies low-risk auto-fixes.",
+      "model": "opus",
+      "modifies_code": true,
+      "uses_agents": true,
+      "uses_sessions": true,
+      "dependencies": [],
+      "maturity": "beta"
     }
   ],
   "categories": {
     "orchestrator": "Meta-skills that coordinate other skills",
-    "sprint-lifecycle": "Full sprint workflow — planning, implementation, review",
-    "core-dev": "Core development tasks — research, fix, refactor, test, UI, scaffold",
-    "quality": "Quality assurance — audit, completeness, metrics, dependencies, performance",
+    "sprint-lifecycle": "Full sprint workflow \u2014 planning, implementation, review",
+    "core-dev": "Core development tasks \u2014 research, fix, refactor, test, UI, scaffold",
+    "quality": "Quality assurance \u2014 audit, completeness, metrics, dependencies, performance",
     "docs-release": "Documentation, release management, migrations",
     "meta": "Plugin self-improvement and analysis"
   }
