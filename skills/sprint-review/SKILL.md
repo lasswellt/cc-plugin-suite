@@ -1,7 +1,7 @@
 ---
 name: sprint-review
 description: "Reviews sprint quality with automated gates (type-check, lint, tests, build) and parallel reviewer agents (security, backend, frontend, patterns). Auto-fixes safe categories (types, lint, imports). Enforces the carry-forward registry hard gate (Phase 3.6 Invariants 1-5). Use when the user says 'review sprint', 'check quality', 'run review', 'sprint quality gate', or 'audit sprint'."
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch, Agent
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, Agent
 disable-model-invocation: false
 model: opus
 effort: high
