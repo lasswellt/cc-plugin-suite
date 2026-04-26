@@ -2,6 +2,27 @@
 
 All notable changes to the blitz plugin are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] — 2026-04-25
+
+### April 2026 CC Platform Feature Adoption
+
+Six CC platform features from the research backlog (`docs/_research/2026-04-25_blitz-skill-alignment.md`) implemented across skills and hooks.
+
+### Added
+
+- **`PreCompact` / `PostCompact` hooks** (`hooks/hooks.json` + `hooks/scripts/pre-compact-snapshot.sh` + `hooks/scripts/post-compact-log.sh`) — PreCompact fires before context compaction and writes a state snapshot (sprint number, wave progress, stories done/remaining, CF_ACTIVE count) to `.cc-sessions/compact-state.json`. PostCompact (async) reads the snapshot and appends a restoration hint to the activity feed so the next turn knows where to resume. Addresses the highest blitz failure mode: silent state loss during auto-compact on long sprints.
+- **`UserPromptExpansion` hook** (`hooks/hooks.json` + `hooks/scripts/blitz-prompt-expansion.sh`) — fires on every `blitz:*` slash command expansion, reads the last 5 substantive activity-feed events, and injects them as `additionalContext` into the expansion prompt. Gives every skill instant awareness of prior session state without relying on Claude reading CLAUDE.md manually.
+
+### Changed
+
+- **`skills/sprint-dev/SKILL.md`** Phase 3.2 — Monitoring loop now uses the `Monitor` tool (event-driven) as the primary progress-tracking mechanism. Agents append JSON lines to a sprint-scoped progress file; a `tail -f` monitor wakes the orchestrator on DONE/BLOCKED/wave_complete events, eliminating the per-turn polling cost on long sprints. `TaskList` polling retained as fallback when Monitor is unavailable.
+- **`skills/sprint-dev/SKILL.md`** Phase 2.2 — Agent MCP scoping table added. When `.claude/agents/blitz-{backend,frontend,test}-dev.md` definitions exist, each agent is spawned with its typed `mcpServers` config (backend=Firestore/Firebase, frontend=Playwright, test=read-only). Falls back to full session MCP set if agent definition files are absent.
+- **`skills/sprint-dev/SKILL.md`** Phase 4.11 (new) — `PushNotification` call at sprint completion: sends title, story counts, and GitHub URL as a mobile push via Remote Control. No-op when Remote Control is not configured.
+- **`skills/ship/SKILL.md`** Phase 4.2 (new) — `PushNotification` call at ship completion: sends version, feature/fix counts, and release URL. No-op when Remote Control is not configured.
+- **`skills/sprint/SKILL.md`** `--loop` flag — Documents CronCreate-backed scheduling tiers (session/desktop/cloud Routine) and adds `ScheduleWakeup` self-scheduling pattern for direct `--loop` invocations (skipped when `CLAUDE_CODE_LOOP_MANAGED=1`). Documents 7-day CronCreate session expiry; recommends cloud Routines for runs >7 days.
+- **`skills/ui-audit/SKILL.md`** Loop mode — `ScheduleWakeup` pattern added to `--loop` table: each tick registers the next wakeup so the audit survives idle periods without a persistent terminal.
+- **`.claude-plugin/skill-registry.json`** — version 1.4.0 → 1.5.0.
+
 ## [1.7.0] — 2026-04-25
 
 ### blitz:code-doctor + Research → Sprint Auto-Chain

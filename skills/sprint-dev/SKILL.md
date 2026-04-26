@@ -180,12 +180,18 @@ Use `TeamCreate` to create a team named `sprint-${SPRINT_NUMBER}-dev`.
 
 Based on story assignments, spawn only the agents that have stories:
 
-| Agent Name | Role | Worktree Branch |
-|---|---|---|
-| `backend-dev` | Schemas, APIs, stores, services, cloud functions | `sprint-${N}/backend` |
-| `frontend-dev` | Components, pages, layouts, navigation, styles | `sprint-${N}/frontend` |
-| `test-writer` | Unit tests, integration tests, e2e tests | `sprint-${N}/tests` |
-| `infra-dev` | Infrastructure, CI/CD, deployment (if stories exist) | `sprint-${N}/infra` |
+| Agent Name | Role | Worktree Branch | MCP Scope |
+|---|---|---|---|
+| `backend-dev` | Schemas, APIs, stores, services, cloud functions | `sprint-${N}/backend` | Firestore, Firebase MCP only |
+| `frontend-dev` | Components, pages, layouts, navigation, styles | `sprint-${N}/frontend` | Playwright MCP only |
+| `test-writer` | Unit tests, integration tests, e2e tests | `sprint-${N}/tests` | Read-only tools only |
+| `infra-dev` | Infrastructure, CI/CD, deployment (if stories exist) | `sprint-${N}/infra` | Full (infra-scoped) |
+
+**Agent MCP scoping:** If the project has `.claude/agents/` definitions for `blitz-backend-dev`, `blitz-frontend-dev`, or `blitz-test-writer`, those definitions are used at spawn time and their `mcpServers` field restricts which MCP servers each agent can access — backend agents only get database/API MCPs, frontend gets Playwright/Figma, test-writer gets none. Check for these files before spawning:
+```bash
+ls .claude/agents/blitz-{backend,frontend,test}-dev.md 2>/dev/null
+```
+If missing, agents inherit the full session MCP set (existing behavior, safe fallback).
 
 ### 2.3 Spawn Agents with Worktree Isolation
 
@@ -269,7 +275,21 @@ Each agent follows this loop for each assigned story:
 
 The orchestrator (you) must:
 
-1. **Poll progress** every 2-3 agent messages. Use `TaskList` to check status. Track wave-level completion — when all stories in a wave complete, print a wave progress report per [verbose-progress.md](/_shared/verbose-progress.md) and unblock all Wave N+1 stories.
+1. **Monitor progress** using the Monitor tool (event-driven) in preference to polling. Start a background progress monitor before the first agent wave:
+   ```bash
+   # Agents append JSON lines to this file on DONE/BLOCKED/HEARTBEAT
+   PROGRESS_FILE=".cc-sessions/${SESSION_ID}/tmp/sprint-progress.jsonl"
+   touch "$PROGRESS_FILE"
+   ```
+   Then use the `Monitor` tool:
+   ```
+   Monitor(
+     description: "Sprint ${N} agent progress",
+     command: "tail -f ${PROGRESS_FILE} | grep --line-buffered '\"status\":\"done\"\\|\"status\":\"blocked\"\\|\"event\":\"wave_complete\"'",
+     persistent: true
+   )
+   ```
+   Each stdout line from the monitor wakes this session as a notification event, eliminating the need for manual polling. Fall back to `TaskList` polling (every 2-3 turns) only if Monitor is unavailable. Track wave-level completion — when all stories in a wave complete, print a wave progress report per [verbose-progress.md](/_shared/verbose-progress.md) and unblock all Wave N+1 stories.
 1a. **Write carry-forward registry progress on story `DONE:`.** When an agent signals `DONE:` for a story, before updating STATE.md, check the completed story's frontmatter for a `registry_entries` field (see `skills/sprint-plan/reference.md` Story File Format). For each referenced entry:
 
     a. **Validate the id.** Reduce the registry with `jq -s 'group_by(.id) | map(max_by(.ts))' .cc-sessions/carry-forward.jsonl` and confirm the id exists and is `status ∈ {active, partial}`. If the id is unknown → hard-fail with a loud error (the story's `registry_entries` references a non-existent entry — the author must fix the story). If the status is already `complete|dropped|deferred` → log a warning, skip the write, and continue (the story is working against a closed entry, which may indicate stale planning).
@@ -496,3 +516,17 @@ git push origin HEAD
 ### 4.10 Final Output and Error Recovery
 
 Print the summary block and apply recovery rules from `reference.md` sections **"Final Output Template"** and **"Error Recovery"**.
+
+### 4.11 Push Completion Notification
+
+After the final commit and push, send a mobile push notification if Remote Control is enabled:
+
+```
+PushNotification(
+  title: "Sprint ${N} complete ✓",
+  message: "${COMPLETED}/${TOTAL} stories · ${BLOCKED} blocked · review ready",
+  url: "https://github.com/<repo>/tree/sprint-${N}"
+)
+```
+
+Call this unconditionally — if Remote Control is not configured the tool is a no-op. Do not gate on user confirmation; this is informational only.

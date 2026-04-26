@@ -58,7 +58,7 @@ Follow the session protocol from [/_shared/session-protocol.md](/_shared/session
 | **Consistency** | `consistency` | Reduce existing registry, evaluate invariants. No browser. Cheap. |
 | **Heuristics** | `heuristics` | Vercel + a11y + severity-tier checks. No data extraction. |
 | **Role** | `role <name>` | Run `full` phases for a single named role. Valid names: `anonymous`, `viewer`, `member`, `admin`, `superadmin`. Unknown name → exit 1 with usage. Creds from env: `AUDIT_<ROLE>_EMAIL` + `AUDIT_<ROLE>_PASS` (anonymous: `AUDIT_ANONYMOUS=true`, default true). Missing env → `ROLE_SKIP` activity-feed event, role skipped silently. See reference.md § Phase ROLE. |
-| **Loop** | `--loop` | One `(role, page)` pair per tick. Exits cleanly after the tick completes. Use with `/loop 2m /blitz:ui-audit --loop`. |
+| **Loop** | `--loop` | One `(role, page)` pair per tick. Exits cleanly after the tick completes. Use with `/loop 2m /blitz:ui-audit --loop`. After each tick, `ScheduleWakeup(delaySeconds: 120, prompt: "/blitz:ui-audit --loop")` keeps the audit running through idle periods if invoked directly (not via `/loop`). Skip `ScheduleWakeup` when `CLAUDE_CODE_LOOP_MANAGED=1`. For nightly full-matrix runs use a cloud Routine via `/schedule`. |
 | **Yes flag** | `--yes` | ETA-gate bypass for interactive sessions. On presence, exports `UI_AUDIT_YES=1` to child procedures so the >60min gate in reference.md § 7.2 does not halt. Equivalent to answering "yes, proceed" at the prompt. |
 | **CI flag** | `--ci` | ETA-gate bypass for automation. On presence, exports `UI_AUDIT_CI=1` AND writes one `ci_run` activity-feed event at start for audit trail. Used by nightly pipelines. |
 

@@ -28,6 +28,25 @@ Parse the following flags from the user's arguments:
 - `--mode <autonomous|checkpoint|interactive>`: Execution mode passed through to sprint-dev. `autonomous` (default) runs everything; `checkpoint` pauses after each wave for user review; `interactive` confirms each story before starting.
 - `--loop`: Fully autonomous loop mode. Enables state-based reconciliation: reads current sprint state, executes **one phase**, then exits cleanly so `/loop` can re-invoke. Sets autonomy to `full` — all decisions are auto-approved, no user prompts, no confirmations, no pauses. Designed for use with `/loop <interval> /blitz:sprint --loop` under bypass permissions.
 
+  **Scheduling tiers for `--loop`:**
+  | Tier | How | Persistence | Min interval | Use case |
+  |------|-----|-------------|-------------|---------|
+  | `/loop` + CronCreate | Session-scoped | Requires active session | 1 min | Interactive dev sprints |
+  | Desktop scheduled task | Survives session restart | Requires machine | 1 min | Overnight local runs |
+  | Routine (cloud) | Machine-independent | Fully autonomous | 1 hour | Nightly CI, weekly sweeps |
+
+  **Self-scheduling in loop mode:** After Step 3 (Act) completes, use `ScheduleWakeup` to register the next tick — this keeps the loop alive through idle periods without requiring the user to keep a terminal open:
+  ```
+  ScheduleWakeup(
+    delaySeconds: 270,   # under 5-min cache TTL; adjust per sprint cadence
+    prompt: "/blitz:sprint --loop",
+    reason: "next sprint reconciliation tick"
+  )
+  ```
+  Do NOT use `ScheduleWakeup` if the user explicitly invoked `/loop <interval>` — that already handles scheduling. Use it only when `--loop` is invoked directly (not via `/loop`). Detect via `CLAUDE_CODE_LOOP_MANAGED` env var: if `"1"`, skip `ScheduleWakeup`.
+
+  **Session expiry:** CronCreate-backed sessions expire after 7 days. For runs longer than 7 days, use a cloud Routine (see `/schedule`).
+
 If no flags are provided, run all three phases in sequence.
 
 ---

@@ -242,6 +242,20 @@ Ship Complete: vX.Y.Z
     - N other changes
 ```
 
+### 4.2 Push Completion Notification
+
+After printing the summary, send a mobile push notification:
+
+```
+PushNotification(
+  title: "Shipped vX.Y.Z ✓",
+  message: "<N features> · <N fixes> · release at <release-url>",
+  url: "<release-url>"
+)
+```
+
+No-op if Remote Control is not configured.
+
 ---
 
 ## Error Recovery
