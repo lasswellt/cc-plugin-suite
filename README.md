@@ -15,7 +15,7 @@
 
 **Production-grade Claude Code plugin for Vue/Nuxt + Firebase**
 
-**36 skills** · **6 agents** · **19 hooks** · **8 hook events**
+**37 skills** · **6 agents** · **19 hooks** · **8 hook events**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude_Code-Plugin-blue)](https://docs.anthropic.com/en/docs/claude-code)
@@ -150,7 +150,7 @@ Each tick the reconciliation engine reads current state, executes exactly one ph
 
 ---
 
-## Skills (36)
+## Skills (37)
 
 ### Orchestrators
 
@@ -216,6 +216,7 @@ Each tick the reconciliation engine reads current state, executes exactly one ph
 | **retrospective** | Analyzes completed sessions, identifies patterns, generates self-improvement proposals with safety classification | `/blitz:retrospective` |
 | **setup** | Detects conflicts between CLAUDE.md files and blitz skill behaviors. Validates permissions and stack assumptions. | `/blitz:setup` |
 | **health** | Plugin health check — hooks, sessions, registry, structural integrity | `/blitz:health` |
+| **conform** | Detects drift in any blitz-style plugin directory (frontmatter, companion file layout, hook wiring, version sync, registry remnants). Reports findings; `--fix` applies mechanical migrations using the v1.9.0 migration scripts. Read-only by default. | `/blitz:conform [target-dir] [--fix\|--report-only]` |
 | **todo** | Track development todos in `.cc-sessions/todos.jsonl` | `/blitz:todo [add\|list\|check\|resolve]` |
 
 ---

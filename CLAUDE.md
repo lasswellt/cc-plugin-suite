@@ -45,7 +45,7 @@ If no activity feed exists or is empty, skip the summary silently.
 
 ## Skill System
 
-This repo contains **36 development skills** in `skills/`. Skills are auto-discovered by Claude Code from `skills/<name>/SKILL.md` (Anthropic-canonical layout — no central registry). Skills are invoked via `/blitz:<skill-name>`.
+This repo contains **37 development skills** in `skills/`. Skills are auto-discovered by Claude Code from `skills/<name>/SKILL.md` (Anthropic-canonical layout — no central registry). Skills are invoked via `/blitz:<skill-name>`.
 
 Every SKILL.md must satisfy the canonical frontmatter contract enforced by `hooks/scripts/skill-frontmatter-validate.sh`: third-person description ≤1024 chars, body ≤500 lines, required fields (`name`, `description`, `model`, `effort`, `compatibility`, `allowed-tools` when invokable), and the verbatim OUTPUT STYLE snippet from `/_shared/terse-output.md`.
 
