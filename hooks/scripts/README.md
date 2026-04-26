@@ -1,6 +1,6 @@
 # Hook Scripts
 
-18 scripts wired through `hooks/hooks.json`, covering 8 hook events. Every script reads its trigger from stdin (or runs unconditionally on `SessionStart`/`PreCompact`-style events). All exit non-blocking by default; only `pre-commit-validate.sh`, `pre-edit-guard.sh`, `task-completed-validate.sh`, `reference-compression-validate.sh`, and `skill-frontmatter-validate.sh` can BLOCK an action by exiting 2.
+19 scripts wired through `hooks/hooks.json`, covering 8 hook events. Every script reads its trigger from stdin (or runs unconditionally on `SessionStart`/`PreCompact`-style events). All exit non-blocking by default; only `pre-commit-validate.sh`, `pre-edit-guard.sh`, `task-completed-validate.sh`, `reference-compression-validate.sh`, and `skill-frontmatter-validate.sh` can BLOCK an action by exiting 2.
 
 ## By event
 
@@ -24,6 +24,7 @@
 | `pre-edit-backup.sh` | `Write\|Edit` | Snapshots file content to `.cc-sessions/backups/` before each edit |
 | `pre-commit-validate.sh` | `Bash` | Fires on `git commit`. Validates SKILL.md frontmatter on staged files; calls `check-version-sync.sh`; blocks bump commits with version drift |
 | `reference-compression-validate.sh` | `Bash` | Fires on `git commit`. Validates that any compressed `references/main.md` preserves all structure of its `.original` sibling (code fences, URLs, headings, tables) |
+| `markdown-link-validate.sh` | `Bash` | Fires on `git commit`. Warns on broken relative `.md` links across `skills/` (skips fenced code, inline code, http URLs, anchors). Non-blocking; pre-commit-validate.sh prints warnings only |
 | `workflow-guard.sh` | `Bash` | Detects anti-patterns in shell commands (`rm -rf` outside scratch, `git push --force` to main, etc.) |
 
 ### `PostToolUse` — fires after any tool execution; non-blocking

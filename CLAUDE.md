@@ -63,7 +63,8 @@ Required for the sprint family:
 
 Required for skills that spawn agents:
 - **spawn-protocol.md** — Subagent type selection, weight classes, HEARTBEAT/PARTIAL, **Agent Output Contract** (success/failure/partial gate thresholds — never redefine inline)
+- **agent-prompt-boilerplate.md** — Author-time dedup target for recurring Agent() prompt sections (BUDGET, WRITE-AS-YOU-GO, HEARTBEAT/PARTIAL, CONFIRMATION). Cited via `<!-- import: -->` markers in 7 `references/main.md` files
 
 ## Hooks
 
-Pre/post tool-use hooks are configured in `hooks/hooks.json`. These handle file protection, auto-formatting, auto-linting, auto-testing, and commit validation.
+19 hook scripts wired through `hooks/hooks.json` across 8 events (`SessionStart`, `UserPromptExpansion`, `PreToolUse`, `PostToolUse`, `PreCompact`, `PostCompact`, `TaskCompleted`, `TeammateIdle`). They handle file protection, auto-formatting, auto-linting, auto-testing, commit validation (frontmatter lint, version sync, link rot, reference compression), context monitoring, and activity-feed logging. See [hooks/scripts/README.md](hooks/scripts/README.md) for the full index grouped by event.

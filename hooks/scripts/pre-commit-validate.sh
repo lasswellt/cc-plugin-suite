@@ -175,5 +175,17 @@ if [[ -n "$STAGED_SKILLS" ]]; then
   fi
 fi
 
+# --- Check for broken markdown links (warn-only) ---
+LINK_SCRIPT="${CLAUDE_PLUGIN_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/hooks/scripts/markdown-link-validate.sh"
+if [[ -x "$LINK_SCRIPT" ]]; then
+  LINK_EXIT=0
+  LINK_OUTPUT=$("$LINK_SCRIPT" 2>&1) || LINK_EXIT=$?
+  if [[ "$LINK_EXIT" -ne 0 ]]; then
+    echo "" >&2
+    echo "$LINK_OUTPUT" >&2
+    echo "  (Warning — commit allowed. Fix broken links and re-stage.)" >&2
+  fi
+fi
+
 # No secrets found — allow the commit
 exit 0
