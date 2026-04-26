@@ -216,7 +216,7 @@ Each tick the reconciliation engine reads current state, executes exactly one ph
 | **retrospective** | Analyzes completed sessions, identifies patterns, generates self-improvement proposals with safety classification | `/blitz:retrospective` |
 | **setup** | Detects conflicts between CLAUDE.md files and blitz skill behaviors. Validates permissions and stack assumptions. | `/blitz:setup` |
 | **health** | Plugin health check — hooks, sessions, registry, structural integrity | `/blitz:health` |
-| **conform** | Detects drift in any blitz-style plugin directory (frontmatter, companion file layout, hook wiring, version sync, registry remnants). Reports findings; `--fix` applies mechanical migrations using the v1.9.0 migration scripts. Read-only by default. | `/blitz:conform [target-dir] [--fix\|--report-only]` |
+| **conform** | Detects + fixes drift in an existing project's blitz runtime artifacts (`.cc-sessions/`, `sprints/`, `docs/roadmap/`, `docs/_research/`, `STATE.md`) against the current canonical schemas in `skills/_shared/`. Use after upgrading blitz when sprint-dev/review starts complaining about missing fields. Read-only by default; `--fix` applies migrations. `--scope plugin` available for plugin-fork structural drift. | `/blitz:conform [target-dir] [--fix\|--report-only] [--scope project\|plugin\|all]` |
 | **todo** | Track development todos in `.cc-sessions/todos.jsonl` | `/blitz:todo [add\|list\|check\|resolve]` |
 
 ---
