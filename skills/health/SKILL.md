@@ -3,16 +3,19 @@ name: health
 description: "Plugin health check — verifies hooks, sessions, registry, and structural integrity"
 argument-hint: "(no arguments — runs all checks)"
 model: sonnet
+effort: low
 compatibility: ">=2.1.50"
 disable-model-invocation: true
 ---
 
 
-**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Fragments OK, drop filler/pleasantries/hedging. Preserve code, paths, commands, YAML/JSON verbatim.
 ## Project Context
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ---
+
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 # Plugin Health Check
 
@@ -103,26 +106,21 @@ Report the number of session reports available.
 
 ## Phase 3: REGISTRY CHECKS
 
-### 3.1 Skill Registry Matches Disk
+### 3.1 Skill Frontmatter Conformance
 
-Compare skill entries in `.claude-plugin/skill-registry.json` with actual skill directories:
+Walk every `skills/*/SKILL.md` (Anthropic-canonical layout — no central registry) and validate via the lint hook:
 
 ```bash
-# Skills in registry
-python3 -c "
-import json
-registry = json.load(open('.claude-plugin/skill-registry.json'))
-registered = set(s['name'] for s in registry['skills'])
-print('Registered:', sorted(registered))
-"
-
-# Skills on disk (directories under skills/ with SKILL.md, excluding _shared)
-ls -d skills/*/SKILL.md 2>/dev/null | sed 's|skills/||;s|/SKILL.md||' | sort
+hooks/scripts/skill-frontmatter-validate.sh --all
 ```
 
-Report any mismatches:
-- Skills on disk but not in registry
-- Skills in registry but not on disk
+The validator reports per-file violations: missing required frontmatter fields, description over 1024 chars, body over 500 lines, missing canonical OUTPUT STYLE snippet. Report the exit code (0 = all conform; 1 = violations listed) plus the count of skills found:
+
+```bash
+ls skills/*/SKILL.md | wc -l
+```
+
+If any skill directory lacks a SKILL.md, flag it (the directory is incomplete or stale).
 
 ### 3.2 Agent Files Exist
 
@@ -168,7 +166,7 @@ Sessions:              N active, N stale, N completed
 Stale locks:           N found
 Activity feed:         N lines (OK/WARN)
 Session reports:       N available
-Skill registry:        PASS/FAIL (N skills registered, N on disk)
+Skill frontmatter:     PASS/FAIL (N skills, M frontmatter violations)
 Agent files:           PASS/FAIL (N/M found)
 Shared protocols:      PASS/FAIL (N/M found)
 Stack detection:       PASS/FAIL
@@ -182,5 +180,5 @@ If any checks fail, list recommended actions:
 Recommended Actions:
   1. [STALE SESSION] Clean up session <X> — PID not running, 6h old
   2. [ORPHANED LOCK] Delete sprint-registry.json.lock — owning session completed
-  3. [MISSING SKILL] Skill "foo" on disk but not in registry — add to skill-registry.json
+  3. [FRONTMATTER] skills/foo/SKILL.md: missing required field 'effort' — see /_shared/terse-output.md and lint hook
 ```

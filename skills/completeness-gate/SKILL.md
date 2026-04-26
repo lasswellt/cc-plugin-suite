@@ -3,6 +3,7 @@ name: completeness-gate
 description: "Scans code for placeholder patterns, incomplete implementations, and production readiness issues. Returns structured findings with file:line references."
 allowed-tools: Read, Bash, Glob, Grep
 model: sonnet
+effort: medium
 compatibility: ">=2.1.50"
 argument-hint: "<scope: path or 'all'>"
 ---
@@ -13,6 +14,9 @@ argument-hint: "<scope: path or 'all'>"
 ## Additional Resources
 - For grep patterns, severity rules, and output schemas, see [reference.md](reference.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
+
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 ---
 

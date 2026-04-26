@@ -1,10 +1,16 @@
 ---
 name: review
-description: "Sprint review and quality gate"
+description: "Runs the review phase of a sprint by routing to sprint-review. Use when the user says 'review sprint N', 'run quality gates', or 'check the sprint'."
 argument-hint: "--sprint NNN | --auto-fix"
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, ToolSearch, Agent
 disable-model-invocation: false
+model: opus
+effort: low
 compatibility: ">=2.1.71"
 ---
+
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 # Sprint Review
 

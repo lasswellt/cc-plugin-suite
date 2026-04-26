@@ -3,6 +3,7 @@ name: integration-check
 description: "Validates cross-module wiring: export-to-import tracing, route coverage, auth guard coverage, store-to-component wiring. Read-only analysis."
 allowed-tools: Read, Write, Bash, Glob, Grep, Agent
 model: opus
+effort: medium
 compatibility: ">=2.1.71"
 argument-hint: "[scope: all | routes | exports | auth | stores]"
 ---
@@ -13,6 +14,9 @@ argument-hint: "[scope: all | routes | exports | auth | stores]"
 ## Additional Resources
 - For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
+
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 ---
 

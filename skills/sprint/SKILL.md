@@ -1,13 +1,16 @@
 ---
 name: sprint
-description: "Full sprint cycle: plan, implement, review. Supports --loop for use with /loop."
+description: "Orchestrates the full sprint cycle (plan → implement → review). Use when the user says 'run a sprint', 'do a full sprint', or invokes --loop for autonomous reconciliation."
 argument-hint: "--epics EP-001,EP-002 | --plan-only | --skip-review | --loop"
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, ToolSearch, Agent
 disable-model-invocation: false
+model: opus
+effort: low
 compatibility: ">=2.1.71"
 ---
 
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
-**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Fragments OK, drop filler/pleasantries/hedging. Preserve code, paths, commands, YAML/JSON verbatim.
 # Sprint Cycle Orchestrator
 
 You orchestrate a full sprint cycle: **plan → implement → review**.

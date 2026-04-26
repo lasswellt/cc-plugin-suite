@@ -2,6 +2,48 @@
 
 All notable changes to the blitz plugin are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] — 2026-04-26
+
+### Skill Suite Overhaul to Anthropic-Canonical Conventions
+
+A full review of all 36 skills against Anthropic's official Skill authoring guidance (`code.claude.com/docs/en/skills`, `platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices`, `github.com/anthropics/skills`) and the production carry-forward / sprint-family contracts. Every skill now satisfies a single canonical contract enforced by a new lint hook.
+
+### Breaking
+
+- **Removed `.claude-plugin/skill-registry.json`** — non-canonical per Anthropic; skills are now auto-discovered from `skills/<name>/SKILL.md`. The only consumer (`skills/health/SKILL.md` Phase 3.1) was rewritten to walk SKILL.md files directly via the new lint hook.
+
+### Added
+
+- **`skills/_shared/story-frontmatter.md`** (NEW) — single canonical YAML schema for sprint stories. Producer/consumer matrix (sprint-plan writes; sprint-dev/sprint-review read). Validation algorithm (sprint-dev Phase 0). Closes the producer/consumer drift that contributed to the CAP-133 carry-forward incident.
+- **`skills/_shared/state-handoff.md`** (NEW) — pipeline contracts for every artifact passed between bootstrap → research → roadmap → sprint-plan → sprint-dev → sprint-review → ship. Documents the producer/consumer/required-by table and the Phase 0 input-validation pattern.
+- **`skills/_shared/carry-forward-registry.md`** §Reader Algorithm — single executable script that consolidates Invariants 1, 2, 4 + rollover-ceiling escalation. Sprint-plan / sprint-review / roadmap / dashboards now shell out to one canonical implementation; thresholds no longer drift across skills.
+- **`skills/_shared/spawn-protocol.md`** §8 Agent Output Contract — unified SUCCESS / PARTIAL / MALFORMED / EMPTY / MISSING / TIMEOUT classifications and standard gate thresholds (N=1 → ABORT @ 1; N=2-3 → ABORT @ 2; N≥4 → ABORT @ ⌈N/2⌉). PARTIAL retry policy. Validator script. Skills that spawn agents now share one threshold table.
+- **`skills/_shared/terse-output.md`** §Canonical Exemptions List — single authoritative list of sections that always use full prose (Safety, Root Cause, Risks, Destructive ops, First-time onboarding, Migration notices). Skills must not redefine the exemption set.
+- **`hooks/scripts/skill-frontmatter-validate.sh`** (NEW) — Anthropic-canonical lint. Checks required frontmatter fields, name length (≤64 chars + reserved-word ban), description length (≤1024 chars), body length (≤500 lines), `effort:` presence, `model:` presence when invokable, and verbatim OUTPUT STYLE snippet. Wired into `hooks.json` PostToolUse Write|Edit chain and `pre-commit-validate.sh`.
+- **Phase 0.0 Input Gate** — added to `sprint-plan` and `sprint-dev`; hard-fails with the missing-artifact path AND the producer skill name when an upstream input is missing (no more cryptic "no roadmap registry" errors on greenfield projects).
+
+### Changed
+
+- **All 36 SKILL.md files** — every skill now satisfies the canonical frontmatter contract: `effort:` field present (low/medium/high), `model:` explicit when invokable (no `[1m]` inheritance), verbatim OUTPUT STYLE snippet from `/_shared/terse-output.md` immediately below the Additional Resources block. Bodies trimmed to ≤500 lines (sprint-plan and sprint-dev pushed redundant content to canonical shared docs and reference.md).
+- **`skills/sprint-plan/SKILL.md`** — Additional Resources cite story-frontmatter.md and state-handoff.md as load-bearing; Phase 2.4 cites spawn-protocol.md §8 Agent Output Contract instead of inline thresholds; Phase 1.4 lock cycle delegates to session-protocol.md §File-Based Locking Protocol.
+- **`skills/sprint-dev/SKILL.md`** — Execution Mode now reads autonomy from `.cc-sessions/developer-profile.json` per session-protocol.md §Autonomy Levels (canonical: low → interactive, medium → checkpoint, high/full → autonomous-forced); Phase 0.0 gate validates upstream artifacts; Phase 3.1a registry write delegates to carry-forward-registry.md §Writers; Phase 3.5.0 integration-check **mandatory** (was "optional").
+- **`skills/sprint-review/SKILL.md`** — Phase 3.6 invocation switched to canonical Reader Algorithm; Invariant 5 now scans **SKILL.md AND reference.md** (was reference.md only) — every SKILL.md without the canonical OUTPUT STYLE snippet auto-fails. Phase 2.6 cites spawn-protocol.md §8.
+- **`skills/sprint/SKILL.md`, `skills/implement/SKILL.md`, `skills/review/SKILL.md`** — orchestrators now declare `model: opus`, `effort: low`, `allowed-tools`; descriptions rewritten in third person with explicit trigger phrases.
+- **`skills/health/SKILL.md`** — Phase 3.1 rewritten to walk `skills/*/SKILL.md` via the new lint hook (was: parse `skill-registry.json`).
+- **`hooks/scripts/pre-commit-validate.sh`** — adds SKILL.md frontmatter validation gate on staged SKILL.md files. Commits with violations are blocked.
+- **`hooks/hooks.json`** — added `skill-frontmatter-validate.sh --all` to the PostToolUse Write|Edit chain.
+
+### Documentation
+
+- **`CLAUDE.md`** — fixed skill count (31 → 36); dropped `skill-registry.json` reference; added the canonical SKILL.md contract description and an expanded shared-protocol cross-reference list.
+- **`README.md`** — fixed protocol count (9 → 12); dropped `skill-registry.json` from the architecture diagram; expanded the Shared Protocols table with three new entries (story-frontmatter.md, state-handoff.md, agent-prompt-boilerplate.md / scheduling.md / session-report-template.md).
+- **`.claude-plugin/marketplace.json`** — version 1.6.0 → 1.9.0; description updated to "36 skills, 6 agents, 17 hook scripts".
+- **`.claude-plugin/plugin.json`** — version 1.8.0 → 1.9.0.
+
+### Why This Matters
+
+A fresh Claude Code session can now invoke any skill from its SKILL.md alone. The sprint family round-trips cleanly because producer (sprint-plan) and consumers (sprint-dev, sprint-review) share one schema. Agent failure thresholds no longer drift between skills — one Agent Output Contract governs all spawns. The carry-forward registry has one Reader Algorithm; impossible-to-diverge implementations replace three near-duplicates. The OUTPUT STYLE snippet is now enforced by lint on every SKILL.md, eliminating the silent drift that triggered Invariant 5 failures.
+
 ## [1.8.0] — 2026-04-25
 
 ### April 2026 CC Platform Feature Adoption

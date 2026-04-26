@@ -4,6 +4,7 @@ description: Implements planned sprints with coordinated agent teams. Spawns bac
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, TeamCreate, SendMessage, TaskCreate, TaskUpdate, TaskList
 disable-model-invocation: false
 model: opus
+effort: high
 compatibility: ">=2.1.71"
 ---
 
@@ -11,13 +12,18 @@ compatibility: ">=2.1.71"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
+- For story YAML schema (canonical, producer/consumer matrix, validation algorithm), see [story-frontmatter.md](/_shared/story-frontmatter.md)
+- For pipeline state contracts (which artifacts this skill produces and requires), see [state-handoff.md](/_shared/state-handoff.md)
 - For agent prompt templates, coordination patterns, and story distribution rules, see [reference.md](reference.md)
+- For autonomy modes (low/medium/high/full), see [session-protocol.md](/_shared/session-protocol.md) §Autonomy Levels
 - For checkpoint/resume behavior, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
 - For agent deviation handling, see [deviation-protocol.md](/_shared/deviation-protocol.md)
 - For context window hygiene, see [context-management.md](/_shared/context-management.md)
-- For the carry-forward registry (written on story completion in Phase 3.2), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
-- For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
-- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
+- For the carry-forward registry (Reader Algorithm + writer contract on story completion in Phase 3.1a), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
+- For subagent spawning, agent output contract (success/failure/partial thresholds), see [spawn-protocol.md](/_shared/spawn-protocol.md)
+- For output style (terse-technical, canonical exemptions), see [/_shared/terse-output.md](/_shared/terse-output.md)
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 ---
 
@@ -27,15 +33,43 @@ Implement a planned sprint by spawning coordinated agent teams in isolated workt
 
 ## Execution Mode
 
-Check for a `--mode` flag. If not specified, default to `autonomous`. **If autonomy is `high` or `full` (e.g., loop mode with bypass permissions), always override to `autonomous` regardless of the `--mode` flag.**
+Read autonomy from `.cc-sessions/developer-profile.json` per [session-protocol.md](/_shared/session-protocol.md) §Autonomy Levels (default: `medium`). Map autonomy to `--mode` per the table below; an explicit `--mode` flag overrides only when autonomy is `low` or `medium`. **At autonomy `high` or `full`, force `autonomous` regardless of any `--mode` flag** — loop mode with bypass permissions cannot pause for confirmations.
+
+| Autonomy (canonical) | Default mode | User `--mode` honored? |
+|---|---|---|
+| `low` | `interactive` | Yes |
+| `medium` | `checkpoint` | Yes |
+| `high` | `autonomous` | No (always autonomous) |
+| `full` | `autonomous` | No (always autonomous) |
 
 | Mode | Behavior |
 |---|---|
-| `autonomous` | Default. Orchestrator manages everything. No pauses except for errors. |
-| `checkpoint` | Pause after each wave completion. Present wave results to user, ask for confirmation before starting next wave. Allows user to review progress incrementally. |
+| `autonomous` | Orchestrator manages everything. No pauses except for errors. |
+| `checkpoint` | Pause after each wave completion. Present wave results to user, ask for confirmation before starting next wave. |
 | `interactive` | Present each story to the user before assigning it to an agent. Ask for approach confirmation. Pair-programming style. |
 
 ---
+
+## Phase 0.0: INPUT GATE — Validate Pipeline Inputs
+
+Before any other work, hard-fail if required upstream artifacts are missing. Per [state-handoff.md](/_shared/state-handoff.md):
+
+```bash
+PIPELINE_MISSING=()
+[ -s "sprint-registry.json" ] || PIPELINE_MISSING+=("sprint-registry.json")
+SPRINT_NUMBER="${SPRINT_NUMBER:-$(jq -r '.current_sprint // empty' sprint-registry.json 2>/dev/null)}"
+SPRINT_DIR="sprints/sprint-${SPRINT_NUMBER}"
+[ -s "${SPRINT_DIR}/manifest.json" ] || PIPELINE_MISSING+=("${SPRINT_DIR}/manifest.json")
+ls "${SPRINT_DIR}/stories/"S*.md >/dev/null 2>&1 || PIPELINE_MISSING+=("${SPRINT_DIR}/stories/S*.md")
+if [ "${#PIPELINE_MISSING[@]}" -gt 0 ]; then
+  echo "BLOCK: missing pipeline inputs (see /_shared/state-handoff.md §sprint-dev):" >&2
+  printf '  - %s\n' "${PIPELINE_MISSING[@]}" >&2
+  echo "Producer: /blitz:sprint-plan." >&2
+  exit 1
+fi
+```
+
+Then validate every story file against [story-frontmatter.md](/_shared/story-frontmatter.md) §Validation algorithm. Report ALL validation failures together, do not abort on the first.
 
 ## Phase 0: CONTEXT — Load Project State
 
@@ -75,38 +109,13 @@ Check for a `--mode` flag. If not specified, default to `autonomous`. **If auton
 
 ## Phase 0.5: DISCOVER — Learn Project Conventions
 
-Before any agent writes code, research the codebase to build a conventions guide.
+Before any agent writes code, build a conventions guide. Read 2-3 representative files from each layer (backend, stores, pages/components, tests) and document: auth pattern, error format, response envelope, validation approach, component style, CSS approach, store pattern, loading UI, test structure, file naming. Then identify reusable assets:
 
-### 0.5.1 Read Representative Files
-
-Read 2-3 existing files from each layer:
-- **Backend**: Cloud functions, Zod schemas, services
-- **Stores**: Pinia stores, composables
-- **Pages/Components**: Vue pages, feature components
-- **Tests**: Unit tests, integration tests
-
-### 0.5.2 Build Conventions Guide
-
-From the files read, document:
-- **Auth pattern**: How auth is checked (middleware, per-function, etc.)
-- **Error format**: How errors are structured and returned
-- **Response shape**: Standard response envelope
-- **Validation approach**: Zod, Joi, or manual — and where schemas live
-- **Component style**: Script setup, Options API, or mixed
-- **CSS approach**: Tailwind, Quasar, Vuetify, or scoped CSS
-- **Store pattern**: Setup syntax vs options syntax, naming conventions
-- **Loading UI**: Skeleton loaders, spinners, or conditional rendering
-- **Test structure**: AAA, BDD, or custom — describe/it nesting style
-- **File naming**: kebab-case, camelCase, PascalCase per directory
-
-### 0.5.3 Identify Reusable Assets
-
-Search for existing composables, utilities, and shared components:
 ```bash
 find . -path '*/composables/*' -o -path '*/utils/*' -o -path '*/shared/*' -o -path '*/components/base/*' | grep -v node_modules | head -30
 ```
 
-Build a **REUSE THESE — do not recreate** list with file paths and what each provides.
+Produce a **REUSE THESE — do not recreate** list with file paths and what each provides. Full checklist and conventions-guide schema in `reference.md` section **"Project Conventions Discovery"**.
 
 **Gate:** Conventions guide must be complete before spawning agents.
 
@@ -290,36 +299,10 @@ The orchestrator (you) must:
    )
    ```
    Each stdout line from the monitor wakes this session as a notification event, eliminating the need for manual polling. Fall back to `TaskList` polling (every 2-3 turns) only if Monitor is unavailable. Track wave-level completion — when all stories in a wave complete, print a wave progress report per [verbose-progress.md](/_shared/verbose-progress.md) and unblock all Wave N+1 stories.
-1a. **Write carry-forward registry progress on story `DONE:`.** When an agent signals `DONE:` for a story, before updating STATE.md, check the completed story's frontmatter for a `registry_entries` field (see `skills/sprint-plan/reference.md` Story File Format). For each referenced entry:
-
-    a. **Validate the id.** Reduce the registry with `jq -s 'group_by(.id) | map(max_by(.ts))' .cc-sessions/carry-forward.jsonl` and confirm the id exists and is `status ∈ {active, partial}`. If the id is unknown → hard-fail with a loud error (the story's `registry_entries` references a non-existent entry — the author must fix the story). If the status is already `complete|dropped|deferred` → log a warning, skip the write, and continue (the story is working against a closed entry, which may indicate stale planning).
-
-    b. **Compute the new `delivered.actual`.** Read the current latest-wins line for the entry. Add the story's `delta` (or `len(story.files)` if `delta` is omitted). Clamp at `scope.target` so coverage cannot exceed 1.0.
-
-    c. **Determine the new `status`.** If `new_actual >= scope.target` → `status: complete`. Else → `status: partial`. Precompute `coverage = new_actual / scope.target`.
-
-    d. **Append a `progress` line** to `.cc-sessions/carry-forward.jsonl`:
-       ```jsonl
-       {"id":"<registry-id>","ts":"<ISO-8601>","event":"progress","delivered":{"unit":"<unit>","actual":<new_actual>,"last_sprint":"sprint-${SPRINT_NUMBER}"},"coverage":<computed>,"status":"<partial|complete>","last_touched":{"sprint":"sprint-${SPRINT_NUMBER}","date":"<ISO-8601>"},"children":["<story-id>"],"notes":"Advanced by <story-id> (delta: <delta>)"}
-       ```
-
-    e. **Log the activity-feed mirror:**
-       ```jsonl
-       {"ts":"<ISO-8601>","session":"${SESSION_ID}","skill":"sprint-dev","event":"registry_progress","message":"Story <story-id> advanced <registry-id> by <delta> (coverage <old> → <new>)","detail":{"story_id":"<story-id>","registry_id":"<registry-id>","delta":<delta>,"coverage":<new>}}
-       ```
-
-    **Inference fallback:** if a completed story has no `registry_entries` field but its parent epic has non-empty `registry_entries` in `epic-registry.json`, infer the link with `delta: 1` for each entry, and tag the `notes` as `"Inferred from parent epic; explicit delta recommended"`. This prevents silent zero-progress on stories whose authors forgot to set the field, but it's strictly a safety net — the `TaskUpdate` that transitions the task to `completed` should print a one-line warning in the orchestrator log noting the inference.
-
-    **No-op path:** stories with no `registry_entries` AND a parent epic with no `registry_entries` get no write. This is normal — not every story is linked to a quantified scope entry. Infrastructure stories, test-only stories, and spike outcomes often fall into this bucket.
+1a. **Write carry-forward registry progress on story `DONE:`.** When an agent signals `DONE:`, before updating STATE.md, follow the writer contract in [/_shared/carry-forward-registry.md](/_shared/carry-forward-registry.md) §Writers (sprint-dev): validate the story's `registry_entries` ids (per [story-frontmatter.md](/_shared/story-frontmatter.md)), compute `new_actual = current + delta` (clamp at `scope.target`), append a `progress` line transitioning to `partial` or `complete`, and log the activity-feed mirror. Apply the inference-fallback (parent-epic link with `delta: 1`) when the story omits `registry_entries`. No-op for stories whose epic also has no registry link.
 
 1b. **Update STATE.md** — After each story completion (or at wave boundaries), update `${SPRINT_DIR}/STATE.md` per [checkpoint-protocol.md](/_shared/checkpoint-protocol.md). This enables session recovery if interrupted. Include wave progress.
-1c. **Commit and push at wave boundaries** — When a wave completes, commit all changes and push to the remote. This ensures progress is persisted and visible to other sessions (especially in `/loop` mode where the next tick runs in a fresh context):
-   ```bash
-   git add -A
-   git commit -m "feat(sprint-${N}): wave ${WAVE} complete — ${COMPLETED}/${TOTAL} stories"
-   git push origin HEAD
-   ```
-   Also push after each integration fix round (Phase 4.3) and at sprint completion (Phase 4.9).
+1c. **Commit and push at wave boundaries** — `git add -A && git commit -m "feat(sprint-${N}): wave ${WAVE} complete — ${COMPLETED}/${TOTAL} stories" && git push origin HEAD`. Required for `/loop` mode resumability (next tick runs in fresh context). Also push after each integration fix round (Phase 4.3) and at sprint completion (Phase 4.9).
 2. **Unblock stories** — When a dependency completes, send newly-ready stories to the appropriate agent.
 3. **Coordinate via SendMessage** — When an agent completes a story that another agent depends on:
    ```
@@ -361,14 +344,14 @@ Within same priority, higher `priority` field stories go first, then lower `poin
 
 This phase is **mandatory** and must not be skipped, even if no explicit UI stories exist.
 
-### 3.5.0 Run Integration Check (Optional)
+### 3.5.0 Run Integration Check (Mandatory)
 
-Before the UI/UX pass, optionally run `/blitz:integration-check` to verify cross-module wiring:
+Before the UI/UX pass, run `/blitz:integration-check` to verify cross-module wiring on the just-implemented code:
 - Export-to-import tracing (are new exports consumed?)
 - Route coverage (do new pages have navigation?)
 - Store wiring (are new stores connected to components?)
 
-If integration-check finds high-severity issues, address them before the UI pass.
+This step is **mandatory** because integration gaps caught at Phase 3.5.0 cost one fix-round; the same gaps caught at sprint-review Phase 1.6 cost a full review-and-fix-round. If integration-check finds high-severity issues, address them before the UI pass and re-run before proceeding.
 
 ### 3.5.1 Spawn Integration Agent
 

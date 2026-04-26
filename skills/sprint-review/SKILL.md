@@ -4,6 +4,7 @@ description: Reviews sprint quality with automated checks and parallel reviewer 
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch, Agent
 disable-model-invocation: false
 model: opus
+effort: high
 compatibility: ">=2.1.71"
 ---
 
@@ -11,13 +12,17 @@ compatibility: ">=2.1.71"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
+- For story YAML schema (canonical, producer/consumer matrix), see [story-frontmatter.md](/_shared/story-frontmatter.md)
+- For pipeline state contracts (which artifacts this skill produces and requires), see [state-handoff.md](/_shared/state-handoff.md)
 - For review report template, reviewer checklists, and auto-fix strategies, see [reference.md](reference.md)
 - For context window hygiene (reviewer agents), see [context-management.md](/_shared/context-management.md)
 - For checkpoint awareness, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
 - For handling reviewer agent escalations, see [deviation-protocol.md](/_shared/deviation-protocol.md)
-- For the carry-forward registry enforced by Phase 3.5 (hard gate), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
-- For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
-- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
+- For the carry-forward registry (canonical Reader Algorithm enforced by Phase 3.6), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
+- For subagent spawning, agent output contract (success/failure/partial thresholds), see [spawn-protocol.md](/_shared/spawn-protocol.md)
+- For output style (terse-technical, canonical exemptions), see [/_shared/terse-output.md](/_shared/terse-output.md)
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 All auto-fix code must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder implementations.
 
@@ -247,30 +252,21 @@ The previous peer-to-peer `SendMessage CROSS-FINDING:` protocol was removed in v
 
 ### 2.6 Collect Review Findings
 
-Wait for all reviewers to complete. **Before reading any file, validate output presence**:
+Wait for all reviewers to complete. **Run the canonical Agent Output Contract validator** from [spawn-protocol.md](/_shared/spawn-protocol.md) §8 — it classifies SUCCESS / PARTIAL / MALFORMED / EMPTY / MISSING / TIMEOUT and applies the N=4 standard gate (ABORT at MISSING_COUNT ≥ 2). Do NOT redefine thresholds inline.
 
 ```bash
-MISSING_COUNT=0
-EXPECTED_FILES=(
+EXPECTED_OUTPUTS=(
   "${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-review-security.md"
   "${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-review-backend.md"
   "${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-review-frontend.md"
   "${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-review-patterns.md"
 )
-for f in "${EXPECTED_FILES[@]}"; do
-  if [ ! -s "$f" ]; then
-    echo "MISSING: $f" >&2
-    MISSING_COUNT=$((MISSING_COUNT+1))
-    # Log failure to .cc-sessions/activity-feed.jsonl
-  fi
-done
+# Run validator from /_shared/spawn-protocol.md §8.
+# A security-domain MISSING is particularly dangerous — if classify_output → MISSING for the
+# security reviewer specifically, escalate the abort message: "SECURITY DOMAIN UNREVIEWED — sprint cannot close."
 ```
 
-**Gate**: If `MISSING_COUNT >= 2` (half or more reviewers failed), ABORT Phase 2 and report to user. A security-domain miss is particularly dangerous — never silently ship a review with the security reviewer missing.
-
-If `MISSING_COUNT == 1`: retry the failed reviewer once with a narrower scope (one domain/file prefix). If still failed, the final report MUST explicitly state that domain X was not reviewed.
-
-**Also check for `PARTIAL: true` markers** in successful files. Treat PARTIAL reviewers as half-coverage; note MISSING sections in the final report.
+If all classifications resolve to SUCCESS (post any narrow retries per §8 PARTIAL retry policy), proceed. Carry forward `PARTIAL` annotations into the report's "Review Coverage Gaps" section.
 
 If all files are present and non-empty: read their output files. Merge cross-findings (deduplicate by file+line).
 
@@ -388,15 +384,12 @@ This phase is a **hard gate**: failing any invariant fails the sprint close. Its
 Full invariant procedures (Invariants 1-4, the hard-gate decision, report schema, and escalation rules) are in `reference.md` section **"Registry Invariants — Phase 3.6 Detailed Procedures"**. See also [carry-forward-registry.md](/_shared/carry-forward-registry.md) and `docs/_research/2026-04-08_sprint-carryforward-registry.md`.
 
 **Outline**:
-1. Load the registry (latest-wins reduction) + sprint manifest + epic registry + `SPRINT_RESEARCH_DOCS`.
-2. Run each invariant:
-   - **Invariant 1**: every quantified scope claim has a `scope:` block or a `<!-- no-registry: -->` waiver.
-   - **Invariant 2**: every active/partial entry was touched, deferred, or auto-waived this sprint; escalate at `rollover_count >= 3`.
+1. Run the canonical Reader Algorithm from [/_shared/carry-forward-registry.md](/_shared/carry-forward-registry.md) §Reader Algorithm with `MODE=review`. The algorithm consolidates Invariants 1, 2, 4 + rollover-ceiling escalation into one executable script — exit 2 = INVARIANT FAILURE; exit 3 = ESCALATION; both block sprint close.
+2. Run skill-local Invariants 3 and 5 (not yet in the canonical algorithm):
    - **Invariant 3**: every epic claiming `status: done|complete` has all its registry entries at `status: complete`.
-   - **Invariant 4**: auto-inject uncompleted `active` entries (`coverage < 1.0`, `rollover_count < 3`) into next sprint's `planning-inputs.json`.
-   - **Invariant 5**: every Agent-prompt template under `skills/*/reference.md` contains the canonical `OUTPUT STYLE: … per /_shared/terse-output.md` snippet from `spawn-protocol.md` §7. Missing snippet → Critical finding → sprint FAILs (BLOCKER, not WARNING, since Sprint 5 S5-002).
+   - **Invariant 5**: every SKILL.md under `skills/*/SKILL.md` AND every reference.md under `skills/*/reference.md` containing an Agent-prompt template contains the canonical `OUTPUT STYLE: … per /_shared/terse-output.md` snippet from `spawn-protocol.md` §7. Missing snippet → Critical finding → sprint FAILs (BLOCKER).
 3. Write the Invariants Report section to the review report.
-4. **Hard gate**: all five pass → proceed to Phase 4; any fail → `CONDITIONAL` at best, with Invariant 5 fail escalating to FAIL per its BLOCKER semantics.
+4. **Hard gate**: Reader Algorithm exit 0 + Invariants 3, 5 pass → proceed to Phase 4. Any fail → `CONDITIONAL` at best; ESCALATION (exit 3) or Invariant 5 fail → FAIL.
 
 ### Invariant 5 — Agent-Prompt Output Style Snippet (BLOCKER)
 
@@ -412,15 +405,25 @@ already evident in the diff or tool output. Format: fragments OK.
 
 MUST appear in every `skills/*/reference.md` that contains an agent-prompt template (7 files as of Sprint 3: codebase-audit, codebase-map, code-sweep, integration-check, quality-metrics, sprint-dev, sprint-plan). Any missing snippet is a Critical finding; sprint status transitions to **FAIL**.
 
-Audit command (sprint-review runs this in Phase 3.6):
+Audit command (sprint-review runs this in Phase 3.6 — covers SKILL.md AND reference.md):
 
 ```bash
-EXPECTED=8  # UNSAFE reference.md files known to carry agent prompts (7 core + ui-audit/reference.md added in sprint-8)
-PRESENT=$(grep -l 'OUTPUT STYLE: terse-technical per /_shared/terse-output.md\|OUTPUT STYLE: lite per /_shared/terse-output.md\|OUTPUT STYLE: full per /_shared/terse-output.md\|OUTPUT STYLE: ultra per /_shared/terse-output.md' skills/*/reference.md | wc -l)
-[ "$PRESENT" -ge "$EXPECTED" ] || echo "Invariant 5 FAIL: $PRESENT / $EXPECTED snippets present"
+SNIPPET_RE='OUTPUT STYLE: (terse-technical|lite|full|ultra) per /_shared/terse-output.md'
+
+# Every SKILL.md must include the snippet (Anthropic-canonical SKILL.md template requirement).
+SKILL_TOTAL=$(ls skills/*/SKILL.md | wc -l)
+SKILL_PRESENT=$(grep -lE "$SNIPPET_RE" skills/*/SKILL.md | wc -l)
+[ "$SKILL_PRESENT" -eq "$SKILL_TOTAL" ] \
+  || echo "Invariant 5 FAIL (SKILL.md): $SKILL_PRESENT / $SKILL_TOTAL contain canonical OUTPUT STYLE snippet"
+
+# Every reference.md that contains an Agent-prompt template must include the snippet.
+REF_WITH_PROMPTS=$(grep -l "Agent Prompt Template\|prompt:" skills/*/reference.md 2>/dev/null | wc -l)
+REF_PRESENT=$(grep -lE "$SNIPPET_RE" skills/*/reference.md 2>/dev/null | wc -l)
+[ "$REF_PRESENT" -ge "$REF_WITH_PROMPTS" ] \
+  || echo "Invariant 5 FAIL (reference.md): $REF_PRESENT / $REF_WITH_PROMPTS contain canonical OUTPUT STYLE snippet"
 ```
 
-If a new reference.md with an agent-prompt template is added to the repo, the enforcer expects it to also carry the snippet. Update `EXPECTED` when the UNSAFE file set grows.
+The check is total-coverage on SKILL.md (no exemptions) and present-where-needed on reference.md (only files with embedded agent prompts). Adding a new SKILL.md without the snippet auto-fails the next review.
 
 ---
 

@@ -3,6 +3,7 @@ name: browse
 description: Automated browser testing, site crawling, and visual analysis via Playwright MCP. Navigates pages, clicks safe interactive elements, captures console errors and failed network requests. Classifies findings and optionally auto-fixes source issues. In loop mode, crawls one page per tick, builds a navigational hierarchy, performs visual/design analysis via screenshots, detects cross-page inconsistencies, and auto-fixes issues. Use when user says "test pages", "smoke test", "check console errors", "browse test", "crawl site", "check design".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, ToolSearch
 model: opus
+effort: high
 compatibility: ">=2.1.50"
 argument-hint: "[mode] [target] -- modes: full | smoke | page <path> | fix | --loop"
 ---
@@ -19,6 +20,9 @@ You are an automated browser tester, site crawler, and visual design analyst. Yo
 ## Additional Resources
 - For error classification taxonomy, fix templates, interaction safety rules, crawl state schemas, URL normalization rules, visual analysis methods, and cross-page comparison techniques, see [reference.md](reference.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
+
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 ---
 

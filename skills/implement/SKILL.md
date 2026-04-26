@@ -1,10 +1,16 @@
 ---
 name: implement
-description: "Sprint implementation phase only"
-argument-hint: "--sprint NNN | --stories STORY-XXX-001,STORY-XXX-002"
+description: "Runs the implementation phase of a sprint by routing to sprint-dev. Use when the user says 'implement sprint N', 'develop these stories', or 'resume sprint'."
+argument-hint: "--sprint NNN | --stories STORY-XXX-001,STORY-XXX-002 | --resume | --mode <autonomous|checkpoint|interactive>"
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, ToolSearch, Agent
 disable-model-invocation: false
+model: opus
+effort: low
 compatibility: ">=2.1.71"
 ---
+
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 # Sprint Implementation
 

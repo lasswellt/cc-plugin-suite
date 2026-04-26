@@ -3,6 +3,7 @@ name: migrate
 description: "Handles framework, library, and tooling migrations with incremental safety. Researches breaking changes, plans atomic steps, and verifies after each."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, SendMessage
 model: opus
+effort: high
 compatibility: ">=2.1.50"
 argument-hint: "<target: e.g. 'vue 3.5', 'vitest', 'eslint 9', 'pinia 3'>"
 ---
@@ -13,6 +14,9 @@ argument-hint: "<target: e.g. 'vue 3.5', 'vitest', 'eslint 9', 'pinia 3'>"
 ## Additional Resources
 - For codemod registry, risk assessment matrix, and rollback procedures, see [reference.md](reference.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
+
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 ---
 

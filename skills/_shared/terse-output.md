@@ -83,6 +83,34 @@ Resume terse mode on the next response.
 
 ---
 
+## Canonical Exemptions List
+
+Authoritative — overrides any per-skill exemption declarations. Skills MUST NOT redefine the exemption set in their SKILL.md frontmatter; if a skill thinks it needs a new exemption category, propose it here first.
+
+Sections in any agent or skill output that ALWAYS use full-prose (LITE intensity) regardless of the active intensity level:
+
+| Section type | Examples | Why exempt |
+|---|---|---|
+| **Safety rules** | "Never run X against prod", "Never bypass Y", security warnings, credential-handling guidance | Compressed safety language has caused real incidents (e.g., a "use --no-verify only when needed" terse line that dropped the only-when-needed condition). |
+| **Root cause analyses** | Bug post-mortems, "why did this break", architectural decision records | The reasoning chain is the value; compression loses it. |
+| **Risks and trade-offs** | Research doc §Risks, Open Questions, ADR §Consequences | Same reason as root cause — the qualifier matters. |
+| **Destructive-op confirmations** | `rm -rf`, `git push --force`, `drop table`, `kubectl delete`, package uninstall | Irreversibility demands a full sentence + reasoning chain. The user's "yes" is binding. |
+| **First-time onboarding** | README quickstart sections, bootstrap output to a fresh user, error-message remediation | New users need full sentences; terse output fails the "reader picks up cold" test. |
+| **Migration notices** | Breaking-change descriptions in CHANGELOG, deprecation warnings, upgrade-required prompts | Users skim; full prose ensures the action is unmissable. |
+
+**How to apply.** When a skill's output crosses an exemption category, that section drops to LITE intensity for the duration of the section. Resume the active intensity at the next non-exempt section. Mark the boundary explicitly if the section is more than ~3 lines:
+
+```markdown
+<!-- exempt: safety -->
+This operation is destructive. It will delete the production database
+backup. There is no automated rollback. Type the database name to confirm.
+<!-- /exempt -->
+```
+
+**Audit.** sprint-review Phase 3.6 grep-checks for `<!-- exempt: ` markers in agent prompt templates and skill outputs; missing markers around safety/destructive content is a WARN, present-but-misused markers are a BLOCKER.
+
+---
+
 ## Examples
 
 | Verbose (before) | Terse (after) |

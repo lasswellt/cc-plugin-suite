@@ -3,6 +3,7 @@ name: refactor
 description: Performs safe, incremental refactoring with test verification after each step. Snapshots test results, refactors incrementally, verifies no regressions. Use when user says "refactor", "extract", "simplify", "decompose", "clean up".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: opus
+effort: medium
 compatibility: ">=2.1.50"
 argument-hint: "<target-file-or-module> <refactoring-goal>"
 ---
@@ -12,6 +13,9 @@ argument-hint: "<target-file-or-module> <refactoring-goal>"
 
 ## Additional Resources
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
+
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 ---
 

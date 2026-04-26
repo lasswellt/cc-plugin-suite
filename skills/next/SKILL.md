@@ -3,16 +3,19 @@ name: next
 description: "Determines the logical next action based on current project and sprint state"
 argument-hint: "(no arguments — reads state automatically)"
 model: sonnet
+effort: low
 compatibility: ">=2.1.50"
 disable-model-invocation: true
 ---
 
 
-**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Fragments OK, drop filler/pleasantries/hedging. Preserve code, paths, commands, YAML/JSON verbatim.
 ## Project Context
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ---
+
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 # Next Action Advisor
 

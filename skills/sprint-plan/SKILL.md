@@ -4,6 +4,7 @@ description: Plans sprints from roadmap epics with research-backed stories. Read
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, Agent
 disable-model-invocation: false
 model: opus
+effort: high
 compatibility: ">=2.1.71"
 ---
 
@@ -11,12 +12,16 @@ compatibility: ">=2.1.71"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
-- For story YAML schema, agent assignment rules, and partition logic, see [reference.md](reference.md)
+- For story YAML schema (canonical, producer/consumer matrix, validation algorithm), see [story-frontmatter.md](/_shared/story-frontmatter.md)
+- For pipeline state contracts (which artifacts this skill produces and requires), see [state-handoff.md](/_shared/state-handoff.md)
+- For agent assignment rules and partition logic, see [reference.md](reference.md)
 - For context window hygiene (research agents), see [context-management.md](/_shared/context-management.md)
 - For checkpoint awareness, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
-- For the carry-forward registry (read in Phase 0, written in Phase 4.1), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
-- For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
-- For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
+- For the carry-forward registry (Reader Algorithm in Phase 0, writer contract in Phase 4.1), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
+- For subagent spawning, agent output contract (success/failure/partial thresholds), see [spawn-protocol.md](/_shared/spawn-protocol.md)
+- For output style (terse-technical, canonical exemptions), see [/_shared/terse-output.md](/_shared/terse-output.md)
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 All generated stories must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder acceptance criteria.
 
@@ -47,6 +52,27 @@ Instead of selecting epics, parse quality gaps from the most recent sprint:
 Execute all phases below in order.
 
 ---
+
+## Phase 0.0: INPUT GATE — Validate Pipeline Inputs
+
+Before any other work, hard-fail if required upstream artifacts are missing. Per [state-handoff.md](/_shared/state-handoff.md):
+
+```bash
+PIPELINE_MISSING=()
+for input in \
+    "docs/roadmap/roadmap-registry.json" \
+    "docs/roadmap/epic-registry.json"; do
+  [ -s "$input" ] || PIPELINE_MISSING+=("$input")
+done
+if [ "${#PIPELINE_MISSING[@]}" -gt 0 ]; then
+  echo "BLOCK: missing pipeline inputs (see /_shared/state-handoff.md §sprint-plan):" >&2
+  printf '  - %s\n' "${PIPELINE_MISSING[@]}" >&2
+  echo "Greenfield order: bootstrap → research → roadmap → sprint-plan." >&2
+  exit 1
+fi
+```
+
+The carry-forward registry (`.cc-sessions/carry-forward.jsonl`) is OPTIONAL at this gate — its absence is normal for greenfield projects. Step 8 below handles it.
 
 ## Phase 0: CONTEXT — Load Project State
 
@@ -114,14 +140,7 @@ mkdir -p "${SPRINT_DIR}/research"
 
 ### 1.4 Write Sprint Manifest
 
-**Registry Lock — `${SPRINT_DIR}/manifest.json`**: Before writing, acquire a file-based lock per [session-protocol.md](/_shared/session-protocol.md):
-1. CHECK if `${SPRINT_DIR}/manifest.json.lock` exists — if stale (session completed/failed or >4h old with dead PID), delete it.
-2. ACQUIRE by writing `${SPRINT_DIR}/manifest.json.lock` with `{ "session_id": "${SESSION_ID}", "acquired": "<ISO-8601>" }`.
-3. VERIFY by re-reading the lock file — confirm it contains YOUR `SESSION_ID`. If not, wait up to 60s (check every 5s), then ABORT with conflict report.
-4. OPERATE — read, modify, and write the registry file.
-5. RELEASE — delete `${SPRINT_DIR}/manifest.json.lock` and append `lock_released` to the operation log.
-
-Write `${SPRINT_DIR}/manifest.json`:
+Acquire `${SPRINT_DIR}/manifest.json.lock` per [session-protocol.md](/_shared/session-protocol.md) §File-Based Locking Protocol (CHECK → ACQUIRE → VERIFY → OPERATE → RELEASE). Then write `${SPRINT_DIR}/manifest.json`:
 ```json
 {
   "sprint": <number>,
@@ -184,33 +203,23 @@ Each agent prompt (filled from the template in reference.md) contains:
 
 ### 2.4 Collect Research
 
-Wait for all agents to complete. **Before reading any file, validate output presence**:
+Wait for all agents to complete. **Run the canonical Agent Output Contract validator** from [spawn-protocol.md](/_shared/spawn-protocol.md) §8. The validator classifies each output as SUCCESS / PARTIAL / MALFORMED / EMPTY / MISSING / TIMEOUT and applies the standard gate threshold (N=3 → ABORT at MISSING_COUNT ≥ 2; N=4 → ABORT at MISSING_COUNT ≥ 2). Do NOT redefine thresholds inline.
 
 ```bash
-MISSING_COUNT=0
-EXPECTED_FILES=(
+EXPECTED_OUTPUTS=(
   "${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-domain-researcher.md"
   "${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-library-researcher.md"
   "${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-codebase-analyst.md"
 )
-# Add infra-analyst.md to EXPECTED_FILES if it was spawned.
+# Add infra-analyst.md if it was spawned.
 
-for f in "${EXPECTED_FILES[@]}"; do
-  if [ ! -s "$f" ]; then
-    echo "MISSING: $f" >&2
-    MISSING_COUNT=$((MISSING_COUNT+1))
-    # Log failure to .cc-sessions/activity-feed.jsonl
-  fi
-done
+# Run /_shared/spawn-protocol.md §8 validator (classify_output + standard gate).
+# On ABORT: stop Phase 2 and report.
+# On survivor singleton: retry the failed agent once with narrower scope (one most-critical epic only).
+# On PARTIAL: per §8, queue narrow retries for items in MISSING list.
 ```
 
-**Gate**: If `MISSING_COUNT >= 2` (i.e., half or more of the research agents failed), ABORT Phase 2 and report to the user. Do not proceed to story generation on badly-degraded research.
-
-If `MISSING_COUNT == 1`, retry the failed agent once with a narrower scope (single most-critical epic only). If still failed, proceed with a loud warning in the sprint manifest noting the missing domain.
-
-If all files are present: copy into `${SPRINT_DIR}/research/`.
-
-**Also check for `PARTIAL: true` markers** in successful files (see [spawn-protocol.md](/_shared/spawn-protocol.md)). Treat a PARTIAL research file as half-coverage; note MISSING sections in the sprint manifest.
+If all classifications resolve to SUCCESS or post-retry SUCCESS, copy outputs into `${SPRINT_DIR}/research/`. Persist any PARTIAL annotations into the sprint manifest's `research_partials` field for sprint-review Invariant 1 cross-check.
 
 ---
 

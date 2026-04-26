@@ -179,9 +179,108 @@ This is **Linear cycle semantics** — nothing silently falls out of view. The o
 
 ---
 
-## Readers
+## Reader Algorithm (canonical)
 
-Any skill or agent that needs to audit coverage reduces the registry with `jq`:
+Every reader (sprint-plan Phase 0, sprint-review Phase 3.5, roadmap refresh, dashboards) MUST use this single algorithm. It consolidates Invariants 1–4 into one executable sequence, eliminating per-skill drift.
+
+```bash
+# Inputs:
+#   $REG       — path to .cc-sessions/carry-forward.jsonl (default: ./.cc-sessions/carry-forward.jsonl)
+#   $SPRINT    — current sprint number (e.g., "sprint-198")
+#   $MODE      — "plan" | "review" | "audit"
+#
+# Outputs (file: ${SESSION_TMP_DIR}/registry-state.json):
+#   { "active": [...], "partial": [...], "escalated": [...], "complete_this_sprint": [...] }
+#
+# Exit codes:
+#   0 — registry consistent, output written
+#   2 — INVARIANT FAILURE (block sprint close / planning); details in registry-state.json
+#   3 — ESCALATION required (one or more entries hit rollover_count >= 3)
+
+set -euo pipefail
+REG="${REG:-.cc-sessions/carry-forward.jsonl}"
+OUT="${SESSION_TMP_DIR}/registry-state.json"
+
+# Step 1 — Reduce to latest-wins.
+[ -s "$REG" ] || { echo "{}" > "$OUT"; exit 0; }
+LATEST=$(jq -s 'group_by(.id) | map(max_by(.ts))' "$REG")
+
+# Step 2 — Bucket by status.
+echo "$LATEST" | jq '
+  {
+    active:   map(select(.status == "active")),
+    partial:  map(select(.status == "partial")),
+    deferred: map(select(.status == "deferred")),
+    dropped:  map(select(.status == "dropped")),
+    complete: map(select(.status == "complete"))
+  }
+' > "$OUT"
+
+# Step 3 — Invariant 1 (provisional shouldn't exist post-roadmap-extend).
+PROVISIONAL=$(echo "$LATEST" | jq '[.[] | select(.status == "provisional")] | length')
+if [ "$PROVISIONAL" -gt 0 ] && [ "$MODE" != "audit" ]; then
+  echo "INVARIANT 1 FAIL: $PROVISIONAL provisional entries — run /blitz:roadmap extend" >&2
+  exit 2
+fi
+
+# Step 4 — Invariant 2 (active/partial entries touched-or-deferred this sprint).
+STALE=$(echo "$LATEST" | jq --arg s "$SPRINT" '
+  [.[] | select(
+    (.status == "active" or .status == "partial") and
+    .last_touched.sprint != $s and
+    .event != "deferred"
+  )]
+')
+STALE_COUNT=$(echo "$STALE" | jq 'length')
+if [ "$STALE_COUNT" -gt 0 ] && [ "$MODE" == "review" ]; then
+  echo "INVARIANT 2 FAIL: $STALE_COUNT entries not touched this sprint and not deferred" >&2
+  echo "$STALE" | jq -r '.[] | "  - \(.id) (status=\(.status), last=\(.last_touched.sprint))"' >&2
+  exit 2
+fi
+
+# Step 5 — Rollover ceiling escalation.
+ESCALATED=$(echo "$LATEST" | jq '[.[] | select(.rollover_count >= 3 and (.status == "active" or .status == "partial"))]')
+ESCALATED_COUNT=$(echo "$ESCALATED" | jq 'length')
+if [ "$ESCALATED_COUNT" -gt 0 ]; then
+  jq --argjson e "$ESCALATED" '. + {escalated: $e}' "$OUT" > "$OUT.tmp" && mv "$OUT.tmp" "$OUT"
+  if [ "$MODE" != "audit" ]; then
+    echo "ESCALATION: $ESCALATED_COUNT entries at rollover_count >= 3 — human review required" >&2
+    echo "$ESCALATED" | jq -r '.[] | "  - \(.id) (rollover=\(.rollover_count), parent=\(.parent.epic))"' >&2
+    exit 3
+  fi
+fi
+
+# Step 6 — Invariant 4 (auto-inject for next sprint planning).
+if [ "$MODE" == "review" ]; then
+  NEXT_SPRINT=$(echo "$SPRINT" | sed 's/sprint-//' | awk '{print "sprint-" $1+1}')
+  PLANNING_INPUTS="sprints/${NEXT_SPRINT}-planning-inputs.json"
+  echo "$LATEST" | jq '[.[] | select(.status == "active" and .coverage < 1.0)]' > "$PLANNING_INPUTS"
+fi
+
+# Step 7 — Activity feed event.
+TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+echo "{\"ts\":\"$TS\",\"session\":\"${SESSION_ID:-unknown}\",\"skill\":\"${SKILL:-unknown}\",\"event\":\"registry_read\",\"message\":\"reader algorithm $MODE pass\",\"detail\":{\"active\":$(jq '.active | length' "$OUT"),\"partial\":$(jq '.partial | length' "$OUT"),\"escalated\":$ESCALATED_COUNT}}" \
+  >> .cc-sessions/activity-feed.jsonl
+
+exit 0
+```
+
+**Calling convention.**
+
+| Caller | `MODE` | Treats exit 2 as | Treats exit 3 as |
+|---|---|---|---|
+| sprint-plan Phase 0 | `plan` | BLOCK planning; print remediation | BLOCK; require human waiver before continuing |
+| sprint-review Phase 3.5 | `review` | INVARIANT FAILURE; sprint cannot close | ESCALATION; sprint cannot close |
+| roadmap refresh | `audit` | Print warning; continue | Print warning; continue |
+| dashboards | `audit` | Display in UI | Display with red badge |
+
+**Why a single algorithm.** Prior versions split this across sprint-plan Phase 0 step 8, sprint-review Phase 3.5 Invariant 1–4, and roadmap refresh — three places, three slightly different threshold conventions. The CAP-133 incident traced back to two places implementing the rollover ceiling slightly differently, with the higher one in plan and the lower one in review. The algorithm above is now the only place these thresholds live; consumers shell out to it, period.
+
+---
+
+## Readers (jq one-liners)
+
+For ad-hoc inspection outside the canonical algorithm, reduce the registry with `jq`:
 
 ```bash
 # Latest-wins reduction

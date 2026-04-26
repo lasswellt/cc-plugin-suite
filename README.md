@@ -307,19 +307,22 @@ The carry-forward registry (`.cc-sessions/carry-forward.jsonl`) is the backbone 
 
 ## Shared Protocols (`skills/_shared/`)
 
-All skills share 9 protocol files that define cross-cutting behavior:
+All skills share 14 protocol files that define cross-cutting behavior:
 
 | Protocol | Purpose |
 |----------|---------|
-| `session-protocol.md` | Multi-session safety — file locks, conflict matrix, session registration |
+| `session-protocol.md` | Multi-session safety — file locks, conflict matrix, session registration, autonomy levels |
 | `verbose-progress.md` | Output format and activity feed logging spec |
-| `definition-of-done.md` | 9 banned anti-patterns (TODO/FIXME/placeholder/mock in production, etc.) |
+| `definition-of-done.md` | Banned anti-patterns (TODO/FIXME/placeholder/mock in production, etc.) |
 | `checkpoint-protocol.md` | Sprint STATE.md format and resume flow |
 | `deviation-protocol.md` | 4-tier escalation for unexpected implementation issues |
 | `context-management.md` | Context window hygiene rules — when to summarize, when to offload to STATE.md |
-| `carry-forward-registry.md` | Full registry protocol — schema, write procedures, rollover escalation |
-| `spawn-protocol.md` | Agent spawn rules — type selection, workload sizing, HEARTBEAT/PARTIAL |
-| `terse-output.md` | Output style — drop filler, preserve code/paths/YAML/JSON verbatim |
+| `carry-forward-registry.md` | Carry-forward registry — schema, **canonical Reader Algorithm**, writer contracts, rollover escalation |
+| `story-frontmatter.md` | Canonical YAML schema for sprint stories — producer/consumer matrix, validation algorithm |
+| `state-handoff.md` | Pipeline contracts — which artifacts each skill produces/requires (bootstrap → research → roadmap → sprint-* → ship) |
+| `spawn-protocol.md` | Agent spawn rules — type selection, workload sizing, HEARTBEAT/PARTIAL, **Agent Output Contract** (success/failure/partial gates) |
+| `terse-output.md` | Output style — canonical exemptions list, intensity precedence, OUTPUT STYLE snippet |
+| `agent-prompt-boilerplate.md` / `scheduling.md` / `session-report-template.md` | Agent prompt preamble, loop-mode scheduling, session report format |
 
 ---
 
@@ -342,7 +345,6 @@ blitz/
 ├── .claude-plugin/
 │   ├── plugin.json              # Manifest (name, version, author)
 │   ├── marketplace.json         # Marketplace catalog
-│   ├── skill-registry.json      # Skill metadata (dependencies, maturity, model)
 │   └── model-profiles.json      # quality / balanced / budget profiles
 ├── installer/
 │   ├── bin/install.js           # npx blitz-cc entry point
@@ -357,7 +359,7 @@ blitz/
 │   ├── backfill-registry-parents.py
 │   └── add-terse-output-reference.py
 ├── skills/
-│   ├── _shared/                 # 9 shared protocol files
+│   ├── _shared/                 # 14 shared protocol files
 │   ├── sprint/                  # Orchestrator — auto-chains roadmap extend
 │   ├── sprint-plan/             # Carry-forward-aware sprint planning
 │   ├── sprint-dev/              # Monitor-tool progress, worktree isolation

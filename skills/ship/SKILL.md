@@ -3,13 +3,15 @@ name: ship
 description: "End-to-end shipping workflow: review, completeness gate, quality metrics, release. Chains multiple skills with quality gates between each."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: opus
+effort: low
 compatibility: ">=2.1.71"
 argument-hint: "[version]"
 disable-model-invocation: false
 ---
 
 
-**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Fragments OK, drop filler/pleasantries/hedging. Preserve code, paths, commands, YAML/JSON verbatim.
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
+
 # Ship Workflow
 
 You are the shipping orchestrator. You chain quality gates and release preparation into a single, safe workflow. Each step must pass before proceeding to the next. Execute every phase in order. Do NOT skip phases.

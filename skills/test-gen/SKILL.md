@@ -3,6 +3,7 @@ name: test-gen
 description: Generates tests for target files matching project conventions. Analyzes untested functions, edge cases, and error paths. Runs tests to verify they pass. Use when user says "add tests", "test coverage", "generate tests for".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+effort: medium
 compatibility: ">=2.1.50"
 argument-hint: "<file-path>"
 ---
@@ -13,6 +14,9 @@ argument-hint: "<file-path>"
 ## Additional Resources
 - For Vitest/Jest patterns, Vue component testing, and Firestore rules testing, see [reference.md](reference.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
+
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 ---
 

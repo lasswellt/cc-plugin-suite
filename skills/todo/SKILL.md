@@ -3,12 +3,14 @@ name: todo
 description: "Track development todos and follow-up items. Modes: add, list, check, resolve. Stores in .cc-sessions/todos.jsonl."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+effort: low
 compatibility: ">=2.1.50"
 argument-hint: "<add <description> | list | check | resolve <id>>"
 ---
 
 
-**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Fragments OK, drop filler/pleasantries/hedging. Preserve code, paths, commands, YAML/JSON verbatim.
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
+
 # Todo Management
 
 Track development ideas, follow-up items, and technical debt discovered during work. Prevents items from being lost or becoming stale TODO comments in code.

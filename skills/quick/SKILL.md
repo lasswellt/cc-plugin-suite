@@ -3,6 +3,7 @@ name: quick
 description: "Fast ad-hoc changes without full skill ceremony. For small fixes, typos, one-file changes, and quick tweaks."
 argument-hint: "<describe what you want to change>"
 model: sonnet
+effort: low
 compatibility: ">=2.1.50"
 disable-model-invocation: true
 ---
@@ -11,6 +12,9 @@ disable-model-invocation: true
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ---
+
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 # Quick Mode
 

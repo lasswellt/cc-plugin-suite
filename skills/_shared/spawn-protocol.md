@@ -338,6 +338,93 @@ Sprint-review enforces this snippet's presence as a **BLOCKER** via Phase 3.6 In
 
 ---
 
+## 8. Agent Output Contract (success / failure / partial)
+
+Unified definition of what counts as a successful agent return, what counts as failure, and what counts as PARTIAL. Every orchestrator that spawns agents and consumes their output MUST use these definitions — no per-skill drift on thresholds.
+
+### Output classifications
+
+| Outcome | Definition | Orchestrator action |
+|---|---|---|
+| **SUCCESS** | Output file exists, is non-empty (≥ 1 line), parses as the declared format (JSON/YAML/Markdown), and does NOT contain a `PARTIAL: true` marker block. | Consume normally. |
+| **PARTIAL** | Output file exists, is non-empty, parses, AND contains a `PARTIAL: true` marker block (Section 3) with `COMPLETED:` and `MISSING:` lists. | Use the COMPLETED sections; queue MISSING items for narrow retry. Warn the user. |
+| **MALFORMED** | Output file exists but does not parse as the declared format, OR contains the `PARTIAL: true` token but lacks `COMPLETED:`/`MISSING:` fields. | Treat as FAILURE. Do not retry the same prompt. |
+| **EMPTY** | Output file exists but is zero-byte. | Treat as FAILURE. Common cause: agent crashed mid-write or budget-exhausted before first write. |
+| **MISSING** | Output file does not exist after wall-clock + 30s grace. | Treat as FAILURE. |
+| **TIMEOUT** | Wall-clock budget exceeded; output file may exist with partial content but no PARTIAL marker. | If file exists and is non-empty, treat as PARTIAL with implicit `COMPLETED: <best-effort>, MISSING: <unknown>, CONFIDENCE: low`. Otherwise, FAILURE. |
+
+### Standard gate thresholds
+
+`MISSING_COUNT` = count of agents that returned MISSING / EMPTY / MALFORMED (i.e., NOT SUCCESS and NOT PARTIAL).
+
+| Spawn fan-out (N agents) | MISSING_COUNT >= | Action |
+|---|---|---|
+| N = 1 | 1 | ABORT the orchestrator phase. The single agent failed; no degraded path is acceptable. |
+| N = 2 | 1 | WARN. Proceed only if the surviving agent's domain covers the failed one. |
+| N = 2 | 2 | ABORT. |
+| N = 3 | 2 | ABORT. |
+| N = 4+ | ⌈N / 2⌉ | ABORT. (Half-or-more failure means degraded synthesis, not partial loss.) |
+
+These thresholds are hard rules. Skills MUST NOT define their own. If a skill genuinely needs a different threshold (e.g., 10-agent codebase-audit pillars), it MUST document the deviation in its SKILL.md with rationale, and sprint-review Phase 3.6 flags undocumented deviations as BLOCKERs.
+
+### PARTIAL retry policy
+
+When PARTIAL is detected:
+1. Extract the `MISSING` list from the marker block.
+2. Spawn ONE narrow-scope retry agent per MISSING item, with the same `subagent_type`, `model`, and weight class as the original.
+3. The retry prompt must explicitly cite the prior PARTIAL output and scope down to ONE missing item per agent.
+4. Retry budget per item: 1 attempt only. A second PARTIAL on the same item escalates to operator (do not infinite-retry).
+5. Merge retry outputs into the original output file and mark `PARTIAL: false` if all MISSING items resolved.
+
+### Validator script (orchestrator-side)
+
+Every spawn site MUST run this check before consuming output:
+
+```bash
+classify_output() {
+  local f="$1"
+  if [ ! -f "$f" ]; then echo MISSING; return; fi
+  if [ ! -s "$f" ]; then echo EMPTY; return; fi
+  # Check declared format parses
+  case "$f" in
+    *.json) jq empty "$f" 2>/dev/null || { echo MALFORMED; return; } ;;
+    *.yaml|*.yml) yq -e . "$f" >/dev/null 2>&1 || { echo MALFORMED; return; } ;;
+  esac
+  # Check PARTIAL marker
+  if grep -q '^PARTIAL: true' "$f"; then
+    if grep -q '^COMPLETED:' "$f" && grep -q '^MISSING:' "$f"; then
+      echo PARTIAL
+    else
+      echo MALFORMED
+    fi
+    return
+  fi
+  echo SUCCESS
+}
+
+# Tally outcomes
+declare -A COUNTS=()
+for f in "${EXPECTED_OUTPUTS[@]}"; do
+  c=$(classify_output "$f")
+  COUNTS[$c]=$((${COUNTS[$c]:-0} + 1))
+  echo "$f → $c"
+done
+
+MISSING_COUNT=$(( ${COUNTS[MISSING]:-0} + ${COUNTS[EMPTY]:-0} + ${COUNTS[MALFORMED]:-0} ))
+N=${#EXPECTED_OUTPUTS[@]}
+
+# Apply standard gate
+case $N in
+  1) THRESHOLD=1 ;;
+  2|3) THRESHOLD=2 ;;
+  *) THRESHOLD=$(( (N + 1) / 2 )) ;;
+esac
+
+[ "$MISSING_COUNT" -ge "$THRESHOLD" ] && { echo "ABORT: $MISSING_COUNT/$N agents failed"; exit 1; }
+```
+
+---
+
 ## How to Reference This Doc
 
 Every blitz skill that spawns subagents should add to its Additional Resources block:

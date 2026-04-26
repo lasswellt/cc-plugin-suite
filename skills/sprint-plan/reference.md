@@ -7,121 +7,19 @@ Supporting schemas, templates, and logic for the sprint-plan skill.
 
 ---
 
-## Story File Format (YAML Frontmatter Schema)
+## Story File Format
 
-Every story file uses this frontmatter schema:
+The story-frontmatter contract — schema, producer/consumer matrix, validation algorithm, body sections, and gap-closure template — lives in **[/_shared/story-frontmatter.md](/_shared/story-frontmatter.md)**. Sprint-plan, sprint-dev, and sprint-review all link to that single source.
 
-```yaml
----
-id: "S1-001"                          # Sprint number + zero-padded sequence
-title: "Create user profile schema"    # Short, imperative title
-epic: "E003"                           # Parent epic ID
-status: "planned"                      # Always "planned" at creation
-priority: "high"                       # high | medium | low
-points: 3                              # Fibonacci: 1, 2, 3, 5, 8
-depends_on:                            # Story IDs this blocks on
-  - "S1-000"                           # (empty list if no dependencies)
-assigned_agent: "backend-dev"          # backend-dev | frontend-dev | test-writer | infra-dev
-files:                                 # Files this story creates or modifies
-  - "src/models/user-profile.ts"
-  - "src/schemas/user-profile.schema.ts"
-verify:                                # Shell commands that must pass for story completion
-  - "npx tsc --noEmit"
-  - "npx vitest run src/schemas/user-profile.test.ts"
-done: "UserProfile schema exists, validates correctly, and has passing tests"
-github_issue: null                     # Populated after issue creation
-carry_forward: false                   # true if from a previous sprint
-research_refs:                         # Research findings referenced
-  - "domain-researcher:auth-patterns"
-  - "codebase-analyst:existing-models"
-registry_entries:                      # Optional: carry-forward registry ids this story advances
-  - id: "cf-2026-04-02-modal-consistency"
-    delta: 10                          # Units of progress this story contributes (files, components, etc.)
----
-```
+This section previously duplicated the schema; the duplication caused producer/consumer drift (CAP-133 carry-forward incident traced partly to that duplication). Schema changes go into the shared doc only.
 
-### `registry_entries` — Story → Registry Link
-
-Optional. When present, sprint-dev writes a `progress` event line to `.cc-sessions/carry-forward.jsonl` for each referenced id when the story is marked `done`. This gives live coverage visibility during implementation — the registry updates as work lands, not only at sprint-review close.
-
-**Fields per entry:**
-- **`id`** (required) — An existing carry-forward registry id. Sprint-dev hard-fails if the id doesn't exist in the registry.
-- **`delta`** (optional) — Integer units of progress this story contributes toward `scope.target`. If omitted, sprint-dev falls back to `len(story.files)` as a best-effort estimate. Authors should set `delta` explicitly whenever the story's file list is a poor proxy for its contribution (e.g., a single-file refactor that removes `class="modal-overlay"` from 40 files counts as a delta of 40, not 1).
-
-**Inference fallback:** if a story has no `registry_entries` field but the parent epic has a non-empty `registry_entries` array in `epic-registry.json`, sprint-dev infers the link — but with `delta` forced to `1` (single-story pro-rata against the epic's children count). Authors are encouraged to set `registry_entries` explicitly for any story whose coverage contribution is non-trivial; the fallback is there to prevent silent zero-progress, not as a substitute for explicit tracking.
-
-**Multi-entry stories:** a story can advance more than one registry entry simultaneously (e.g., a single commit that migrates modals AND normalizes z-index layers). Each entry gets its own `progress` line with its own `delta`.
-
-See [carry-forward-registry.md](/_shared/carry-forward-registry.md) for the writer contract.
-
-### Body Sections (required)
-
-```markdown
-## Description
-2-4 sentences explaining what this story delivers and why it matters.
-
-## Acceptance Criteria
-1. [ ] Specific, testable criterion one
-2. [ ] Specific, testable criterion two
-3. [ ] Specific, testable criterion three
-
-## Implementation Notes
-- Key patterns to follow (reference existing code)
-- Imports and dependencies needed
-- Research findings that inform the approach
-
-## Code Snippets
-\`\`\`typescript
-// Starter type definition, function signature, or test skeleton
-\`\`\`
-
-## Dependencies
-- Blocks on: S1-000 (reason)
-- Blocked by: nothing
-```
-
-### Gap-Closure Story Template
-
-Used when `--gaps` mode is active. Stories generated from sprint review findings, completeness gate reports, or blocked story analysis.
-
-```yaml
----
-id: "S${N}-G001"                       # G prefix for gap-closure stories
-title: "Fix: <finding title>"          # Imperative, prefixed with "Fix:"
-epic: "gap-closure"                    # Always "gap-closure"
-status: "planned"
-priority: "high"                       # Derived from finding severity
-points: 2                              # Gap stories are typically small (1-3)
-type: "gap-closure"                    # Distinguishes from normal stories
-depends_on: []
-assigned_agent: "backend-dev"
-files:
-  - "src/path/to/affected-file.ts"
-verify:
-  - "npx tsc --noEmit"
-  - "<test command for the specific fix>"
-done: "<what the fix achieves>"
-source_finding:                        # Traceability to the original finding
-  report: "sprint-review"              # sprint-review | completeness-gate | STATE.md
-  severity: "high"
-  description: "Original finding text"
----
-```
-
-Body sections for gap-closure stories:
-```markdown
-## Finding
-<Original finding from the review/gate report>
-
-## Root Cause
-<Why this gap exists — missing implementation, incomplete wiring, etc.>
-
-## Fix
-<Specific change to make, referencing existing code patterns>
-
-## Verification
-<How to confirm the fix addresses the finding>
-```
+**Sprint-plan-specific responsibilities** when emitting story files:
+- Phase 3.2 generates one `S${N}-${SEQ}-<slug>.md` per story under `sprints/sprint-${N}/stories/`.
+- The `id:` field MUST equal the filename's `S${N}-${SEQ}` prefix.
+- `status:` is always `"planned"` at creation.
+- `github_issue:` is `null` until Phase 4.5 (post-issue-creation).
+- `registry_entries:` is populated in Phase 4.1 from the auto-waiver / coverage-link logic; never inferred at planning time.
+- For `--gaps` mode, set `type: "gap-closure"` and populate `source_finding:` per the shared schema's conditional-required rule.
 
 ---
 

@@ -3,6 +3,7 @@ name: research
 description: Investigates libraries, APIs, cloud services, and architecture patterns. Produces structured research documents with findings, recommendations, and code examples. Use when user says "research X", "investigate", "compare options", "what's the best approach for".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, Agent
 model: opus
+effort: high
 compatibility: ">=2.1.71"
 ---
 
@@ -17,6 +18,9 @@ compatibility: ">=2.1.71"
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 All research output must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder sections.
+
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 ---
 

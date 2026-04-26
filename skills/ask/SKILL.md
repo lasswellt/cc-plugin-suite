@@ -3,12 +3,14 @@ name: ask
 description: "Task intake: classifies vague requests and dispatches to the right skill(s)"
 argument-hint: "<describe what you want to do>"
 model: opus
+effort: low
 compatibility: ">=2.1.50"
 disable-model-invocation: true
 ---
 
 
-**Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Fragments OK, drop filler/pleasantries/hedging. Preserve code, paths, commands, YAML/JSON verbatim.
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
+
 # Task Intake Router
 
 You are the intake router for this project. Your job is to take a vague or

@@ -157,5 +157,23 @@ if [[ -x "$VERSION_SYNC_SCRIPT" ]]; then
   fi
 fi
 
+# --- Check SKILL.md frontmatter conformance for staged SKILL.md files ---
+STAGED_SKILLS=$(echo "$STAGED_FILES" | grep -E '^skills/[^/]+/SKILL\.md$' || true)
+if [[ -n "$STAGED_SKILLS" ]]; then
+  LINT_SCRIPT="${CLAUDE_PLUGIN_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/hooks/scripts/skill-frontmatter-validate.sh"
+  if [[ -x "$LINT_SCRIPT" ]]; then
+    LINT_EXIT=0
+    # shellcheck disable=SC2086
+    LINT_OUTPUT=$(echo "$STAGED_SKILLS" | xargs "$LINT_SCRIPT" 2>&1) || LINT_EXIT=$?
+    if [[ "$LINT_EXIT" -ne 0 ]]; then
+      echo "" >&2
+      echo "$LINT_OUTPUT" >&2
+      echo "BLOCKED: SKILL.md frontmatter violations in staged files." >&2
+      echo "  See /_shared/terse-output.md and /_shared/spawn-protocol.md §7 for canonical conventions." >&2
+      exit 2
+    fi
+  fi
+fi
+
 # No secrets found — allow the commit
 exit 0

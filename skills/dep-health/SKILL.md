@@ -3,6 +3,7 @@ name: dep-health
 description: "Audits npm dependencies for vulnerabilities, outdated packages, and license compliance. Supports audit, upgrade, and report modes."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch
 model: sonnet
+effort: medium
 compatibility: ">=2.1.50"
 argument-hint: "<mode: audit|upgrade|report>"
 ---
@@ -13,6 +14,9 @@ argument-hint: "<mode: audit|upgrade|report>"
 ## Additional Resources
 - For package manager commands, license tables, and report templates, see [reference.md](reference.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
+
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 ---
 

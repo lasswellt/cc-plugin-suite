@@ -3,12 +3,16 @@ name: compress
 description: Rewrites a markdown or plain-text file into terse form to reduce input tokens when the file is loaded. Preserves code, URLs, paths, commands, headings, tables, YAML, and JSON verbatim. Writes a .original backup before modifying the source. Use when user says "compress this file", "shrink this doc", "reduce tokens in <file>".
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob
 model: sonnet
+effort: low
 compatibility: ">=2.1.71"
 ---
 
 ## Additional Resources
 - For the output-compression rules, preservation boundary, and examples, see [/_shared/terse-output.md](/_shared/terse-output.md)
 - For the structural validator (run after compression), see `hooks/scripts/reference-compression-validate.sh`
+
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 ---
 

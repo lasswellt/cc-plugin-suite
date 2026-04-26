@@ -3,6 +3,7 @@ name: ui-build
 description: Researches codebase design patterns then generates production-grade Vue 3 UI that feels native to the project. Runs a 5-phase workflow (Discover, Analyze, Design, Implement, Refine). Use when user says "build a page", "create UI", "add a form", "design component", "build UI for".
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, ToolSearch
 model: opus
+effort: high
 compatibility: ">=2.1.50"
 ---
 
@@ -18,6 +19,9 @@ You build production-grade Vue 3 UI that feels native to any project. Follow the
 ## Additional Resources
 - For UX design principles, wireframe templates, and accessibility checklist, see [reference.md](reference.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
+
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 ---
 

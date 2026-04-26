@@ -45,13 +45,24 @@ If no activity feed exists or is empty, skip the summary silently.
 
 ## Skill System
 
-This repo contains 31 development skills in `skills/`. See `.claude-plugin/skill-registry.json` for the full registry. Skills are invoked via `/blitz:<skill-name>`.
+This repo contains **36 development skills** in `skills/`. Skills are auto-discovered by Claude Code from `skills/<name>/SKILL.md` (Anthropic-canonical layout — no central registry). Skills are invoked via `/blitz:<skill-name>`.
+
+Every SKILL.md must satisfy the canonical frontmatter contract enforced by `hooks/scripts/skill-frontmatter-validate.sh`: third-person description ≤1024 chars, body ≤500 lines, required fields (`name`, `description`, `model`, `effort`, `compatibility`, `allowed-tools` when invokable), and the verbatim OUTPUT STYLE snippet from `/_shared/terse-output.md`.
 
 ## Shared Protocols
 
-All skills follow two shared protocols in `skills/_shared/`:
-- **session-protocol.md** — Multi-session safety (locks, conflict matrix, session registration)
+All skills follow the protocols in `skills/_shared/` (14 files). Required for every skill:
+- **session-protocol.md** — Multi-session safety (locks, conflict matrix, session registration, autonomy levels)
 - **verbose-progress.md** — Verbose output format and activity feed logging
+- **terse-output.md** — Output style + canonical exemptions list
+
+Required for the sprint family:
+- **story-frontmatter.md** — Canonical YAML schema for sprint stories (producer/consumer matrix, validation algorithm)
+- **state-handoff.md** — Pipeline contracts (which artifacts each skill produces/requires)
+- **carry-forward-registry.md** — Carry-forward registry (canonical Reader Algorithm + writer contracts)
+
+Required for skills that spawn agents:
+- **spawn-protocol.md** — Subagent type selection, weight classes, HEARTBEAT/PARTIAL, **Agent Output Contract** (success/failure/partial gate thresholds — never redefine inline)
 
 ## Hooks
 

@@ -3,6 +3,7 @@ name: setup
 description: "Detects conflicts between the user's CLAUDE.md files and blitz skill behaviors. Reads global and project CLAUDE.md scopes, matches rules against a known-conflict catalog, and reports severity-graded findings with remediation suggestions. Validates tool permissions and stack assumptions. Use when setting up blitz in a new project, after adding CLAUDE.md rules, or when sprint-dev/code-sweep behave unexpectedly."
 allowed-tools: Read, Bash, Glob, Grep
 model: sonnet
+effort: low
 compatibility: ">=2.1.71"
 argument-hint: "[--fix | --check | --scope <global|project|all>]"
 ---
@@ -15,6 +16,9 @@ argument-hint: "[--fix | --check | --scope <global|project|all>]"
 - For session protocol, see [session-protocol.md](/_shared/session-protocol.md)
 - For the research driving this skill, see `docs/_research/2026-04-16_plugin-agent-strategy.md`
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
+
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 ---
 

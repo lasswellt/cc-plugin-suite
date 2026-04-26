@@ -3,6 +3,7 @@ name: quality-metrics
 description: "Collects, stores, and visualizes code quality metrics over time. Supports collect, dashboard, trend, and compare modes."
 allowed-tools: Read, Write, Bash, Glob, Grep, Agent
 model: opus
+effort: medium
 compatibility: ">=2.1.71"
 argument-hint: "<mode: collect|dashboard|trend|compare <date1> <date2>>"
 ---
@@ -15,6 +16,9 @@ argument-hint: "<mode: collect|dashboard|trend|compare <date1> <date2>>"
 !cat skills/quality-metrics/reference.md
 - For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
+
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
 
 ---
 

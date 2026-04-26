@@ -17,6 +17,9 @@ argument-hint: "[scope] [--scan|--fix|--fix-all] [--rules firestore,vuefire,vue,
 - For session registration and activity feed, see [/_shared/session-protocol.md](/_shared/session-protocol.md)
 - For verbose progress format, see [/_shared/verbose-progress.md](/_shared/verbose-progress.md)
 
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.
+
 ---
 
 **Terse exemptions (LITE intensity):** severity:critical `message` field — full sentences required. Resume terse on other severities.

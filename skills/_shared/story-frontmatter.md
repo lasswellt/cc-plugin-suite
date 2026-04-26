@@ -1,0 +1,196 @@
+# Story Frontmatter Contract
+
+Canonical YAML frontmatter schema for sprint stories. Single source of truth for the producer (`sprint-plan`) and consumers (`sprint-dev`, `sprint-review`, `quick`, gap-closure path).
+
+**Why this doc exists.** The schema previously lived in `skills/sprint-plan/reference.md` Story File Format section, but consumers cited it indirectly. When sprint-plan emitted a field, sprint-dev had no shared spec to validate against; when sprint-dev expected a field, sprint-plan had no shared spec to enforce. This file is the single authoritative contract — both producer and consumer link here.
+
+**Companion protocols:**
+- [carry-forward-registry.md](carry-forward-registry.md) — Defines `registry_entries` semantics and the writer contract.
+- [state-handoff.md](state-handoff.md) — Defines which file consumes which field, end-to-end across the sprint pipeline.
+- [definition-of-done.md](definition-of-done.md) — `done:` and `verify:` fields are executable DoD checks.
+
+---
+
+## File path & naming
+
+```
+sprints/sprint-${SPRINT_NUMBER}/stories/S${SPRINT_NUMBER}-${SEQ}-<slug>.md
+```
+
+- `${SPRINT_NUMBER}`: integer (1, 2, …); no zero padding on the directory.
+- `${SEQ}`: zero-padded 3-digit sequence within the sprint (`001`, `002`, …, `999`). Gap-closure stories use the `G` prefix: `G001`, `G002`, ….
+- `<slug>`: kebab-case, ≤ 6 words, derived from `title:`.
+- The filename `id` segment (`S${SPRINT_NUMBER}-${SEQ}`) MUST equal the `id:` frontmatter field.
+
+---
+
+## Canonical Schema (standard story)
+
+```yaml
+---
+# ─── Identity (required) ─────────────────────────────────────────────────
+id: "S1-001"                          # Sprint number + zero-padded seq
+title: "Create user profile schema"   # Imperative, ≤ 80 chars
+epic: "E003"                          # Parent epic ID from epic-registry.json
+type: "standard"                      # standard | gap-closure | spike
+
+# ─── Lifecycle (required) ────────────────────────────────────────────────
+status: "planned"                     # planned | in-progress | done | blocked | dropped
+priority: "high"                      # high | medium | low
+points: 3                             # Fibonacci: 1, 2, 3, 5, 8
+
+# ─── Dependencies & assignment (required) ────────────────────────────────
+depends_on: []                        # Story ids this blocks on (e.g., ["S1-000"])
+assigned_agent: "backend-dev"         # backend-dev | frontend-dev | test-writer | infra-dev
+
+# ─── Scope contract (required) ───────────────────────────────────────────
+files:                                # Files this story creates or modifies
+  - "src/models/user-profile.ts"
+verify:                               # Shell commands; ALL must pass for done
+  - "npx tsc --noEmit"
+  - "npx vitest run src/schemas/user-profile.test.ts"
+done: "UserProfile schema exists, validates correctly, and has passing tests"
+
+# ─── Tracing (required) ──────────────────────────────────────────────────
+research_refs: []                     # Format: "<agent-role>:<finding-anchor>"
+github_issue: null                    # Populated after issue creation
+carry_forward: false                  # true if rolled over from a previous sprint
+
+# ─── Registry link (optional but recommended) ────────────────────────────
+registry_entries:                     # Carry-forward registry ids this story advances
+  - id: "cf-2026-04-02-modal-consistency"
+    delta: 10                         # Integer units toward scope.target
+
+# ─── Source traceability (gap-closure only) ──────────────────────────────
+source_finding:                       # OMIT unless type == "gap-closure"
+  report: "sprint-review"             # sprint-review | completeness-gate | STATE.md
+  severity: "high"                    # high | medium | low
+  description: "Original finding text"
+---
+```
+
+---
+
+## Field Contract (Producer / Consumer Matrix)
+
+Required = R, Optional = O, Conditional = C (required iff condition).
+
+| Field | Type | Producer (writer) | Consumer (reader) | R/O |
+|---|---|---|---|---|
+| `id` | string | sprint-plan Phase 3.2 | sprint-dev (worktree naming, registry write), sprint-review (story status sweep) | R |
+| `title` | string | sprint-plan Phase 3.2 | sprint-dev (commit messages), sprint-review (report) | R |
+| `epic` | string | sprint-plan Phase 3.2 | sprint-dev (epic-registry lookup), sprint-review (Invariant 3) | R |
+| `type` | enum | sprint-plan Phase 3.2 | sprint-dev (assignment), sprint-review (gap-closure handling) | R |
+| `status` | enum | sprint-plan (= `planned`); sprint-dev (`in-progress`/`done`/`blocked`); sprint-review (`done`/`dropped`) | All sprint-family skills | R |
+| `priority` | enum | sprint-plan Phase 3.2 | sprint-dev (wave ordering tie-break) | R |
+| `points` | int | sprint-plan Phase 3.2 | sprint-review (velocity report), quality-metrics | R |
+| `depends_on` | string[] | sprint-plan Phase 3.4 (dependency graph) | sprint-dev (wave computation) | R |
+| `assigned_agent` | enum | sprint-plan Phase 3.3 (partition logic) | sprint-dev (agent dispatch) | R |
+| `files` | string[] | sprint-plan Phase 3.2 | sprint-dev (worktree scope), sprint-review (file-touched audit), code-sweep | R |
+| `verify` | string[] | sprint-plan Phase 3.2 | sprint-dev (story-done gate), completeness-gate | R |
+| `done` | string | sprint-plan Phase 3.2 | sprint-review (acceptance) | R |
+| `research_refs` | string[] | sprint-plan Phase 3.2 | sprint-dev (read findings during impl), sprint-review (Invariant 1) | R |
+| `github_issue` | int\|null | sprint-plan Phase 4.5 (after issue create); never sprint-dev | sprint-review (link in report), ship | R (nullable) |
+| `carry_forward` | bool | sprint-plan Phase 0.6 (if injected from prior sprint) | sprint-review (Invariant 4 cross-check) | R |
+| `registry_entries` | object[] | sprint-plan Phase 4.1 (link stories to scope) | sprint-dev Phase 3.1a (writes `progress` event) | O |
+| `registry_entries[*].id` | string | sprint-plan | sprint-dev (registry id validation; hard-fail on unknown) | R if `registry_entries` present |
+| `registry_entries[*].delta` | int | sprint-plan | sprint-dev (passed as `delivered.actual` increment) | O (defaults to `len(files)`) |
+| `source_finding` | object | sprint-plan `--gaps` mode | sprint-review (gap-closure traceability) | C (required iff `type == "gap-closure"`) |
+
+**Producer hard rules.** `sprint-plan` is the only skill that creates story files. `sprint-dev` may transition `status` and append a `progress_notes` block to the body, but MUST NOT add or remove frontmatter fields outside `status`, `github_issue`, and `progress_notes`. `sprint-review` may transition `status` to `done` or `dropped` only.
+
+**Consumer hard rules.** Consumers MUST treat unknown fields as forward-compatible (don't reject), but MUST hard-fail on missing required fields. The `registry_entries` inference fallback (parent-epic pro-rata with `delta: 1`) lives in sprint-dev Phase 3.1a — see [carry-forward-registry.md](carry-forward-registry.md) §Writers.
+
+---
+
+## Body sections (required for `type: "standard"`)
+
+```markdown
+## Description
+2-4 sentences explaining what this story delivers and why it matters.
+
+## Acceptance Criteria
+1. [ ] Specific, testable criterion one
+2. [ ] Specific, testable criterion two
+
+## Implementation Notes
+- Key patterns to follow (reference existing code)
+- Imports and dependencies needed
+- Research findings that inform the approach
+
+## Code Snippets
+```typescript
+// Starter type definition, function signature, or test skeleton
+```
+
+## Dependencies
+- Blocks on: S1-000 (reason)
+- Blocked by: nothing
+```
+
+For `type: "gap-closure"`, replace with:
+
+```markdown
+## Finding
+<Original finding from the review/gate report>
+
+## Root Cause
+<Why this gap exists>
+
+## Fix
+<Specific change to make, referencing existing code patterns>
+
+## Verification
+<How to confirm the fix addresses the finding>
+```
+
+---
+
+## Validation algorithm (sprint-dev Phase 0)
+
+Sprint-dev MUST validate each story file before dispatching to agents. Hard-fail on any of the following:
+
+```bash
+# 1. Filename matches id field
+basename "$story" .md | cut -d- -f1-2 == $(yq '.id' "$story")
+
+# 2. All required fields present and non-empty
+for field in id title epic type status priority points depends_on assigned_agent files verify done research_refs github_issue carry_forward; do
+  yq -e ".${field}" "$story" >/dev/null || die "Missing required field: ${field}"
+done
+
+# 3. assigned_agent is in the recognized set
+yq '.assigned_agent' "$story" =~ ^(backend-dev|frontend-dev|test-writer|infra-dev)$
+
+# 4. depends_on entries reference real stories in this sprint
+for dep in $(yq '.depends_on[]' "$story"); do
+  test -f "sprints/sprint-${SPRINT}/stories/${dep}-"*.md || die "Dangling depends_on: ${dep}"
+done
+
+# 5. registry_entries[*].id values exist in .cc-sessions/carry-forward.jsonl
+for rid in $(yq '.registry_entries[].id' "$story"); do
+  jq -se --arg id "$rid" 'group_by(.id) | map(max_by(.ts)) | map(select(.id == $id)) | length > 0' \
+    .cc-sessions/carry-forward.jsonl || die "Unknown registry id: ${rid}"
+done
+
+# 6. source_finding present iff type == gap-closure
+[[ "$(yq '.type' "$story")" == "gap-closure" ]] && yq -e '.source_finding' "$story" >/dev/null
+```
+
+Validation failures are **BLOCKER** — sprint-dev MUST NOT dispatch any story until all stories in the sprint pass. Report all failures together; do not abort on the first.
+
+---
+
+## Anti-patterns
+
+- **Don't create stories outside sprint-plan.** Manual story creation bypasses the partition logic, dependency graph, and registry linkage. If gap stories are needed mid-sprint, run `/blitz:sprint-plan --gaps`.
+- **Don't promote `progress_notes` to frontmatter.** Body section, not metadata.
+- **Don't omit `verify:` in favor of "see done field".** Verify is the executable contract; done is the human-readable summary.
+- **Don't use `assigned_agent: "any"` or `null`.** The partition is deterministic — pick a role.
+- **Don't skip `registry_entries` for stories that contribute to a quantified scope claim.** The inference fallback exists for safety, not as the default path. Sprint-review Invariant 2 will flag epics whose registry entries are stuck at `partial` because no story explicitly claimed delta.
+
+---
+
+## Related protocols
+
+- [/_shared/terse-output.md](terse-output.md) — output-style directive. Story body sections are user-facing; follow LITE intensity.
