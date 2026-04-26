@@ -67,6 +67,29 @@ cat roadmap-registry.json 2>/dev/null | head -5 || echo "No roadmap registry"
 cat epic-registry.json 2>/dev/null | head -5 || echo "No epic registry"
 ```
 
+### 0.6 Check Carry-Forward Registry
+
+```bash
+CF_ACTIVE=$(jq -s '
+  group_by(.id) | map(max_by(.ts))
+  | map(select(.status == "active" or .status == "partial"))
+  | length
+' .cc-sessions/carry-forward.jsonl 2>/dev/null || echo "0")
+
+CF_ESCALATED=$(jq -s '
+  group_by(.id) | map(max_by(.ts))
+  | map(select((.status == "active" or .status == "partial") and (.rollover_count // 0) >= 3))
+  | length
+' .cc-sessions/carry-forward.jsonl 2>/dev/null || echo "0")
+```
+
+### 0.7 Check for Uningested Research
+
+```bash
+UNINGESTED_COUNT=$(find docs/_research -name '*.md' -newer roadmap-registry.json 2>/dev/null | wc -l | tr -d ' ')
+UNINGESTED_COUNT=${UNINGESTED_COUNT:-0}
+```
+
 ---
 
 ## Phase 1: DETERMINE NEXT ACTION
@@ -97,6 +120,16 @@ Use this decision tree:
 
 8. No roadmap exists?
    → "Create a roadmap first" — /blitz:roadmap full
+
+8b. Does the carry-forward registry have escalated entries (rollover_count ≥ 3)?
+    → YES: "Operator review needed — entries stuck for 3+ sprints"
+           Print escalation banner with IDs — /blitz:sprint --gaps
+
+8c. No roadmap, but docs/_research/ has files newer than roadmap-registry.json ($UNINGESTED_COUNT > 0)?
+    → YES: "Ingest research and plan" — /blitz:sprint (auto-chains roadmap extend)
+
+8d. No active sprint, roadmap exists, carry-forward registry has active/partial entries ($CF_ACTIVE > 0)?
+    → YES: "Close carry-forward gaps" — /blitz:sprint
 
 9. None of the above (no sprints, no roadmap)?
    → "Start with research or bootstrap" — /blitz:ask <describe your goal>

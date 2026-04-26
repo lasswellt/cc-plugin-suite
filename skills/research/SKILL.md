@@ -350,11 +350,13 @@ Based on the research type and findings, suggest next steps using the skill grap
 
 | Research Outcome | Suggested Skill | Rationale |
 |---|---|---|
-| Library selected, ready to integrate | `refactor` | Refactor existing code to use the new library |
-| Architecture decision made | `sprint-plan` | Plan implementation stories |
-| Feature approach decided | `ui-build` | Build the feature UI |
-| Security concern identified | `codebase-audit` | Audit for related vulnerabilities |
-| Performance approach selected | `test-gen` | Generate performance-related tests |
+| Research with `scope:` block written | `roadmap extend` | Ingest scope into capability-index + carry-forward registry. Required before sprint. |
+| Research complete, roadmap already current | `sprint` | Auto-detects uningested docs, chains roadmap extend if needed, then plans and implements. |
+| Architecture decision made, roadmap already current | `sprint-plan` | Plan implementation stories directly. |
+| Library selected, ready to integrate | `refactor` | Refactor existing code to use the new library. |
+| Feature approach decided | `ui-build` | Build the feature UI. |
+| Security concern identified | `codebase-audit` | Audit for related vulnerabilities. |
+| Performance approach selected | `test-gen` | Generate performance-related tests. |
 
 ---
 

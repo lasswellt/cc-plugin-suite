@@ -73,6 +73,19 @@ CF_ESCALATED=$(jq -s '
 NEXT_SPRINT=$((LATEST + 1))
 CF_PENDING_INPUTS=$(test -f "sprints/sprint-${NEXT_SPRINT}-planning-inputs.json" && echo "1" || echo "0")
 
+# Uningested research docs (newer than roadmap-registry.json, not yet in carry-forward)
+INGESTED_IDS=$(jq -rs '[group_by(.id)[] | max_by(.ts).id] | join("\n")' \
+  .cc-sessions/carry-forward.jsonl 2>/dev/null || echo "")
+UNINGESTED=$(find docs/_research -name '*.md' -newer roadmap-registry.json 2>/dev/null \
+  | while read f; do
+      IDS=$(grep -o 'id: cf-[^ ]*' "$f" 2>/dev/null | awk '{print $2}')
+      if [ -z "$IDS" ]; then echo "$f"; continue; fi
+      for id in $IDS; do
+        echo "$INGESTED_IDS" | grep -qx "$id" || { echo "$f"; break; }
+      done
+    done)
+UNINGESTED_COUNT=$(echo "$UNINGESTED" | grep -c '.' 2>/dev/null || echo 0)
+
 # Active sessions (stale cleanup happens via session protocol step 5a)
 ls .cc-sessions/*.json 2>/dev/null
 ```
@@ -83,6 +96,7 @@ Apply this priority-ordered decision tree (same logic as `/next`):
 
 | # | Condition | Action | Dispatch |
 |---|-----------|--------|----------|
+| 0 | `$UNINGESTED_COUNT > 0` (research docs exist, not yet ingested into roadmap) | Ingest research first | Invoke **roadmap extend**, then exit cleanly so loop re-enters at row 1 |
 | 1 | Sprint `in-progress` + STATE.md exists | Resume implementation | Invoke **sprint-dev** with `--resume` |
 | 2 | Sprint `in-progress` + no STATE.md | Continue implementation | Invoke **sprint-dev** `--sprint N` |
 | 3 | Sprint status `review` | Run review | Invoke **sprint-review** `--sprint N` |
@@ -200,6 +214,15 @@ If a conflicting session is detected (after stale cleanup from session-protocol 
 Before starting any phase (in both normal and loop mode), verify:
 
 1. **Roadmap exists**: Check for `roadmap-registry.json` or `epic-registry.json`. If neither exists, inform the user that a roadmap is needed first and stop.
+1b. **Uningested research check**: Run the UNINGESTED detection from Loop Step 1. If any files found, print:
+    ```
+    [sprint] Uningested research detected:
+      docs/_research/YYYY-MM-DD_<slug>.md
+    [sprint] Auto-invoking /blitz:roadmap extend before sprint cycle…
+    ```
+    Invoke `/blitz:roadmap extend`, then re-read `roadmap-registry.json` / `epic-registry.json` and continue to step 2.
+    If `roadmap extend` fails (e.g., malformed `scope:` block), surface the error with the doc path and stop — do not silently continue to sprint.
+    *(In `--loop` mode: handled by row 0 of the decision tree — Pre-Flight skips this check.)*
 2. **Epics available**: If `--epics` was specified, confirm each epic ID exists and is unblocked. If no epics are specified, confirm at least one epic has unmet dependencies resolved. *(In loop mode, skip this check — the reconciliation tree handles it.)*
 3. **No conflicting sessions**: Check `.cc-sessions/*.json` for active sprint-plan, sprint-dev, or sprint-review sessions. If a conflict exists, warn the user and stop. *(In loop mode, defer gracefully instead of stopping — see above.)*
 4. **Clean working tree**: Run `git status --porcelain`. If there are uncommitted changes, warn the user. *(In loop mode, warn but do not stop.)*
