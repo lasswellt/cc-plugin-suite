@@ -12,6 +12,7 @@ argument-hint: "<type: project|feature|package> <name>"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
+- For pipeline artifact contracts (what bootstrap produces for sprint-plan/sprint-dev), see [/_shared/state-handoff.md](/_shared/state-handoff.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 

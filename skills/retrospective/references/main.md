@@ -156,8 +156,8 @@ Proposal is "safe" if ALL true:
 5. **Easily reversible**: Change revertable via single `git checkout -- <file>`.
 
 **Examples of safe proposals:**
-- Adding new codemod entry to `skills/migrate/reference.md`
-- Adding new pattern to checklist in `skills/codebase-audit/reference.md`
+- Adding new codemod entry to `skills/migrate/references/main.md`
+- Adding new pattern to checklist in `skills/codebase-audit/references/main.md`
 - Fixing typo in skill description
 - Adding new routing row to `skills/ask/SKILL.md`
 - Adding new entry to pattern taxonomy in this file

@@ -137,14 +137,14 @@ if [ "${LINE_COUNT}" -ne 6 ]; then
   exit 4
 fi
 
-# Reducer (matches skills/ui-audit/reference.md § 3.1).
+# Reducer (matches skills/ui-audit/references/main.md § 3.1).
 jq -s '
   [.[] | select(.ts != null and .label != null)]
   | group_by([.role, .page, .label])
   | map(max_by(.ts))
 ' "${REG}" > "${REDUCED}"
 
-# Canonical evaluator — mirrors skills/ui-audit/reference.md § 3I.1.
+# Canonical evaluator — mirrors skills/ui-audit/references/main.md § 3I.1.
 # Hydrates each invariant's sources from the reduced registry, then runs the
 # same cmp_equal / cmp_gte / cmp_lte functions documented in references/main.md.
 # For "equal" with string values (INV-002 plan_tier), cmp_equal falls back to

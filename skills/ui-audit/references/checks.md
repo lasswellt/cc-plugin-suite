@@ -12,7 +12,7 @@ Findings produced by this module surface as `page:label:FLAG` in `docs/crawls/ui
 
 The extracted `parsed` value is `null` — the selector matched nothing, or matched an element with empty `.textContent`. Fires once per (role, page, label). Severity: HIGH when the label is declared in `.ui-audit.json` and the page is declared; MED otherwise.
 
-**Detection:** inline in Phase 2 § 2.4 extraction JS — emits when `raw === null || raw === ''` for a declared label. Implemented in sprint-6. See `skills/ui-audit/reference.md § Phase 2 § 2.4`.
+**Detection:** inline in Phase 2 § 2.4 extraction JS — emits when `raw === null || raw === ''` for a declared label. Implemented in sprint-6. See `skills/ui-audit/references/main.md § Phase 2 § 2.4`.
 
 ## PLACEHOLDER
 
@@ -48,7 +48,7 @@ Configured parent/child relationship: sum of declared child `parsed` values != p
 
 ## Interactive-element checks (CAP-014 / E-010 / sprint-7)
 
-These are orthogonal to data-quality flags — they target interactive elements, not labeled values. Findings surface as `button_finding` registry lines. Full detection procedures in `skills/ui-audit/reference.md` § Phase INTERACTIVE § I.3.
+These are orthogonal to data-quality flags — they target interactive elements, not labeled values. Findings surface as `button_finding` registry lines. Full detection procedures in `skills/ui-audit/references/main.md` § Phase INTERACTIVE § I.3.
 
 | Check | Severity | Section |
 |---|---|---|
@@ -64,7 +64,7 @@ These are orthogonal to data-quality flags — they target interactive elements,
 
 ## Integration with reporter
 
-The Phase 6 reporter (skills/ui-audit/reference.md § REPORT) consumes quality-flag findings as:
+The Phase 6 reporter (skills/ui-audit/references/main.md § REPORT) consumes quality-flag findings as:
 
 ```jsonl
 {"ts":"...","role":"...","page":"/dashboard","label":"quality_flag","raw":"","parsed":null,"detail":{"flag":"NULL_VALUE","target_label":"open_invoices","severity":"HIGH"},"hash":"...","tick":7}

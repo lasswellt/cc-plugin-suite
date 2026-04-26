@@ -386,7 +386,7 @@ Full invariant procedures (Invariants 1-4, the hard-gate decision, report schema
 1. Run the canonical Reader Algorithm from [/_shared/carry-forward-registry.md](/_shared/carry-forward-registry.md) §Reader Algorithm with `MODE=review`. The algorithm consolidates Invariants 1, 2, 4 + rollover-ceiling escalation into one executable script — exit 2 = INVARIANT FAILURE; exit 3 = ESCALATION; both block sprint close.
 2. Run skill-local Invariants 3 and 5 (not yet in the canonical algorithm):
    - **Invariant 3**: every epic claiming `status: done|complete` has all its registry entries at `status: complete`.
-   - **Invariant 5**: every SKILL.md under `skills/*/SKILL.md` AND every references/main.md under `skills/*/reference.md` containing an Agent-prompt template contains the canonical `OUTPUT STYLE: … per /_shared/terse-output.md` snippet from `spawn-protocol.md` §7. Missing snippet → Critical finding → sprint FAILs (BLOCKER).
+   - **Invariant 5**: every SKILL.md under `skills/*/SKILL.md` AND every `skills/*/references/main.md` containing an Agent-prompt template contains the canonical `OUTPUT STYLE: … per /_shared/terse-output.md` snippet from `spawn-protocol.md` §7. Missing snippet → Critical finding → sprint FAILs (BLOCKER).
 3. Write the Invariants Report section to the review report.
 4. **Hard gate**: Reader Algorithm exit 0 + Invariants 3, 5 pass → proceed to Phase 4. Any fail → `CONDITIONAL` at best; ESCALATION (exit 3) or Invariant 5 fail → FAIL.
 
@@ -402,7 +402,7 @@ error codes, dates, version numbers. No preamble. No trailing summary of work
 already evident in the diff or tool output. Format: fragments OK.
 ```
 
-MUST appear in every `skills/*/reference.md` that contains an agent-prompt template (7 files as of Sprint 3: codebase-audit, codebase-map, code-sweep, integration-check, quality-metrics, sprint-dev, sprint-plan). Any missing snippet is a Critical finding; sprint status transitions to **FAIL**.
+MUST appear in every `skills/*/references/main.md` that contains an agent-prompt template (7 files as of Sprint 3: codebase-audit, codebase-map, code-sweep, integration-check, quality-metrics, sprint-dev, sprint-plan). Any missing snippet is a Critical finding; sprint status transitions to **FAIL**.
 
 Audit command (sprint-review runs this in Phase 3.6 — covers SKILL.md AND references/main.md):
 
@@ -416,8 +416,8 @@ SKILL_PRESENT=$(grep -lE "$SNIPPET_RE" skills/*/SKILL.md | wc -l)
   || echo "Invariant 5 FAIL (SKILL.md): $SKILL_PRESENT / $SKILL_TOTAL contain canonical OUTPUT STYLE snippet"
 
 # Every references/main.md that contains an Agent-prompt template must include the snippet.
-REF_WITH_PROMPTS=$(grep -l "Agent Prompt Template\|prompt:" skills/*/reference.md 2>/dev/null | wc -l)
-REF_PRESENT=$(grep -lE "$SNIPPET_RE" skills/*/reference.md 2>/dev/null | wc -l)
+REF_WITH_PROMPTS=$(grep -l "Agent Prompt Template\|prompt:" skills/*/references/main.md 2>/dev/null | wc -l)
+REF_PRESENT=$(grep -lE "$SNIPPET_RE" skills/*/references/main.md 2>/dev/null | wc -l)
 [ "$REF_PRESENT" -ge "$REF_WITH_PROMPTS" ] \
   || echo "Invariant 5 FAIL (references/main.md): $REF_PRESENT / $REF_WITH_PROMPTS contain canonical OUTPUT STYLE snippet"
 ```

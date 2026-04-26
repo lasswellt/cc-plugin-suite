@@ -125,7 +125,7 @@ Research itself does **not** write directly to `.cc-sessions/carry-forward.jsonl
 When `/blitz:roadmap extend` reads a research doc with a `scope:` block, it:
 1. Generates a registry `id` derived from the doc date and slug.
 2. Appends a `created` line with `status: active`, `delivered.actual: 0`, `coverage: 0.0`.
-3. Records the new entry id in the affected epic's `registry_entries` field (see `roadmap/reference.md`).
+3. Records the new entry id in the affected epic's `registry_entries` field (see `roadmap/references/main.md`).
 
 Roadmap `refresh` mode re-verifies existing entries against the current codebase: if the executable DoD checks now pass, it appends a `complete` line.
 

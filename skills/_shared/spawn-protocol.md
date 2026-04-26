@@ -334,7 +334,7 @@ Orchestrator skills SHOULD substitute the resolved intensity explicitly when bui
 - Root-cause explanations where compressed prose would lose the reasoning chain
 - User has explicitly requested normal-style output in this session
 
-Sprint-review enforces this snippet's presence as a **BLOCKER** via Phase 3.6 Invariant 5: any Agent() prompt template that omits the canonical OUTPUT STYLE snippet causes the sprint to fail until the gap is closed. As of Sprint 3, all 7 UNSAFE references/main.md files under `skills/*/reference.md` carry the snippet; Sprint 5 upgrades the enforcement clause accordingly. Previous WARNING-only semantics are retired.
+Sprint-review enforces this snippet's presence as a **BLOCKER** via Phase 3.6 Invariant 5: any Agent() prompt template that omits the canonical OUTPUT STYLE snippet causes the sprint to fail until the gap is closed. As of Sprint 3, all 7 UNSAFE references/main.md files under `skills/*/references/main.md` carry the snippet; Sprint 5 upgrades the enforcement clause accordingly. Previous WARNING-only semantics are retired.
 
 ---
 

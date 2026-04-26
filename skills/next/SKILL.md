@@ -12,6 +12,10 @@ disable-model-invocation: true
 ## Project Context
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
+## Additional Resources
+- For pipeline artifact contracts (which files indicate which next-action: `STATE.md`, `roadmap/`, `carry-forward.jsonl`, `review-report.md`), see [/_shared/state-handoff.md](/_shared/state-handoff.md)
+- For carry-forward registry reads (`CF_ACTIVE`, `CF_ESCALATED`, `UNINGESTED_COUNT`), see [/_shared/carry-forward-registry.md](/_shared/carry-forward-registry.md)
+
 ---
 
 

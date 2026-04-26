@@ -1535,7 +1535,7 @@ Passed verbatim to `browser_evaluate`. The payload is built per-page by looking 
 
 ### JSONL append (single-session safe)
 
-`>>` append is race-safe for a single ui-audit session (matches the `crawl-ledger.jsonl` precedent in `skills/browse/reference.md`). No `flock` needed. Across concurrent sessions the conflict matrix forces BLOCK (see `skills/_shared/session-protocol.md`).
+`>>` append is race-safe for a single ui-audit session (matches the `crawl-ledger.jsonl` precedent in `skills/browse/references/main.md`). No `flock` needed. Across concurrent sessions the conflict matrix forces BLOCK (see `skills/_shared/session-protocol.md`).
 
 ### Latest-wins reducer
 

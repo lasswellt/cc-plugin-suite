@@ -2,7 +2,7 @@
 
 Canonical text for prompt sections that recur across blitz orchestrator skills (codebase-audit, codebase-map, code-sweep, integration-check, quality-metrics, sprint-dev, sprint-plan).
 
-**Purpose:** author-time deduplication of the ~12 K tokens/sprint of recurring Agent() prompt boilerplate. Skills currently inline these sections in their own `references/main.md` for byte-stable spawn behavior. Future orchestrators may Read this fragment plus the per-skill `references/main.md` and splice the relevant section into the Agent() prompt at spawn time, replacing the inline copy. Until that splice machinery exists in every orchestrator, the inline copies in `skills/<skill>/reference.md` remain authoritative; this fragment is the canonical reference + extraction target.
+**Purpose:** author-time deduplication of the ~12 K tokens/sprint of recurring Agent() prompt boilerplate. Skills currently inline these sections in their own `references/main.md` for byte-stable spawn behavior. Future orchestrators may Read this fragment plus the per-skill `references/main.md` and splice the relevant section into the Agent() prompt at spawn time, replacing the inline copy. Until that splice machinery exists in every orchestrator, the inline copies in `skills/<skill>/references/main.md` remain authoritative; this fragment is the canonical reference + extraction target.
 
 **Important:** the `OUTPUT STYLE: terse-technical …` snippet is NOT extracted here. Sprint-review Invariant 5 (per S5-003) requires that snippet to be present verbatim in every references/main.md — deduping it would break the invariant. The canonical OUTPUT STYLE text lives in [spawn-protocol.md §7](spawn-protocol.md#7-output-style-terse-output-protocol).
 
@@ -183,7 +183,7 @@ Do NOT echo findings in your response.
 
 ## Output-Style Reference (NOT extracted — invariant)
 
-The canonical OUTPUT STYLE snippet that closes every Agent() prompt template lives in [spawn-protocol.md §7](spawn-protocol.md#7-output-style-terse-output-protocol). It is **deliberately not extracted into this fragment.** Sprint-review Invariant 5 enforces verbatim presence of that snippet in every `skills/*/reference.md` agent-prompt template. Deduping it would break the invariant. Each references/main.md must continue to carry the snippet inline.
+The canonical OUTPUT STYLE snippet that closes every Agent() prompt template lives in [spawn-protocol.md §7](spawn-protocol.md#7-output-style-terse-output-protocol). It is **deliberately not extracted into this fragment.** Sprint-review Invariant 5 enforces verbatim presence of that snippet in every `skills/*/references/main.md` agent-prompt template. Deduping it would break the invariant. Each references/main.md must continue to carry the snippet inline.
 
 For the resolved active-intensity behavior at spawn time, see `spawn-protocol.md` §7 "Active-intensity interpolation".
 
@@ -199,7 +199,7 @@ Skills inline the relevant boilerplate sections in their own `references/main.md
 
 ### Pattern B — runtime splice (future)
 
-The orchestrator Reads both `skills/<skill>/reference.md` and `skills/_shared/agent-prompt-boilerplate.md` at spawn time, then splices the relevant section into the Agent() prompt where the import marker appears in references/main.md. Once every orchestrator that spawns from a given references/main.md has migrated to Pattern B, the inline copy in that references/main.md may be removed.
+The orchestrator Reads both `skills/<skill>/references/main.md` and `skills/_shared/agent-prompt-boilerplate.md` at spawn time, then splices the relevant section into the Agent() prompt where the import marker appears in references/main.md. Once every orchestrator that spawns from a given references/main.md has migrated to Pattern B, the inline copy in that references/main.md may be removed.
 
 **Migration safety:** Pattern B requires byte-identical resolved-prompt parity (see S5-001 AC3). Until parity is verified for a specific orchestrator+skill pair, the inline copy must remain — Invariant 5 (OUTPUT STYLE) and exact-match TASKS lists in agent prompts depend on per-byte stability.
 
@@ -209,12 +209,12 @@ The orchestrator Reads both `skills/<skill>/reference.md` and `skills/_shared/ag
 
 | references/main.md | Sections currently inlined (mirror these from this fragment when updating) |
 |---|---|
-| `codebase-audit/reference.md` | OUTPUT STYLE only — no HEARTBEAT/PARTIAL/BUDGET (audit pillars use their own pillar-checklist budget) |
-| `codebase-map/reference.md` | Generic agent preamble · Medium BUDGET · WRITE-AS-YOU-GO · HEARTBEAT (file-append) · CONFIRMATION |
-| `code-sweep/reference.md` | OUTPUT STYLE only — tier agents have a 90-second budget inline; JSON write-as-you-go implicit in single-array Write |
-| `integration-check/reference.md` | Generic agent preamble · Medium BUDGET · WRITE-AS-YOU-GO (JSON variant) · HEARTBEAT (JSON variant) · CONFIRMATION |
-| `quality-metrics/reference.md` | Generic agent preamble · Light BUDGET · WRITE-AS-YOU-GO (implicit) · CONFIRMATION |
-| `sprint-dev/reference.md` | Heavy BUDGET (Item 3) · HEARTBEAT (story-completion variant) + PARTIAL (sprint-dev variant) (Item 12) |
-| `sprint-plan/reference.md` | Generic agent preamble · Medium BUDGET · WRITE-AS-YOU-GO |
+| `codebase-audit/references/main.md` | OUTPUT STYLE only — no HEARTBEAT/PARTIAL/BUDGET (audit pillars use their own pillar-checklist budget) |
+| `codebase-map/references/main.md` | Generic agent preamble · Medium BUDGET · WRITE-AS-YOU-GO · HEARTBEAT (file-append) · CONFIRMATION |
+| `code-sweep/references/main.md` | OUTPUT STYLE only — tier agents have a 90-second budget inline; JSON write-as-you-go implicit in single-array Write |
+| `integration-check/references/main.md` | Generic agent preamble · Medium BUDGET · WRITE-AS-YOU-GO (JSON variant) · HEARTBEAT (JSON variant) · CONFIRMATION |
+| `quality-metrics/references/main.md` | Generic agent preamble · Light BUDGET · WRITE-AS-YOU-GO (implicit) · CONFIRMATION |
+| `sprint-dev/references/main.md` | Heavy BUDGET (Item 3) · HEARTBEAT (story-completion variant) + PARTIAL (sprint-dev variant) (Item 12) |
+| `sprint-plan/references/main.md` | Generic agent preamble · Medium BUDGET · WRITE-AS-YOU-GO |
 
 When extending boilerplate or fixing a bug in a recurring section, update this fragment first, then propagate to the affected references/main.md files.

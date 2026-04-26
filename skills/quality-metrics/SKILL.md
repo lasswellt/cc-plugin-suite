@@ -13,7 +13,7 @@ argument-hint: "<mode: collect|dashboard|trend|compare <date1> <date2>>"
 
 ## Additional Resources
 - For metric snapshot schema, dashboard templates, trend thresholds, and score calculation details, see:
-!cat skills/quality-metrics/reference.md
+!cat skills/quality-metrics/references/main.md
 - For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 

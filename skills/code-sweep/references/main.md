@@ -18,7 +18,7 @@ against the provided file list, then write every finding to the output file as
 a JSON array.
 
 Repo root: {{REPO_ROOT}}
-Reference file: {{REPO_ROOT}}/skills/code-sweep/reference.md
+Reference file: {{REPO_ROOT}}/skills/code-sweep/references/main.md
 Output file (MUST write here): {{OUTPUT_PATH}}
 
 Source files (apply all Tier-{{TIER}} checks):
@@ -120,7 +120,7 @@ already evident in the diff or tool output. Format: fragments OK.
 | 21 | `three-state-ui` | Presence of `useAsyncData\|useFetch\|useLazyFetch\|\$fetch\|store\.\w+Action` in `<script>` WITHOUT loading/error handling in `<template>` | `*.vue` | Only flag if component has a `<template>`. Ignore components that delegate to parent wrapper. | No |
 | 22 | `file-length` | `wc -l` on source files, flag > 300 lines (configurable) | `*.ts, *.tsx, *.js, *.jsx, *.vue` | Exclude generated files, config files. Threshold configurable via `max_lines`. | No |
 | 23 | `missing-v-for-key` | Lines with `v-for=` but without `:key` on the same element | `*.vue` | Low false positives. Almost always a bug. | No |
-| 24 | `missing-subagent-type` | `(TeamCreate\|SendMessage\|Agent\()` without `subagent_type` in surrounding 20 lines | `skills/**/SKILL.md, skills/**/reference.md` | Exclude `_shared/` docs (they discuss the pattern, not spawn agents). Exclude commented-out code blocks. Severity: high (silent-failure risk per 2026-04-16 retrospective). | No |
+| 24 | `missing-subagent-type` | `(TeamCreate\|SendMessage\|Agent\()` without `subagent_type` in surrounding 20 lines | `skills/**/SKILL.md, skills/**/references/main.md` | Exclude `_shared/` docs (they discuss the pattern, not spawn agents). Exclude commented-out code blocks. Severity: high (silent-failure risk per 2026-04-16 retrospective). | No |
 
 ### Tier 3: Deep Analysis (only with `--deep`)
 

@@ -15,6 +15,7 @@ argument-hint: "[full | refresh | extend | status]"
 ## Additional Resources
 - For capability schema, document classification, and Phases 5-8 procedures, see [references/main.md](references/main.md)
 - For the carry-forward registry (written in Phase 1 from research doc scope: blocks; re-scanned in refresh mode), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
+- For pipeline artifact contracts (`docs/roadmap/`, `capability-index.json` consumed by sprint-plan), see [/_shared/state-handoff.md](/_shared/state-handoff.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 All generated epics and roadmap artifacts must satisfy the [Definition of Done](/_shared/definition-of-done.md). No placeholder descriptions.
@@ -479,7 +480,7 @@ Write `docs/roadmap/phase-plan.json`:
 
 ## Phases 5-8: IMPLEMENTATION SPECS, CROSS-CUTTING, EPICS, SUMMARY
 
-These phases are loaded on demand from `references/main.md` to keep this skill file lean. Read the "Phases 5-8 Detailed Procedures" section from `${CLAUDE_SKILL_DIR}/reference.md` before executing.
+These phases are loaded on demand from `references/main.md` to keep this skill file lean. Read the "Phases 5-8 Detailed Procedures" section from `${CLAUDE_SKILL_DIR}/references/main.md` before executing.
 
 **Phase 5**: Spawn agents per domain to generate implementation specs (data models, API contracts, component trees, workflow diagrams).
 

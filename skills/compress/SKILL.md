@@ -99,7 +99,7 @@ compress: <N> file(s) processed
 ## Invocation examples
 
 ```
-/blitz:compress skills/research/reference.md
+/blitz:compress skills/research/references/main.md
 /blitz:compress docs/guides/onboarding.md docs/guides/architecture.md
 ```
 

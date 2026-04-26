@@ -58,4 +58,4 @@ L30: ❓ q: why `Map` over `Record<string, X>` here? Hot path?
 
 ## Delegation
 
-For all other templates, quality gates, auto-fix strategies, reviewer-specific checklists, and final-output formats, see `skills/sprint-review/reference.md`. The wrapper does not duplicate that content — it only enforces the finding-format contract above.
+For all other templates, quality gates, auto-fix strategies, reviewer-specific checklists, and final-output formats, see `skills/sprint-review/references/main.md`. The wrapper does not duplicate that content — it only enforces the finding-format contract above.

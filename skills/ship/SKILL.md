@@ -18,6 +18,8 @@ You are the shipping orchestrator. You chain quality gates and release preparati
 
 **Verbose progress is mandatory.** Follow [verbose-progress.md](/_shared/verbose-progress.md) throughout. Print `[ship]` prefixed status lines at every phase transition, gate result, and dispatch. Log `skill_start` and `skill_complete` events to the activity feed (`.cc-sessions/activity-feed.jsonl`).
 
+**Pipeline artifacts.** Ship consumes the upstream sprint chain — see [/_shared/state-handoff.md](/_shared/state-handoff.md) for the producer/consumer matrix (`STATE.md`, `carry-forward.jsonl`, `review-report.md`). A clean ship requires the most recent sprint to be in a `complete` state per the handoff contract.
+
 ---
 
 ## SAFETY RULES (NON-NEGOTIABLE)
