@@ -1,11 +1,11 @@
 ---
 name: conform
-description: Conforms an existing project's blitz runtime artifacts to the current canonical schemas in skills/_shared/. Detects drift in `.cc-sessions/` (carry-forward.jsonl, activity-feed.jsonl, developer-profile.json), sprint artifacts (manifest, stories, STATE.md), roadmap JSON files, and research docs (`scope:` blocks). Fixes legacy story-frontmatter (missing registry_entries, old autonomy fields), normalizes activity-feed entries to the verbose-progress.md schema, repairs STATE.md required fields, removes orphan locks. Use after upgrading blitz, when sprint-dev/review complains about missing schema fields, when carry-forward escalations look stale, or when a project bootstrapped on older blitz needs to be brought into spec. Read-only by default — `--fix` applies migrations idempotently. Plugin-fork mode (SKILL.md / companion file / hook drift) via `--scope plugin`.
-when_to_use: After upgrading blitz in an existing project, when sprint-dev complains about missing story frontmatter fields, when carry-forward shows stale escalations or duplicate IDs, when activity-feed entries fail schema validation, when a STATE.md from an older sprint is missing fields, when forking the plugin and auditing structural drift.
+description: Conforms an existing project's blitz runtime artifacts to the current canonical schemas in skills/_shared/. Detects drift in `.cc-sessions/` (carry-forward.jsonl, activity-feed.jsonl, developer-profile.json), sprint artifacts (manifest, stories, STATE.md), roadmap JSON files, and research docs (`scope:` blocks). Schema-version aware — detects pre-v1.9.0 story frontmatter (epic/verify/done fields) and migrates to current spec (epic_id/acceptance_criteria/registry_entries) preserving project-specific extensions. Supports both session-file (`<id>.json`) and session-directory (`<id>/`) models. Optional features (carry-forward, developer-profile) are not required if absent and unreferenced. Sample mode for high-volume sprints. Use after upgrading blitz, when sprint-dev/review complains about missing schema fields, or when a project bootstrapped on older blitz needs to be brought into spec. Read-only by default — `--fix` applies migrations idempotently. Plugin-fork mode via `--scope plugin`.
+when_to_use: After upgrading blitz in an existing project, when sprint-dev complains about missing story frontmatter fields, when carry-forward shows stale escalations or duplicate IDs, when activity-feed entries fail schema validation, when forking the plugin and auditing structural drift.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: opus
 effort: low
-argument-hint: "[target-dir] [--fix | --report-only] [--scope project|plugin|all]"
+argument-hint: "[target-dir] [--fix | --report-only] [--scope project|plugin|all] [--sample-mode]"
 disable-model-invocation: false
 compatibility: ">=2.1.71"
 ---
@@ -26,17 +26,18 @@ You are the conformance auditor + migration runner. You bring an existing **proj
 | Scope | Target | Use case |
 |---|---|---|
 | **`project`** (default) | `.cc-sessions/`, `sprints/`, `docs/roadmap/`, `docs/_research/`, `STATE.md` | A repo that uses blitz to run sprints. Brings runtime artifacts into spec after a plugin upgrade. |
-| **`plugin`** | `skills/*/SKILL.md`, `skills/_shared/`, `hooks/`, `.claude-plugin/` | A blitz fork or the plugin source itself. Brings structure into spec (frontmatter, companion files, hook wiring). |
-| **`all`** | both | Full sweep — uncommon; usually only useful when auditing a self-modifying plugin install. |
+| **`plugin`** | `skills/*/SKILL.md`, `skills/_shared/`, `hooks/`, `.claude-plugin/` | A blitz fork. Brings structure into spec (frontmatter, companion files, hook wiring). |
+| **`all`** | both | Full sweep — uncommon. |
 
 ## Additional Resources
 
-- For the carry-forward registry schema (entry shape, lifecycle events, hard-gate algorithm), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
-- For the activity-feed JSONL schema (`ts`, `session`, `skill`, `event`, `message`, `detail` fields + ≤200/300-char message rule), see [verbose-progress.md](/_shared/verbose-progress.md)
-- For the canonical story frontmatter (producer/consumer matrix, validation algorithm, `registry_entries` field), see [story-frontmatter.md](/_shared/story-frontmatter.md)
-- For pipeline state handoff (which artifact each skill produces/requires, STATE.md required fields), see [state-handoff.md](/_shared/state-handoff.md)
-- For autonomy field schema (`developer-profile.json`), see [session-protocol.md](/_shared/session-protocol.md) §Autonomy Levels
-- For plugin-mode migration scripts and idempotency contracts, see [scripts/maint/v1.9.0/README.md](/_shared/../../../scripts/maint/v1.9.0/README.md)
+- For per-artifact schema versioning rules + migration tables (story frontmatter v0.x→v1.9, STATE.md formats, roadmap canonical-vs-extension table, session model variants), see [references/main.md](references/main.md)
+- For the carry-forward registry schema, see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
+- For the activity-feed JSONL schema, see [verbose-progress.md](/_shared/verbose-progress.md)
+- For the canonical story frontmatter, see [story-frontmatter.md](/_shared/story-frontmatter.md)
+- For pipeline state handoff + STATE.md required fields, see [state-handoff.md](/_shared/state-handoff.md)
+- For autonomy field schema, see [session-protocol.md](/_shared/session-protocol.md) §Autonomy Levels
+- For plugin-mode migration scripts, see [scripts/maint/v1.9.0/README.md](/_shared/../../../scripts/maint/v1.9.0/README.md)
 
 ---
 
@@ -46,241 +47,239 @@ You are the conformance auditor + migration runner. You bring an existing **proj
 
 2. **Resolve target directory.** Default to `pwd`. If first positional arg is a directory path, use it. Reject paths outside `${HOME}` unless explicit `--allow-system-paths` flag passed.
 
-3. **Determine mode.**
-   - `--fix` → audit + migrate (writes mechanical fixes)
-   - `--report-only` (default if neither flag passed) → audit only, no writes
+3. **Determine mode.** `--fix` → audit + migrate. `--report-only` (default) → audit only.
 
-4. **Determine scope.**
-   - `--scope project` (default) → consumer-repo runtime artifacts
-   - `--scope plugin` → plugin source (SKILL.md frontmatter, companion files, hooks)
-   - `--scope all` → both
+4. **Determine scope.** `--scope project` (default) | `--scope plugin` | `--scope all`.
 
-5. **Sanity check target.** Refuse to proceed unless the target contains at least one of:
-   - `.cc-sessions/` (any blitz-managed project)
-   - `sprints/` (sprint-managed project)
-   - `.claude-plugin/plugin.json` (plugin source)
-   - `skills/*/SKILL.md` (skill collection)
+5. **Sample-mode autodetect.** If sprints/ has >50 entries OR total stories >300, switch to sample mode unless `--full` passed. In sample mode: audit all in latest 3 sprints + a **random sample of 10 older stories drawn uniformly across all older sprints** (not file-system order — use `find ... | shuf -n 10`). Remainder gets `INFO: not sampled` line in report. After auditing the sample, **extrapolate finding counts**: e.g., "86/100 sample stories on schema v0.x → projected ~876 of 1018 v0.x → MIGRATE finding for the population."
 
-   If none found, exit with `NOT_A_BLITZ_DIR` and one-line guidance pointing at `/blitz:bootstrap` or `/blitz:setup`.
+6. **Sanity check target.** Refuse to proceed unless target contains at least one of `.cc-sessions/`, `sprints/`, `.claude-plugin/plugin.json`, or `skills/*/SKILL.md`. Else exit `NOT_A_BLITZ_DIR`.
 
 ---
 
 ## Phase 1: DETECT — Inventory Target Artifacts
 
-### Project scope (default)
+For each artifact, record **presence**, **count**, and **schema version** (where versioning applies). See `references/main.md` §Schema Detection Rules for the per-artifact version probes.
 
-Walk the target and capture:
+### Project-scope inventory
 
-| Inventory item | Probe | Schema source |
-|---|---|---|
-| Activity feed | `.cc-sessions/activity-feed.jsonl` (line count + size) | verbose-progress.md |
-| Carry-forward entries | `.cc-sessions/carry-forward.jsonl` (count + per-status breakdown) | carry-forward-registry.md |
-| Developer profile | `.cc-sessions/developer-profile.json` (autonomy field present?) | session-protocol.md §Autonomy Levels |
-| Active sessions | `.cc-sessions/*.json` with `status: active` (count + ages) | session-protocol.md §Session Registration |
-| Orphan locks | `.cc-sessions/*.lock` not paired with an active session | session-protocol.md §File-Based Locking |
-| Sprints | `sprints/sprint-*/` (count, latest sprint number) | state-handoff.md |
-| Sprint manifests | `sprints/sprint-N/manifest.{json,md}` | state-handoff.md |
-| Stories | `sprints/sprint-N/stories/*.md` (frontmatter sample) | story-frontmatter.md |
-| STATE.md files | `sprints/sprint-N/STATE.md`, `STATE.md` (root) | state-handoff.md |
-| Roadmap | `docs/roadmap/{capability-index,epic-registry,phase-plan,domain-index}.json`, `docs/roadmap/ROADMAP.md`, `docs/roadmap/gap-analysis.md` | roadmap skill output schema |
-| Research docs | `docs/_research/*.md` (count, scope-block presence) | research skill output schema |
-| Review reports | `sprints/sprint-N/review-report.md` | sprint-review.md output schema |
+| Artifact | Probe | Optional? | Version probe |
+|---|---|---|---|
+| Activity feed | `.cc-sessions/activity-feed.jsonl` | yes | line schema (required fields present) |
+| Carry-forward | `.cc-sessions/carry-forward.jsonl` | **yes** — only flag MISSING if other artifacts reference it | n/a |
+| Developer profile | `.cc-sessions/developer-profile.json` | **yes** — only flag MISSING if a skill body or hook references it | autonomy field present? |
+| Sessions | `.cc-sessions/<id>` (file OR dir) — accept both models | yes | dir vs file (record per session) |
+| Orphan locks | `.cc-sessions/*.lock` not paired with active session | n/a | n/a |
+| Sprints | `sprints/sprint-*/` | yes | manifest version field if present |
+| Sprint manifests | `sprints/sprint-N/manifest.{json,md}` | per-sprint | shape |
+| Stories | `sprints/sprint-N/stories/*.md` | per-sprint | **v1.9 (epic_id+acceptance_criteria+registry_entries) vs v0.x (epic+verify+done)** — see references/main.md §Story Schema Versions |
+| STATE.md | `sprints/sprint-N/STATE.md`, `STATE.md` (root) | per-sprint | **field-form vs table-form** — try both parsers |
+| Roadmap (canonical) | the 6 files: `capability-index.json`, `epic-registry.json`, `phase-plan.json`, `domain-index.json`, `ROADMAP.md`, `gap-analysis.md` | yes | jq -e shape probes |
+| Roadmap (extensions) | any other file in `docs/roadmap/` | n/a | INFO only — project-specific extensions are not drift |
+| Research docs | `docs/_research/*.md` | yes | scope-block presence + ingestion status (only if carry-forward.jsonl exists) |
 
-Emit one verbose-progress line per category. Stash the inventory in a temp file.
+### Plugin-scope inventory (only if `--scope plugin` or `all`)
 
-### Plugin scope (only if `--scope plugin` or `all`)
+Same as before — frontmatter, companion file layout, hook wiring, version sync, legacy registry. See references/main.md §Plugin-Scope Probes.
 
-| Inventory item | Probe |
-|---|---|
-| SKILL.md files | `find <target>/skills -maxdepth 2 -name SKILL.md` |
-| Companion file layout | for each skill, glob legacy `reference.md`, `CHECKS.md`, `PATTERNS.md`, `*.json` outside `assets/` |
-| Hook scripts present | `find <target>/hooks/scripts -name '*.sh' -o -name '*.py'` |
-| Hooks wired | parse `<target>/hooks/hooks.json` |
-| Version files | `<target>/.claude-plugin/plugin.json`, `marketplace.json`, `installer/install.sh` |
-| Legacy registry | `<target>/.claude-plugin/skill-registry.json` (deleted in v1.9.0) |
-| Shared protocols | `find <target>/skills/_shared -name '*.md'` |
+Emit one verbose-progress line per category. Stash inventory + version-detection results in a temp file.
 
 ---
 
 ## Phase 2: AUDIT — Validate Against Canonical Schemas
 
+For each artifact, validate against the schema **at its detected version** (don't apply v1.9 schema to a v0.x story — that's a migration target, not a drift finding).
+
+Findings classified as:
+
+- **MIGRATE** — auto-applicable schema-version migration (e.g., v0.x story → v1.9 story). Distinct from MECHANICAL because it's not just "missing field" but "different field name to rename".
+- **MECHANICAL** — fixable by trivial inline edit (missing optional default, schema field truly absent at the detected version).
+- **MANUAL** — needs human judgment (stale entries, contradictory state, ambiguous fix).
+- **NO ACTION (INFO)** — informational (extension files, sample-mode skipped artifacts, optional features absent).
+
 ### Project-scope checks
 
-For each artifact category, validate every line/file against the schema in the linked shared protocol. Findings classified as:
+| Check | Validator | Optional treatment |
+|---|---|---|
+| `activity-feed.jsonl` schema | line JSON parse + required-fields probe per verbose-progress.md | always run if file exists |
+| `carry-forward.jsonl` Reader Algorithm | per carry-forward-registry.md §Reader Algorithm `MODE=audit` | **skip** if file absent and no consumer found |
+| `developer-profile.json` autonomy | `jq '.autonomy'` in `{low, medium, high, full}` | **skip** if file absent and no skill/hook references it |
+| Story frontmatter | shape per story-frontmatter.md | **detect version first**: v0.x → emit MIGRATE finding (not MECHANICAL); v1.9 → field-presence check |
+| STATE.md required fields | per state-handoff.md, with table-form fallback parser | **try both formats** before flagging MANUAL |
+| Active sessions older than 4h | compare `started`/dir mtime to now | works for both file + dir model |
+| Orphan locks | set diff `*.lock` minus active sessions | works for both models |
+| Roadmap canonical files schema | `jq -e .` + per-file required-fields | only the 6 canonical files; extensions get INFO line |
+| Research docs scope-block ingestion | cross-reference scope IDs vs registry IDs | **skip** if carry-forward.jsonl absent |
 
-- **MECHANICAL** — auto-fixable (missing-but-trivially-derivable field, normalizable timestamp, schema-version migration)
-- **MANUAL** — needs human judgment (stale escalation that needs a real disposition, contradictory state)
-- **NO ACTION** — informational
+### Plugin-scope checks
 
-| Check | Validator |
-|---|---|
-| `activity-feed.jsonl` lines parse as JSON, have required fields (`ts`, `session`, `skill`, `event`, `message`, `detail`) per verbose-progress.md schema. Message ≤300 chars (audit threshold). | `python3 -c "for l in open(f): json.loads(l); assert all(k in d for k in [...])"` |
-| `carry-forward.jsonl` entries follow the lifecycle event schema (`event in {created, correction, progress, complete, dropped, deferred, escalated}`). No duplicate IDs. No `rollover_count >= 3` without explicit ESCALATION disposition. | Apply the canonical Reader Algorithm from carry-forward-registry.md §Reader Algorithm with `MODE=audit` |
-| `developer-profile.json` has `autonomy` field with value in `{low, medium, high, full}`. | `jq '.autonomy' < developer-profile.json` |
-| Story files have current frontmatter — required fields per story-frontmatter.md producer/consumer matrix (`id`, `title`, `epic_id`, `acceptance_criteria`, `registry_entries`). | Schema-validate each `sprints/sprint-*/stories/*.md` frontmatter block |
-| STATE.md files have required fields per state-handoff.md (`sprint`, `phase`, `last_completed`, `current_session`, `cf_active_count`). | Field-presence check |
-| Active sessions older than 4 hours flagged as stale per session-protocol.md. | Compare `started` timestamp to now |
-| Orphan locks (lock file with no matching active session JSON) — flag for cleanup. | Set diff between `*.lock` and active `*.json` files |
-| Roadmap JSON files (capability-index, epic-registry, phase-plan, domain-index) parse cleanly + have required top-level fields per their writer skill's output schema. | `jq -e .` + field probes |
-| Research docs with `scope:` blocks — verify each scope entry has a corresponding `created` event in `carry-forward.jsonl`. Un-ingested entries are MECHANICAL (re-run `roadmap extend`). | Cross-reference scope IDs vs registry IDs |
-| Review reports for completed sprints exist + reference the registry by ID. | Glob + grep |
-
-### Plugin-scope checks (only if `--scope plugin` or `all`)
-
-| Validator | Source |
-|---|---|
-| `hooks/scripts/skill-frontmatter-validate.sh skills/*/SKILL.md` | repo |
-| `hooks/scripts/markdown-link-validate.sh` | repo |
-| `hooks/scripts/reference-compression-validate.sh` | repo |
-| `scripts/check-version-sync.sh` | repo |
-| Companion file layout: any legacy `reference.md`/`CHECKS.md`/`PATTERNS.md` outside `references/` or `assets/` | filesystem walk |
-| Hook scripts in `hooks/scripts/` matched against `hooks.json` wiring (no orphans, no missing wires) | parse + diff |
-
-Record classification per finding.
+(unchanged from previous version — see references/main.md §Plugin-Scope Validators)
 
 ---
 
 ## Phase 3: PLAN — Categorize Findings
 
-Build a migration plan as a table:
+Build a migration plan as a table (sample shape — actual will reflect target):
 
 | Finding | Scope | Category | Fix approach | Idempotent? |
 |---|---|---|---|---|
-| 47 activity-feed entries missing `detail` field | project | MECHANICAL | inline Edit: append `"detail":{}` to lines lacking it | yes |
-| 3 stories missing `registry_entries` field | project | MECHANICAL | inline Edit: derive from carry-forward.jsonl `created` events bound to story | yes |
-| `developer-profile.json` missing `autonomy` field | project | MECHANICAL | inline Edit: add `"autonomy": "medium"` (safe default) with a TODO comment | yes |
-| 1 stale active session (started 18h ago) | project | MANUAL | requires user disposition — close as `abandoned` or extend? | no |
-| 4 carry-forward entries with `rollover_count: 3` no ESCALATION | project | MANUAL | requires real triage decision | no |
-| 1 research doc with un-ingested scope block | project | MECHANICAL | suggest `/blitz:roadmap extend` | yes (delegated) |
-| 8 SKILL.md missing OUTPUT STYLE snippet | plugin | MECHANICAL | run `scripts/maint/v1.9.0/blitz-fix-frontmatter.sh` | yes |
-| 12 reference.md files (legacy layout) | plugin | MECHANICAL | run `scripts/maint/v1.9.0/blitz-restructure.py` | yes |
-| 1 SKILL.md body >500 lines | plugin | MANUAL | move what to references/? | no |
+| 1018 stories on schema v0.x | project | MIGRATE | inline transform: rename `epic`→`epic_id`, derive `acceptance_criteria` from `verify`, add `registry_entries: []`, preserve all extra fields | yes |
+| 47 activity-feed entries missing `detail` field | project | MECHANICAL | inline Edit: append `"detail":{}` | yes |
+| `carry-forward.jsonl` absent + no consumer | project | NO ACTION | feature not in use | n/a |
+| `developer-profile.json` absent + no consumer | project | NO ACTION | feature not in use | n/a |
+| 162 session directories (dir-model) | project | NO ACTION | INFO: dir model detected; staleness checked via mtime | n/a |
+| 24 roadmap extension files (`.bak`, `_TRACKER.md`, etc.) | project | NO ACTION | INFO: project-specific extensions, not drift | n/a |
+| 4 sprints below latest 3 + 5 random | project | NO ACTION | INFO: not sampled (--full to override) | n/a |
+| 1 stale active session (>4h) | project | MANUAL | requires user disposition | no |
+| 8 SKILL.md missing OUTPUT STYLE snippet | plugin | MECHANICAL | run scripts/maint/v1.9.0/blitz-fix-frontmatter.sh | yes |
 
-Print plan as a verbose-progress table. If `--report-only`, jump to Phase 6.
+Print plan as verbose-progress table. If `--report-only`, skip to Phase 6.
 
 ---
 
 ## Phase 4: MIGRATE (only if `--fix`) — Apply Mechanical Fixes
 
-### Project-scope fixes (inline)
+### Story-frontmatter v0.x → v1.9 migration (the big one)
 
-The fixes are heterogeneous and reasoning-light; apply them one finding at a time using `Edit` and `Write`.
+For each story flagged MIGRATE:
 
-| Finding | Fix |
-|---|---|
-| Activity-feed missing `detail` field | Append `"detail":{}` to each affected JSONL line. Backup `.cc-sessions/activity-feed.jsonl.bak.<ts>` first. |
-| Activity-feed message > 300 chars | Truncate `message` to ≤300 chars; move overflow into `detail.full_message`. |
-| Carry-forward duplicate IDs | Keep most-recent entry by timestamp; append `dropped` event for older with reason `"deduped by /conform"`. |
-| Story missing `registry_entries` | Re-derive: grep `carry-forward.jsonl` for `created` events whose `detail.story_id == story.id`; populate `registry_entries: [...]` in story frontmatter. |
-| `developer-profile.json` missing `autonomy` | Add `"autonomy": "medium"` (canonical safe default per session-protocol.md). |
-| Orphan lock files | Delete after confirming no live session holds them. |
-| STATE.md missing required field | Derive from sprint manifest + carry-forward state; insert under canonical heading. |
-| Un-ingested research scope blocks | **Defer** to `/blitz:roadmap extend` — emit a TODO line in the report; do not auto-invoke another skill from MIGRATE. |
-| Stale active sessions (>4h) | **Defer** — MANUAL disposition required. |
+1. Backup: copy file to `<file>.pre-conform.<ts>`.
+2. Parse YAML frontmatter.
+3. Transform:
+   - Rename `epic:` → `epic_id:` (preserve value)
+   - If `verify:` exists and `acceptance_criteria:` does not, copy `verify` value to `acceptance_criteria` (keep `verify` as well — it's atp-specific extension and doesn't conflict)
+   - If `registry_entries:` missing, add `registry_entries: []` (empty array — populated later by carry-forward integration if/when the project adopts it)
+4. Preserve all other fields verbatim (`priority`, `points`, `depends_on`, `assigned_agent`, `files`, `done`, `commit`, etc.).
+5. Write back. Verify YAML parses.
 
-### Plugin-scope fixes
+Per-story migration is independent — failure on one story does not abort the batch. Failed stories logged to `migration-failures.log`.
 
-Run the migration scripts in dependency order. Each must exit 0 before the next runs.
+### Activity-feed normalization
 
-1. `scripts/maint/v1.9.0/blitz-fix-frontmatter.sh` — adds missing `effort:` + OUTPUT STYLE snippet
-2. `scripts/maint/v1.9.0/blitz-restructure.py` — companion file rename (two-phase: refs first, then files)
-3. `scripts/maint/v1.9.0/blitz-trim-preamble.py` — verbose-preamble trim
-4. `scripts/maint/v1.9.0/blitz-rewrite-desc.py` — **only applies to canonical 36-skill names** (external plugin skills skipped)
-5. `scripts/maint/v1.9.0/blitz-xref-audit.py` — read-only verification
+For each malformed line:
+- Missing `detail` field → append `"detail":{}`
+- Missing `event` field → flag MANUAL (cannot infer)
+- Message > 300 chars → truncate, move overflow into `detail.full_message`
+- Backup `.cc-sessions/activity-feed.jsonl.pre-conform.<ts>` before any in-place writes.
 
-After each fix, append a `migration_applied` event with the script/finding name + per-file delta count.
+### Carry-forward dedup (only if file exists)
+
+- Keep most-recent entry per `(id, event)` pair by timestamp
+- For older duplicates, append a synthetic `dropped` event with reason `"deduped by /conform <ts>"`
+
+### `developer-profile.json` (only if a consumer exists but file is absent)
+
+Create with safe defaults:
+```json
+{
+  "autonomy": "medium",
+  "_created_by": "/blitz:conform",
+  "_created_at": "<ISO-now>",
+  "_note": "review and adjust autonomy based on developer preference per session-protocol.md §Autonomy Levels"
+}
+```
+
+### Orphan lock cleanup
+
+Delete each confirmed-orphan lock (no live session pid in any active session JSON).
+
+### STATE.md repair
+
+If field-form STATE.md missing required fields, derive from sprint manifest + carry-forward state and insert under canonical headings. If table-form, leave alone (already informationally complete; emit INFO that table-form is supported but not normalized to field-form).
+
+### Plugin-scope migrations
+
+(unchanged — runs scripts/maint/v1.9.0/* in dependency order)
+
+After each fix, append `migration_applied` event with finding name + count.
 
 ---
 
 ## Phase 5: VERIFY — Re-run Validators
 
-Re-run all Phase 2 checks against the migrated tree. Compare exit codes and finding counts:
+Re-run all Phase 2 checks against migrated tree. Compare exit codes + finding counts:
 
-- All validators clean → migration successful, transition to REPORT
-- Finding count strictly decreased but not to 0 → classify residue as MANUAL, transition to REPORT with that residue listed
+- All clean → SUCCESS, transition to REPORT
+- Finding count strictly decreased but residue remains → classify residue as MANUAL/INFO, transition to REPORT
 - New findings appeared (regression) → **HALT** with diff vs Phase 2 audit; do not continue
 
-Never auto-rollback. Backup files (`.bak.<ts>`) preserve pre-migration state.
+Never auto-rollback. Backup files (`.pre-conform.<ts>`) preserve pre-migration state.
 
 ---
 
 ## Phase 6: REPORT
 
-Write a single-page summary to stdout (and `${TARGET}/.cc-sessions/conform-report.md` if `--fix` was passed):
+Write to stdout (and `${TARGET}/.cc-sessions/conform-report.md` if `--fix` was passed). Sample shape:
 
 ```
 # Conform Report — <target> — <ISO-date>
 
 Mode: report-only | fix
 Scope: project | plugin | all
+Sample mode: on (auditing latest 3 + 5 random; <N> sprints not sampled) | off
 
 ## Inventory
   Activity feed: <N> entries (<size>)
-  Carry-forward: <N> entries (<active>/<complete>/<dropped>/<escalated>)
+  Carry-forward: <N> entries  |  not in use (file absent, no consumer)
+  Developer profile: present (autonomy=<value>)  |  not in use
+  Sessions: <N> file-style + <M> dir-style (<stale>)
   Sprints: <N> (latest: sprint-<X>)
-  Roadmap files: <N>
-  Research docs: <N> (<un-ingested>)
-  Active sessions: <N> (<stale>)
-  [plugin] SKILL.md files: <N>
-  [plugin] Hook scripts wired: <N>
+  Stories: <N> total (<v1.9>/<v0.x>)
+  Roadmap canonical: <N>/6 present  |  Extensions (INFO): <N>
+  Research docs: <N> (<scope-blocks>)
 
 ## Findings (Phase 2)
+  MIGRATE: <count> (auto schema-version migrations)
   MECHANICAL: <count> (auto-fixable)
   MANUAL: <count> (require human review)
-  NO ACTION: <count> (informational)
+  INFO: <count> (informational, no action)
 
-## Migrations applied (Phase 4) — only present if --fix
-  activity-feed schema fixes: <N> lines updated
-  carry-forward dedup: <N> entries
-  story-frontmatter additions: <N> stories
-  developer-profile autonomy backfill: applied | n/a
-  STATE.md field additions: <N> files
-  orphan lock cleanup: <N> deleted
-  [plugin] blitz-fix-frontmatter.sh: <N> files
-  [plugin] blitz-restructure.py: <N> files moved, <N> ref substitutions
+## Migrations applied (Phase 4) — only if --fix
+  Story v0.x→v1.9: <N> migrated, <N> failed (see migration-failures.log)
+  Activity-feed normalization: <N> lines
+  Carry-forward dedup: <N> entries  |  skipped (no file)
+  Orphan lock cleanup: <N>
+  STATE.md repair: <N>  |  skipped (table-form left as-is)
 
 ## Verification (Phase 5)
-  activity-feed schema: PASS | FAIL (<details>)
-  carry-forward Reader Algorithm: PASS | FAIL | ESCALATION (<n>)
-  story-frontmatter validation: PASS | FAIL (<details>)
-  STATE.md required-fields: PASS | FAIL (<details>)
-  [plugin] skill-frontmatter-validate: PASS | FAIL
-  [plugin] markdown-link-validate: PASS | FAIL
-  [plugin] check-version-sync: PASS | FAIL
+  Activity-feed schema: PASS | FAIL
+  Carry-forward Reader Algorithm: PASS | SKIP | ESCALATION
+  Story-frontmatter validation: PASS | FAIL
+  STATE.md required-fields: PASS | FAIL
 
-## Manual follow-ups (require human action)
+## Manual follow-ups
   - <file>:<line>  <issue>  <suggested action>
-  - ...
 
 ## Deferred to other skills
-  - 1 un-ingested research doc → run `/blitz:roadmap extend`
-  - 4 carry-forward escalations → run `/blitz:next` to triage
+  - <N> un-ingested research docs → /blitz:roadmap extend
+  - <N> carry-forward escalations → /blitz:next triage
 
 Final state: CONFORMANT | DRIFT_REMAINING | REGRESSED
 ```
 
-Append a `task_complete` event with `summary: "conform <mode> <scope> <target> — <final state>"`.
+Append `task_complete` event with `summary: "conform <mode> <scope> <target> — <final state>"`.
 
 ---
 
 ## Safety Rules (NON-NEGOTIABLE)
 
-1. **No writes without `--fix`.** Default mode is read-only. Refuse any write tool call unless `--fix` was parsed.
-2. **No writes to `.git/`, `node_modules/`, or any path matching `pre-edit-guard.sh` protected list.** Honor existing hook protections in the target.
-3. **Backup before mutating** `.cc-sessions/*.jsonl` files. Backups go to `.cc-sessions/<file>.bak.<ts>`.
-4. **No script execution outside `scripts/maint/v1.9.0/`** during plugin-mode MIGRATE. The skill is a thin orchestrator over those scripts; never invent new mechanical fixes inline for plugin-mode.
-5. **Halt on first regression in VERIFY**. Do not continue migrating after a validator regression.
-6. **Activity-feed audit trail required**. Every migration must log a `migration_applied` event with finding name + count, even on partial application.
-7. **Never auto-invoke other blitz skills** from MIGRATE. If the fix is "run `/blitz:roadmap extend`", emit a TODO and let the user decide.
+1. **No writes without `--fix`.** Default mode is read-only.
+2. **No writes to `.git/`, `node_modules/`, or any path matching `pre-edit-guard.sh` protected list.**
+3. **Backup before mutating** any `.jsonl`, `.md` story file, or `STATE.md`. Backups go to `<file>.pre-conform.<ts>`.
+4. **Per-file isolation in MIGRATE.** A failure on story N does not prevent stories N+1...M from migrating. Log failures, continue batch.
+5. **No script execution outside `scripts/maint/v1.9.0/`** during plugin-mode MIGRATE.
+6. **Halt on first regression in VERIFY**. Do not continue migrating after a validator regression.
+7. **Activity-feed audit trail required**. Every migration must log a `migration_applied` event with finding name + count.
+8. **Never auto-invoke other blitz skills** from MIGRATE. Emit a TODO and let the user decide.
+9. **Optional features stay optional.** Never create `carry-forward.jsonl` or `developer-profile.json` from scratch unless a consumer demands them.
+10. **Project-specific extensions stay.** Files outside the canonical roadmap-6 list (e.g., `roadmap-registry.json`, `_TRACKER.md`) are NEVER deleted — they're INFO findings only.
 
 ## Out of scope
 
-- Code-level refactoring (use `/blitz:refactor`)
-- Stack/framework migrations (use `/blitz:migrate`)
-- Bootstrapping a new project (use `/blitz:bootstrap`)
-- Conflicts between user CLAUDE.md and plugin behavior (use `/blitz:setup`)
-- Health probe of currently-running plugin install (use `/blitz:health`)
-- Triage of carry-forward escalations or "what's next" routing (use `/blitz:next`)
-- Re-ingesting research docs into roadmap (use `/blitz:roadmap extend`)
-
-`conform` is exclusively about bringing a project's *runtime artifacts* (or a plugin's *structure*) into spec with the current canonical schemas.
+- Code-level refactoring (`/blitz:refactor`)
+- Stack/framework migrations (`/blitz:migrate`)
+- Bootstrapping (`/blitz:bootstrap`)
+- CLAUDE.md conflicts (`/blitz:setup`)
+- Runtime health probe (`/blitz:health`)
+- Triage of carry-forward escalations (`/blitz:next`)
+- Re-ingesting research docs (`/blitz:roadmap extend`)
