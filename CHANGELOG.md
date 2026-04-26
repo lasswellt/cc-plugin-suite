@@ -2,6 +2,27 @@
 
 All notable changes to the blitz plugin are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] — 2026-04-25
+
+### blitz:code-doctor + Research → Sprint Auto-Chain
+
+New skill `blitz:code-doctor` audits framework-API correctness (Firestore, VueFire, Vue 3, Pinia) — detects anti-patterns, misuse, dead exports, and duplication candidates. Read-only by default; `--fix` applies low-risk auto-fixes.
+
+Auto-chain closes the only blocking manual step in the blitz cycle: running `/research` then `/sprint` previously failed with "No roadmap. Run `/blitz:roadmap` first." because `sprint/SKILL.md` Pre-Flight never detected uningested `docs/_research/*.md`. Now `sprint` automatically detects and ingests research docs via `roadmap extend` before proceeding — in both normal and `--loop` modes. `next/SKILL.md` gains carry-forward registry awareness so it never reports "nothing to do" while active entries exist.
+
+### Added
+
+- **`blitz:code-doctor` skill** (`skills/code-doctor/`) — SKILL.md + reference.md. Opus orchestrator + sonnet Agent workers. Framework-API correctness audit: Firestore (misuse, subcollection patterns, transaction anti-patterns), VueFire (reactive binding correctness), Vue 3 (Options/Composition anti-patterns, reactivity misuse), Pinia (store coupling, action patterns). `--fix` mode for low-risk auto-fixes (read-only by default). Registered in skill-registry.json (`quality` category, `beta` maturity).
+- **Research doc** `docs/_research/2026-04-25_blitz-skill-alignment.md` — full 3-agent cycle alignment analysis. Identified 3 skill gaps + 7 un-adopted April-2026 CC platform features. Scope block `cf-2026-04-25-sprint-from-research-autochain`.
+- **Research doc** `docs/_research/2026-04-25_code-doctor-skill.md` — code-doctor capability research.
+
+### Changed
+
+- **`skills/sprint/SKILL.md`** — Loop Step 1 Observe gains `UNINGESTED` / `UNINGESTED_COUNT` detection (cross-checks `carry-forward.jsonl` to skip already-ingested docs, preventing duplicate-id hard-fail). Loop Step 2 decision tree gains row 0: "uningested research → roadmap extend, exit clean." Pre-Flight gains step 1b: auto-invokes `roadmap extend` in normal mode; fails loud on malformed `scope:` blocks.
+- **`skills/research/SKILL.md`** — Phase 4.2 follow-up table reordered: `roadmap extend` first (mandatory ingestion step made explicit), `sprint` second (single-command auto-chain path), `sprint-plan` third.
+- **`skills/next/SKILL.md`** — Phase 0 gains steps 0.6 (`CF_ACTIVE` / `CF_ESCALATED` reads from carry-forward registry) and 0.7 (`UNINGESTED_COUNT`). Decision tree gains rows 8b–8d: escalation banner for stuck entries, ingest-and-plan path, gap-closure path. `next` can no longer report "nothing to do" while carry-forward entries are active.
+- **`.claude-plugin/skill-registry.json`** — code-doctor entry added; version 1.3.0 → 1.4.0.
+
 ## [1.6.0] — 2026-04-23
 
 ### ui-audit — Continuous Cross-Page Consistency & UX Auditor
