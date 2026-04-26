@@ -1,6 +1,6 @@
 ---
 name: retrospective
-description: "Analyzes completed sessions to identify improvement patterns. Generates proposals for plugin self-improvement with safety classification."
+description: "Analyzes completed sessions to identify improvement patterns. Reads activity-feed entries, session reports, and git diff to surface recurring friction. Generates proposals for plugin self-improvement classified by safety (auto-apply, propose-only, never-auto-apply). Use when the user says 'retrospective', 'what did we learn', 'session analysis', 'improve the plugin', 'find friction patterns'."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: opus
 effort: medium

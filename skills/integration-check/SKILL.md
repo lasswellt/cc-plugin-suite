@@ -1,6 +1,6 @@
 ---
 name: integration-check
-description: "Validates cross-module wiring: export-to-import tracing, route coverage, auth guard coverage, store-to-component wiring. Read-only analysis."
+description: "Validates cross-module wiring on the current code: export-to-import tracing (are new exports actually consumed?), route coverage (do new pages have navigation entries?), auth guard coverage, store-to-component wiring. Read-only analysis. Use when the user says 'integration check', 'check wiring', 'audit imports', 'unused exports', 'orphan routes', or invoked by /blitz:sprint-dev Phase 3.5.0 after implementation."
 allowed-tools: Read, Write, Bash, Glob, Grep, Agent
 model: opus
 effort: medium

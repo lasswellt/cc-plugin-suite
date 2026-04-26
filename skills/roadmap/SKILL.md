@@ -185,7 +185,7 @@ title: "<short descriptive title>"
 source_document: "<relative-path>"
 source_anchor: "<heading-anchor or line reference>"
 document_type: "<classification>"
-description: "<2-3 sentences>"
+description: "Generates phased implementation roadmaps from research documents. Extracts capabilities and quantified scope: blocks, assesses codebase state, clusters features into epics, resolves dependencies, and writes roadmap-registry.json + epic-registry.json + carry-forward.jsonl 'created' lines. Use when the user says 'generate roadmap', 'plan phases', 'roadmap status', 'extend roadmap', or after /blitz:research produces a new doc. Required before /blitz:sprint-plan."
 user_value: "<who benefits and how>"
 acceptance_criteria:
   - "<testable criterion>"

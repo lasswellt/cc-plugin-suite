@@ -1,6 +1,6 @@
 ---
 name: review
-description: "Runs the review phase of a sprint by routing to sprint-review. Use when the user says 'review sprint N', 'run quality gates', or 'check the sprint'."
+description: "Runs the review phase of a sprint by routing to sprint-review. Use when the user says 'review sprint N', 'run quality gates', 'check the sprint', or asks to validate a completed sprint before shipping."
 argument-hint: "--sprint NNN | --auto-fix"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, ToolSearch, Agent
 disable-model-invocation: false

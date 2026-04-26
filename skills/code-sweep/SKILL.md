@@ -1,6 +1,6 @@
 ---
 name: code-sweep
-description: "Iterative code improvement with loop support. Discovers conventions from the codebase, defines standards, and progressively aligns code. 30 checks across 7 categories plus dynamic standards. Ratchet mechanism ensures quality only improves. Use when user says 'sweep', 'cleanup', 'improve code', 'code quality', 'find TODOs', 'dead code', 'optimize', 'enforce standards'."
+description: "Iterative code-quality improvement with /loop support. Discovers conventions from the codebase, defines standards, and progressively aligns code via 30 checks across 7 categories plus dynamic standards. Ratchet mechanism ensures quality only improves (never regresses). Use when the user says 'sweep', 'cleanup', 'improve code', 'code quality pass', 'find TODOs', 'remove dead code', 'enforce standards', or wants a continuous improvement loop running."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent
 model: opus
 effort: high

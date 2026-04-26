@@ -1,6 +1,6 @@
 ---
 name: quality-metrics
-description: "Collects, stores, and visualizes code quality metrics over time. Supports collect, dashboard, trend, and compare modes."
+description: "Collects, stores, and visualizes code-quality metrics over time (test counts, lint debt, cyclomatic complexity, dependency health, type-error trends). Modes: collect, dashboard, trend, compare. Use when the user says 'quality metrics', 'metrics dashboard', 'show trends', 'compare sprints', 'quality over time', or as a post-sprint observability snapshot in /blitz:ship."
 allowed-tools: Read, Write, Bash, Glob, Grep, Agent
 model: opus
 effort: medium

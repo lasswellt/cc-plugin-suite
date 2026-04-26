@@ -1,6 +1,6 @@
 ---
 name: sprint-plan
-description: Plans sprints from roadmap epics with research-backed stories. Reads the dependency graph, selects next unblocked epics, spawns research agents, generates implementation stories, creates GitHub issues. Use when user says "plan sprint", "generate stories", "plan next sprint".
+description: "Plans the next sprint from roadmap epics with research-backed stories. Reads the dependency graph, selects next unblocked epics, spawns research agents in parallel, generates per-story files with the canonical /_shared/story-frontmatter.md schema, and creates GitHub issues. Use when the user says 'plan sprint', 'generate stories', 'plan next sprint', 'sprint planning', or '--gaps' for gap-closure mode. Hard-fails at Phase 0.0 if roadmap-registry.json is missing."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, Agent
 disable-model-invocation: false
 model: opus

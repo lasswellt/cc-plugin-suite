@@ -1,6 +1,6 @@
 ---
 name: ask
-description: "Task intake: classifies vague requests and dispatches to the right skill(s)"
+description: "Routes a vague or underspecified request to the right blitz skill(s) by classifying intent and asking targeted clarifying questions. Use when the user describes work but doesn't pick a skill — e.g., 'I want to add a feature', 'help me clean this up', 'where do I start with X'. Especially valuable for new users who don't yet know the blitz skill catalog."
 argument-hint: "<describe what you want to do>"
 model: opus
 effort: low

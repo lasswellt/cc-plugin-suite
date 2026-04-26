@@ -1,6 +1,6 @@
 ---
 name: implement
-description: "Runs the implementation phase of a sprint by routing to sprint-dev. Use when the user says 'implement sprint N', 'develop these stories', or 'resume sprint'."
+description: "Runs the implementation phase of a sprint by routing to sprint-dev. Use when the user says 'implement sprint N', 'develop these stories', or 'resume sprint'. Skip planning and review — those are separate skills."
 argument-hint: "--sprint NNN | --stories STORY-XXX-001,STORY-XXX-002 | --resume | --mode <autonomous|checkpoint|interactive>"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, ToolSearch, Agent
 disable-model-invocation: false

@@ -1,6 +1,6 @@
 ---
 name: fix-issue
-description: Resolves GitHub issues end-to-end. Fetches issue context, researches root cause, implements fix with tests, updates the issue. Use when user says "fix issue #N", "resolve issue", "work on issue".
+description: "Resolves GitHub issues end-to-end: fetches issue context via gh CLI, researches root cause, implements fix with regression tests, and updates the issue with a closing comment. Use when the user says 'fix issue #N', 'resolve issue', 'work on issue', 'pick up issue', or pastes a GitHub issue URL. Independent of sprint-dev — for one-off bugs not in the sprint plan."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, SendMessage
 model: opus
 effort: medium

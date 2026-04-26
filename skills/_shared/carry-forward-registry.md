@@ -137,15 +137,15 @@ When Phase 4.1 auto-waives uncovered acceptance criteria in `autonomy=full`:
 3. Compute and write updated `coverage = delivered.actual / scope.target`.
 4. Log a corresponding `decision` event to the activity feed.
 
-Phase 0 step 6 **reads** the registry (latest-wins reduction) and injects every `status ∈ {active, partial}` entry as a **mandatory** planning input, regardless of whether the parent epic's status is `done` in `epic-registry.json`. This closes the "epic marked done → next sprint ignores the waived scope" hole.
+Phase 0 step 8 **reads** the registry (latest-wins reduction) and injects every `status ∈ {active, partial}` entry as a **mandatory** planning input, regardless of whether the parent epic's status is `done` in `epic-registry.json`. This closes the "epic marked done → next sprint ignores the waived scope" hole.
 
 ### 4. `sprint-review` — enforces invariants at sprint close
 
-Phase 3.5 (registry invariants, hard gate) runs before the sprint can close. See **Invariants** below.
+Phase 3.6 (registry invariants, hard gate) runs before the sprint can close. See **Invariants** below.
 
 ---
 
-## Invariants (sprint-review Phase 3.5)
+## Invariants (sprint-review Phase 3.6)
 
 At sprint close, `sprint-review` reduces the registry to latest-wins state and enforces four hard gates. **Failing any one fails the sprint close.**
 
@@ -181,7 +181,7 @@ This is **Linear cycle semantics** — nothing silently falls out of view. The o
 
 ## Reader Algorithm (canonical)
 
-Every reader (sprint-plan Phase 0, sprint-review Phase 3.5, roadmap refresh, dashboards) MUST use this single algorithm. It consolidates Invariants 1–4 into one executable sequence, eliminating per-skill drift.
+Every reader (sprint-plan Phase 0, sprint-review Phase 3.6, roadmap refresh, dashboards) MUST use this single algorithm. It consolidates Invariants 1–4 into one executable sequence, eliminating per-skill drift.
 
 ```bash
 # Inputs:
@@ -270,11 +270,11 @@ exit 0
 | Caller | `MODE` | Treats exit 2 as | Treats exit 3 as |
 |---|---|---|---|
 | sprint-plan Phase 0 | `plan` | BLOCK planning; print remediation | BLOCK; require human waiver before continuing |
-| sprint-review Phase 3.5 | `review` | INVARIANT FAILURE; sprint cannot close | ESCALATION; sprint cannot close |
+| sprint-review Phase 3.6 | `review` | INVARIANT FAILURE; sprint cannot close | ESCALATION; sprint cannot close |
 | roadmap refresh | `audit` | Print warning; continue | Print warning; continue |
 | dashboards | `audit` | Display in UI | Display with red badge |
 
-**Why a single algorithm.** Prior versions split this across sprint-plan Phase 0 step 8, sprint-review Phase 3.5 Invariant 1–4, and roadmap refresh — three places, three slightly different threshold conventions. The CAP-133 incident traced back to two places implementing the rollover ceiling slightly differently, with the higher one in plan and the lower one in review. The algorithm above is now the only place these thresholds live; consumers shell out to it, period.
+**Why a single algorithm.** Prior versions split this across sprint-plan Phase 0 step 8, sprint-review Phase 3.6 Invariant 1–4, and roadmap refresh — three places, three slightly different threshold conventions. The CAP-133 incident traced back to two places implementing the rollover ceiling slightly differently, with the higher one in plan and the lower one in review. The algorithm above is now the only place these thresholds live; consumers shell out to it, period.
 
 ---
 

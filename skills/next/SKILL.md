@@ -1,6 +1,6 @@
 ---
 name: next
-description: "Determines the logical next action based on current project and sprint state"
+description: "Reads current project, sprint, and carry-forward state and tells the user what action to take next (run sprint-plan, resume sprint-dev, ship, address a registry escalation, etc.). Use when the user asks 'what should I do next?', 'where are we?', 'is anything blocked?', or just '/blitz:next'. Always cite the specific blitz command to run."
 argument-hint: "(no arguments — reads state automatically)"
 model: sonnet
 effort: low

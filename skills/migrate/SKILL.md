@@ -1,6 +1,6 @@
 ---
 name: migrate
-description: "Handles framework, library, and tooling migrations with incremental safety. Researches breaking changes, plans atomic steps, and verifies after each."
+description: "Handles framework, library, and tooling migrations with incremental safety. Researches breaking changes, plans atomic migration steps, and verifies after each step (type-check + tests). Use when the user says 'migrate to', 'upgrade to Vue 3', 'Pinia from Vuex', 'Nuxt 2→3', 'replace X with Y', 'breaking change upgrade'. Refuses to proceed if any verification step fails."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, ToolSearch, SendMessage
 model: opus
 effort: high

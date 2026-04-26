@@ -1,6 +1,6 @@
 ---
 name: completeness-gate
-description: "Scans code for placeholder patterns, incomplete implementations, and production readiness issues. Returns structured findings with file:line references."
+description: "Scans code for placeholder patterns (TODO/FIXME/STUB/PLACEHOLDER), incomplete implementations (`return {}`, `throw new Error('Not implemented')`), and other production-readiness issues. Returns structured findings with file:line refs. Use when the user says 'check completeness', 'scan for placeholders', 'find unfinished code', 'production readiness', or as an automatic gate before /blitz:ship."
 allowed-tools: Read, Bash, Glob, Grep
 model: sonnet
 effort: medium

@@ -1,6 +1,6 @@
 ---
 name: perf-profile
-description: "Profiles bundle size, runtime performance, and Lighthouse scores. Identifies optimization opportunities for Vue/Nuxt apps."
+description: "Profiles bundle size, runtime performance (Web Vitals), and Lighthouse scores for Vue/Nuxt apps. Identifies optimization opportunities (large deps, unused exports, render bottlenecks). Use when the user says 'profile perf', 'lighthouse', 'bundle size', 'performance', 'why is this slow', 'optimize Vue/Nuxt'."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, ToolSearch
 model: opus
 effort: medium

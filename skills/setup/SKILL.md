@@ -1,6 +1,6 @@
 ---
 name: setup
-description: "Detects conflicts between the user's CLAUDE.md files and blitz skill behaviors. Reads global and project CLAUDE.md scopes, matches rules against a known-conflict catalog, and reports severity-graded findings with remediation suggestions. Validates tool permissions and stack assumptions. Use when setting up blitz in a new project, after adding CLAUDE.md rules, or when sprint-dev/code-sweep behave unexpectedly."
+description: "Detects conflicts between the user's CLAUDE.md files and blitz skill behaviors. Reads global and project CLAUDE.md scopes, matches rules against a known-conflict catalog, and reports severity-graded findings with remediation suggestions. Validates tool permissions and stack assumptions. Use when the user installs blitz in a new project, after adding CLAUDE.md rules, or when sprint-dev/code-sweep/ui-audit behave unexpectedly. Should run automatically the first time blitz is invoked in a project."
 allowed-tools: Read, Bash, Glob, Grep
 model: sonnet
 effort: low

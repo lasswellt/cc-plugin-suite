@@ -96,7 +96,7 @@ The per-sprint manifest lives at `sprints/sprint-${N}/manifest.json` and capture
     "registry_entries_touched": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "List of carry-forward registry ids (cf-*) that this sprint's stories advanced. Each entry MUST have been injected as a mandatory planning input OR explicitly claimed by a story in this sprint. Written during Phase 4.1 coverage check; audited in sprint-review Phase 3.5 Invariant 2."
+      "description": "List of carry-forward registry ids (cf-*) that this sprint's stories advanced. Each entry MUST have been injected as a mandatory planning input OR explicitly claimed by a story in this sprint. Written during Phase 4.1 coverage check; audited in sprint-review Phase 3.6 Invariant 2."
     },
     "mandatory_planning_inputs_source": {
       "type": "string",

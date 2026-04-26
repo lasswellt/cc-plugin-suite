@@ -1,6 +1,6 @@
 ---
 name: quick
-description: "Fast ad-hoc changes without full skill ceremony. For small fixes, typos, one-file changes, and quick tweaks."
+description: "Makes a small ad-hoc change (typo, one-line fix, single-file tweak) without the full sprint ceremony. Use when the user describes a tiny scoped change like 'fix the typo in X', 'change Y to Z in file foo', 'rename this var', 'tweak this string'. Do NOT use for multi-file refactors, new features, or anything that needs tests — those go through sprint-dev or refactor."
 argument-hint: "<describe what you want to change>"
 model: sonnet
 effort: low

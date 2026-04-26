@@ -1,6 +1,6 @@
 ---
 name: dep-health
-description: "Audits npm dependencies for vulnerabilities, outdated packages, and license compliance. Supports audit, upgrade, and report modes."
+description: "Audits npm dependencies for known vulnerabilities (npm audit), outdated versions, and license compliance. Modes: audit (read-only scan), upgrade (interactive bumps), report (CSV/JSON output). Use when the user says 'check deps', 'dep-health', 'audit dependencies', 'security vulnerabilities', 'outdated packages', 'license check', or as a recurring weekly sweep."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch
 model: sonnet
 effort: medium

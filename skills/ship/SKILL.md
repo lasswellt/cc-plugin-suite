@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "End-to-end shipping workflow: review, completeness gate, quality metrics, release. Chains multiple skills with quality gates between each."
+description: "Chains the full release workflow (sprint-review → completeness-gate → quality-metrics → release) with quality gates between each step. Use when the user says 'ship it', 'cut a release', 'release v1.X', or 'ready to ship'. Refuses to publish if any gate fails."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: opus
 effort: low

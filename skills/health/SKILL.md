@@ -1,6 +1,6 @@
 ---
 name: health
-description: "Plugin health check — verifies hooks, sessions, registry, and structural integrity"
+description: "Validates plugin structural integrity: hooks executable + valid hooks.json, no stale sessions or orphan locks, activity feed under threshold, every SKILL.md passes the canonical frontmatter lint. Use when the user reports a hook misfiring, a session collision warning, an unfamiliar lock file, or simply asks 'is the plugin healthy?'. Run after any /blitz:setup or hook config change."
 argument-hint: "(no arguments — runs all checks)"
 model: sonnet
 effort: low

@@ -90,16 +90,16 @@ Required = R, Optional = O, Conditional = C (required iff condition).
 | `verify` | string[] | sprint-plan Phase 3.2 | sprint-dev (story-done gate), completeness-gate | R |
 | `done` | string | sprint-plan Phase 3.2 | sprint-review (acceptance) | R |
 | `research_refs` | string[] | sprint-plan Phase 3.2 | sprint-dev (read findings during impl), sprint-review (Invariant 1) | R |
-| `github_issue` | int\|null | sprint-plan Phase 4.5 (after issue create); never sprint-dev | sprint-review (link in report), ship | R (nullable) |
-| `carry_forward` | bool | sprint-plan Phase 0.6 (if injected from prior sprint) | sprint-review (Invariant 4 cross-check) | R |
-| `registry_entries` | object[] | sprint-plan Phase 4.1 (link stories to scope) | sprint-dev Phase 3.1a (writes `progress` event) | O |
+| `github_issue` | int\|null | sprint-plan Phase 4.4 (after issue create); never sprint-dev | sprint-review (link in report), ship | R (nullable) |
+| `carry_forward` | bool | sprint-plan Phase 0 step 8 (if injected from prior sprint) | sprint-review Phase 3.6 Invariant 4 (cross-check) | R |
+| `registry_entries` | object[] | sprint-plan Phase 4.1 (link stories to scope) | sprint-dev Phase 3.2 step 1a (writes `progress` event) | O |
 | `registry_entries[*].id` | string | sprint-plan | sprint-dev (registry id validation; hard-fail on unknown) | R if `registry_entries` present |
 | `registry_entries[*].delta` | int | sprint-plan | sprint-dev (passed as `delivered.actual` increment) | O (defaults to `len(files)`) |
 | `source_finding` | object | sprint-plan `--gaps` mode | sprint-review (gap-closure traceability) | C (required iff `type == "gap-closure"`) |
 
 **Producer hard rules.** `sprint-plan` is the only skill that creates story files. `sprint-dev` may transition `status` and append a `progress_notes` block to the body, but MUST NOT add or remove frontmatter fields outside `status`, `github_issue`, and `progress_notes`. `sprint-review` may transition `status` to `done` or `dropped` only.
 
-**Consumer hard rules.** Consumers MUST treat unknown fields as forward-compatible (don't reject), but MUST hard-fail on missing required fields. The `registry_entries` inference fallback (parent-epic pro-rata with `delta: 1`) lives in sprint-dev Phase 3.1a — see [carry-forward-registry.md](carry-forward-registry.md) §Writers.
+**Consumer hard rules.** Consumers MUST treat unknown fields as forward-compatible (don't reject), but MUST hard-fail on missing required fields. The `registry_entries` inference fallback (parent-epic pro-rata with `delta: 1`) lives in sprint-dev Phase 3.2 step 1a — see [carry-forward-registry.md](carry-forward-registry.md) §Writers.
 
 ---
 

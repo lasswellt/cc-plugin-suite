@@ -1,6 +1,6 @@
 ---
 name: code-doctor
-description: "Framework-API correctness audit for Firestore, VueFire, Vue 3, and Pinia. Detects anti-patterns, misuse, dead exports, and duplication candidates. Read-only by default; --fix applies low-risk auto-fixes. Use when user says 'code-doctor', 'audit firestore', 'check api usage', 'find misuse'."
+description: "Framework-API correctness audit for Firestore, VueFire, Vue 3, and Pinia. Detects anti-patterns, misuse, dead exports, and duplication candidates. Read-only by default; --fix applies low-risk auto-fixes only (never mutates business logic). Use when the user says 'code-doctor', 'audit firestore', 'check api usage', 'find misuse', 'check vuefire', 'pinia anti-patterns', 'firestore best practices', or starts seeing framework-API warnings in logs."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent
 model: opus
 effort: low

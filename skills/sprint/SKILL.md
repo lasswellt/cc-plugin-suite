@@ -1,6 +1,6 @@
 ---
 name: sprint
-description: "Orchestrates the full sprint cycle (plan → implement → review). Use when the user says 'run a sprint', 'do a full sprint', or invokes --loop for autonomous reconciliation."
+description: "Orchestrates the full sprint cycle (plan → implement → review). Use when the user says 'run a sprint', 'do a full sprint', or invokes --loop for autonomous reconciliation. The --loop mode is the canonical entry point for fully autonomous, multi-tick sprint progression."
 argument-hint: "--epics EP-001,EP-002 | --plan-only | --skip-review | --loop"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, ToolSearch, Agent
 disable-model-invocation: false

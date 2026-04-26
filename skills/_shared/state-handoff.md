@@ -29,8 +29,8 @@ Reading order: **Producer → Artifact → Required-By**. Every artifact has exa
 | `package.json` (or equivalent project manifest) | bootstrap | All skills (project type detection) | Required for greenfield |
 | `src/` (or equivalent source root) | bootstrap | All implementation skills | Required for greenfield |
 | `.cc-sessions/` (directory) | bootstrap **or** any skill on first run | session-protocol consumers | Auto-created by session-protocol |
-| `docs/roadmap/roadmap-registry.json` | bootstrap (greenfield only) **or** roadmap | sprint-plan Phase 0.4 | **Required by sprint-plan** |
-| `docs/roadmap/epic-registry.json` | bootstrap (greenfield only) **or** roadmap | sprint-plan Phase 0.4 | **Required by sprint-plan** |
+| `docs/roadmap/roadmap-registry.json` | bootstrap (greenfield only) **or** roadmap | sprint-plan Phase 0 step 2 | **Required by sprint-plan** |
+| `docs/roadmap/epic-registry.json` | bootstrap (greenfield only) **or** roadmap | sprint-plan Phase 0 step 2 | **Required by sprint-plan** |
 
 **bootstrap Phase 5 must:** initialize `docs/roadmap/roadmap-registry.json` and `docs/roadmap/epic-registry.json` as empty stubs even on greenfield, OR explicitly print "Roadmap not initialized — run /blitz:roadmap before /blitz:sprint-plan". Silent absence is the failure mode.
 
@@ -45,29 +45,29 @@ Reading order: **Producer → Artifact → Required-By**. Every artifact has exa
 
 | Artifact | Producer | Consumer | Required? |
 |---|---|---|---|
-| `docs/roadmap/roadmap-registry.json` (populated) | roadmap (extend, refresh, init) | sprint-plan Phase 0.4 | Required |
-| `docs/roadmap/epic-registry.json` (populated) | roadmap | sprint-plan Phase 0.4, sprint-dev Phase 3.1a (registry inference fallback) | Required |
-| `.cc-sessions/carry-forward.jsonl` lines (`event: "created"`) | roadmap extend (Phase 1.1.5) | sprint-plan Phase 0 mandatory inputs, sprint-review Invariant 1 | Required if research had `scope:` |
+| `docs/roadmap/roadmap-registry.json` (populated) | roadmap (extend, refresh, init) | sprint-plan Phase 0 step 2 | Required |
+| `docs/roadmap/epic-registry.json` (populated) | roadmap | sprint-plan Phase 0 step 2; sprint-dev Phase 3.2 step 1a (registry inference fallback) | Required |
+| `.cc-sessions/carry-forward.jsonl` lines (`event: "created"`) | roadmap extend (Phase 1.1.5) | sprint-plan Phase 0 step 8 (mandatory inputs), sprint-review Phase 3.6 Invariant 1 | Required if research had `scope:` |
 
 ### sprint-plan
 
 | Artifact | Producer | Consumer | Required? |
 |---|---|---|---|
-| `sprints/sprint-${N}/manifest.json` | sprint-plan Phase 1.4 | sprint-dev Phase 0, sprint-review Phase 0 | Required |
+| `sprints/sprint-${N}/manifest.json` | sprint-plan Phase 1.4 | sprint-dev Phase 0.0, sprint-review Phase 0 | Required |
 | `sprints/sprint-${N}/stories/S${N}-*.md` | sprint-plan Phase 3.2 | sprint-dev (every story validated per [story-frontmatter.md](story-frontmatter.md)) | Required (≥ 1 story) |
-| `sprints/sprint-${N}-planning-inputs.json` | sprint-review (previous sprint) **or** sprint-plan Phase 0 (if absent) | sprint-plan Phase 0.6 | Optional (auto-injected when carry-forward exists) |
-| `sprint-registry.json` (entry added) | sprint-plan Phase 1.5 | sprint-dev, sprint-review, ship | Required |
-| `.cc-sessions/carry-forward.jsonl` lines (`event: "auto_waived"`, Phase 4.1) | sprint-plan Phase 4.1 | sprint-review Invariant 2, next sprint-plan Phase 0 | Required when waivers occurred |
-| GitHub issues (one per story) | sprint-plan Phase 4.5 | sprint-dev (links commits), sprint-review (closes) | Required when `--issues` mode |
+| `sprints/sprint-${N}-planning-inputs.json` | sprint-review (previous sprint) **or** sprint-plan Phase 0 (if absent) | sprint-plan Phase 0 step 8 | Optional (auto-injected when carry-forward exists) |
+| `sprint-registry.json` (entry added) | sprint-plan Phase 4.5 | sprint-dev, sprint-review, ship | Required |
+| `.cc-sessions/carry-forward.jsonl` lines (`event: "auto_waived"`, Phase 4.1) | sprint-plan Phase 4.1 | sprint-review Phase 3.6 Invariant 2, next sprint-plan Phase 0 step 8 | Required when waivers occurred |
+| GitHub issues (one per story) | sprint-plan Phase 4.4 | sprint-dev (links commits), sprint-review (closes) | Required when `--issues` mode |
 
 ### sprint-dev
 
 | Artifact | Producer | Consumer | Required? |
 |---|---|---|---|
-| Worktrees `.cc-sessions/${SESSION_ID}/worktrees/agent-<role>/` | sprint-dev Phase 1 | Internal (agent dispatch); merged back at Phase 4 | Internal |
-| `STATE.md` (in repo root or `.cc-sessions/`) | sprint-dev Phase 2 (per checkpoint-protocol) | sprint-dev resume on next invocation, sprint-review report | Required by checkpoint-protocol |
-| Story `status` transitions (`in-progress`, `done`, `blocked`) | sprint-dev | sprint-review (report), next sprint-plan (carry-forward injection) | Required |
-| `.cc-sessions/carry-forward.jsonl` lines (`event: "progress"`, Phase 3.1a) | sprint-dev | sprint-review Invariant 2 cross-check | Required when stories had `registry_entries` |
+| Worktrees `.cc-sessions/${SESSION_ID}/worktrees/agent-<role>/` | sprint-dev Phase 2.3 | Internal (agent dispatch); merged back at Phase 4.1 | Internal |
+| `STATE.md` (in repo root or `.cc-sessions/`) | sprint-dev Phase 3.2 step 1b (per checkpoint-protocol) | sprint-dev resume on next invocation, sprint-review report | Required by checkpoint-protocol |
+| Story `status` transitions (`in-progress`, `done`, `blocked`) | sprint-dev Phase 4.8 | sprint-review (report), next sprint-plan (carry-forward injection) | Required |
+| `.cc-sessions/carry-forward.jsonl` lines (`event: "progress"`, Phase 3.2 step 1a) | sprint-dev | sprint-review Phase 3.6 Invariant 2 cross-check | Required when stories had `registry_entries` |
 | Commits + branches (one per agent worktree) | sprint-dev | sprint-review diff, ship | Required |
 | `${SESSION_TMP_DIR}/HANDOFF.json` (on interrupted exit only) | sprint-dev cleanup | sprint-dev resume | Conditional |
 
@@ -75,11 +75,11 @@ Reading order: **Producer → Artifact → Required-By**. Every artifact has exa
 
 | Artifact | Producer | Consumer | Required? |
 |---|---|---|---|
-| `sprints/sprint-${N}/review-report.md` | sprint-review Phase 4 | ship, retrospective | Required |
-| `sprints/sprint-${N}-planning-inputs.json` (auto-inject for next sprint) | sprint-review Invariant 4 | next `sprint-plan` Phase 0.6 | Required when uncovered registry entries remain |
+| `sprints/sprint-${N}/review-report.md` | sprint-review Phase 4.1 | ship, retrospective | Required |
+| `sprints/sprint-${N}-planning-inputs.json` (auto-inject for next sprint) | sprint-review Phase 3.6 Invariant 4 | next `sprint-plan` Phase 0 step 8 | Required when uncovered registry entries remain |
 | Story `status` final transitions (`done`, `dropped`) | sprint-review Phase 3 | sprint-registry close-out, ship | Required |
-| `.cc-sessions/carry-forward.jsonl` lines (`event: "complete"`, `"deferred"`, or `"dropped"`) | sprint-review Phase 3.5 | next sprint-plan Phase 0 | Required when invariants close entries |
-| `sprint-registry.json` (status `review` → `done` or `cancelled`) | sprint-review Phase 5 | sprint-plan (next sprint number derivation), ship | Required |
+| `.cc-sessions/carry-forward.jsonl` lines (`event: "complete"`, `"deferred"`, or `"dropped"`) | sprint-review Phase 3.6 | next sprint-plan Phase 0 step 8 | Required when invariants close entries |
+| `sprint-registry.json` (status `review` → `done` or `cancelled`) | sprint-review Phase 4.3 | sprint-plan (next sprint number derivation), ship | Required |
 
 ### ship
 

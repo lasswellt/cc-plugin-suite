@@ -1,6 +1,6 @@
 ---
 name: refactor
-description: Performs safe, incremental refactoring with test verification after each step. Snapshots test results, refactors incrementally, verifies no regressions. Use when user says "refactor", "extract", "simplify", "decompose", "clean up".
+description: "Performs safe, incremental refactoring with test verification after every step. Snapshots test results, refactors one piece at a time, and reverts if any test that was passing starts failing. Use when the user says 'refactor', 'extract', 'simplify', 'decompose', 'rename', 'restructure', or 'clean up'. NOT for behavior changes — those go through sprint-dev or fix-issue."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: opus
 effort: medium

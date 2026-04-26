@@ -1,6 +1,6 @@
 ---
 name: doc-gen
-description: "Generates API docs, component docs, architecture diagrams, and changelogs from source code. Supports api, components, architecture, changelog, and full modes."
+description: "Generates API docs, component docs, architecture diagrams (Mermaid), and CHANGELOG entries from source code and conventional commits. Modes: api, components, architecture, changelog, full. Use when the user says 'generate docs', 'doc-gen', 'API documentation', 'component docs', 'architecture diagram', 'auto-changelog', or when source code is ahead of docs/."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch, TeamCreate, SendMessage
 model: opus
 effort: medium

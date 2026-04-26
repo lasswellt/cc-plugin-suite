@@ -1,6 +1,6 @@
 ---
 name: codebase-map
-description: "Analyzes an existing codebase across 4 dimensions: Technology, Architecture, Quality, and Concerns. Produces a CODEBASE-MAP.md for brownfield project onboarding."
+description: "Builds a CODEBASE-MAP.md for brownfield project onboarding by analyzing 4 dimensions: Technology (stack/deps/build), Architecture (modules/layers/data flow), Quality (test coverage, lint debt, complexity hotspots), and Concerns (security/perf/correctness risks). Use when the user says 'map the codebase', 'analyze this project', 'help me understand this code', 'I just inherited this repo', or starts working in an unfamiliar codebase. Should run automatically when no CODEBASE-MAP.md exists in a brownfield project."
 allowed-tools: Read, Write, Bash, Glob, Grep, Agent
 model: opus
 effort: medium
