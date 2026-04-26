@@ -15,7 +15,7 @@
 
 **Production-grade Claude Code plugin for Vue/Nuxt + Firebase**
 
-**36 skills** · **6 agents** · **17 hooks** · **8 hook events**
+**36 skills** · **6 agents** · **18 hooks** · **8 hook events**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude_Code-Plugin-blue)](https://docs.anthropic.com/en/docs/claude-code)
@@ -246,7 +246,7 @@ Drop typed agent YAML files into `.claude/agents/` to scope MCP server access pe
 
 ---
 
-## Hooks (17 scripts, 8 events)
+## Hooks (18 scripts, 8 events)
 
 | Event | Matcher | Script | Behavior |
 |-------|---------|--------|----------|
@@ -378,7 +378,7 @@ blitz/
 │   └── doc-writer.md            # API docs, ADRs, changelogs
 └── hooks/
     ├── hooks.json               # 8 event types wired
-    └── scripts/                 # 17 hook scripts
+    └── scripts/                 # 18 hook scripts
         ├── pre-compact-snapshot.sh     # NEW: sprint state → compact-state.json
         ├── post-compact-log.sh         # NEW: activity feed restoration hint
         ├── blitz-prompt-expansion.sh   # NEW: activity-feed context injection
