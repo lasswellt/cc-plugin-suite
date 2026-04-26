@@ -263,11 +263,13 @@ Drop typed agent YAML files into `.claude/agents/` to scope MCP server access pe
 | `PostToolUse` | `Write\|Edit` | `post-edit-test.sh` | Runs matching test file after source edits |
 | `PostToolUse` | `Write\|Edit` | `analysis-paralysis-guard.sh` | Warns after 5+ consecutive reads without writes |
 | `PostToolUse` | `Read\|Glob\|Grep` | `analysis-paralysis-guard.sh` | Same guard on read-heavy operations |
+| `PostToolUse` | `Write\|Edit` | `skill-frontmatter-validate.sh` | Lints any modified `SKILL.md` against the canonical frontmatter contract (third-person description ≤1024 chars, body ≤500 lines, OUTPUT STYLE snippet present, required fields when invokable) |
 | `PostToolUse` | `Read\|Glob\|Grep\|Bash` | `context-monitor.sh` | Tracks context window utilization, warns at ~60% and ~80% |
 | `PreToolUse` | `Write\|Edit` | `pre-edit-guard.sh` | Blocks edits to protected files (.env, lock files, node_modules) |
 | `PreToolUse` | `Write\|Edit` | `pre-edit-backup.sh` | Creates timestamped backup in /tmp/cc-backups/ before every edit |
-| `PreToolUse` | `Bash` | `pre-commit-validate.sh` | Scans staged files for banned patterns and secrets before `git commit` |
-| `PreToolUse` | `Bash` | `reference-compression-validate.sh` | Validates terse-output references in skill files |
+| `PreToolUse` | `Bash` | `pre-commit-validate.sh` | On `git commit`: SKILL.md frontmatter lint + version-sync drift check + broken markdown link warn |
+| `PreToolUse` | `Bash` | `reference-compression-validate.sh` | On `git commit`: validates compressed `references/main.md` matches `.original` sibling structure (code fences, URLs, headings, tables) |
+| `PreToolUse` | `Bash` | `markdown-link-validate.sh` | On `git commit`: warn-only scan for broken relative `.md` links across `skills/` (skips fenced code, inline code, http URLs) |
 | `PreToolUse` | `Bash` | `workflow-guard.sh` | Warns on out-of-order phase execution in phased skills |
 
 ---
@@ -355,10 +357,11 @@ blitz/
 │   ├── detect-stack.sh          # Dynamic stack detection (injected into every skill)
 │   ├── validate-plugin-structure.sh
 │   ├── validate-skill-output.sh
-│   ├── check-version-sync.sh
+│   ├── check-version-sync.sh    # plugin.json ↔ marketplace.json ↔ installer banner
 │   ├── parse-scope-to-registry.py
 │   ├── backfill-registry-parents.py
-│   └── add-terse-output-reference.py
+│   ├── add-terse-output-reference.py
+│   └── maint/v1.9.0/            # Archived migration scripts from the v1.9.0 overhaul (idempotent re-runs)
 ├── skills/
 │   ├── _shared/                 # 14 shared protocol files
 │   ├── sprint/                  # Orchestrator — auto-chains roadmap extend
@@ -369,6 +372,7 @@ blitz/
 │   ├── roadmap/                 # Research ingestion → epic-registry
 │   ├── ui-audit/                # Cross-page consistency, ScheduleWakeup loop
 │   ├── code-doctor/             # Framework-API correctness audit
+│   ├── conform/                 # Brings legacy project artifacts into current spec (story v0.x→v1.9, etc.)
 │   └── ... (28 more)
 ├── agents/
 │   ├── backend-dev.md           # Firestore/VueFire/Cloud Functions
@@ -379,23 +383,25 @@ blitz/
 │   └── doc-writer.md            # API docs, ADRs, changelogs
 └── hooks/
     ├── hooks.json               # 8 event types wired
-    └── scripts/                 # 19 hook scripts
-        ├── pre-compact-snapshot.sh     # NEW: sprint state → compact-state.json
-        ├── post-compact-log.sh         # NEW: activity feed restoration hint
-        ├── blitz-prompt-expansion.sh   # NEW: activity-feed context injection
-        ├── session-start.sh            # Activity feed summary on session start
-        ├── teammate-idle.sh            # Agent team quality gate
-        ├── task-completed-validate.sh  # DoD check on task completion
+    └── scripts/                 # 19 hook scripts (see hooks/scripts/README.md for the full event-grouped index)
+        ├── pre-compact-snapshot.sh     # PreCompact: sprint state → compact-state.json
+        ├── post-compact-log.sh         # PostCompact: activity feed restoration hint
+        ├── blitz-prompt-expansion.sh   # UserPromptExpansion: activity-feed context injection
+        ├── session-start.sh            # SessionStart: activity feed summary + per-session counter reset
+        ├── teammate-idle.sh            # TeammateIdle: agent team quality gate
+        ├── task-completed-validate.sh  # TaskCompleted: DoD check
         ├── post-edit-activity-log.sh   # file_change → activity feed
         ├── post-edit-format.sh         # Prettier / Biome auto-format
         ├── post-edit-lint.sh           # ESLint / Biome auto-lint
         ├── post-edit-test.sh           # Run matching tests after edit
+        ├── skill-frontmatter-validate.sh  # Lint canonical SKILL.md frontmatter on every edit
         ├── pre-edit-guard.sh           # Block .env / lock files
         ├── pre-edit-backup.sh          # /tmp/cc-backups/ before every edit
-        ├── pre-commit-validate.sh      # Scan staged files for secrets/banned patterns
+        ├── pre-commit-validate.sh      # Scan staged files; runs frontmatter + version-sync + link checks
         ├── analysis-paralysis-guard.sh # Warn on read-heavy without writes
         ├── context-monitor.sh          # Context utilization at 60% / 80%
-        ├── reference-compression-validate.sh
+        ├── reference-compression-validate.sh  # On commit: compressed-vs-original parity
+        ├── markdown-link-validate.sh   # On commit: warn on broken relative .md links
         └── workflow-guard.sh           # Phase order enforcement
 ```
 
@@ -413,6 +419,10 @@ docs/_research/      # Generated research documents
 docs/roadmap/        # Generated roadmap, epic-registry, capability-index
 docs/retrospective/  # Session retrospective proposals
 ```
+
+### Conforming after upgrades
+
+Existing projects that were bootstrapped on an older blitz version may carry artifact drift — old story-frontmatter schema (`epic` instead of `epic_id`), missing `registry_entries` field, STATE.md formats no longer mentioned in shared protocols, etc. Run **`/blitz:conform`** to detect drift; **`/blitz:conform --fix`** to apply mechanical migrations idempotently with per-file backups. Default scope is `project` (runtime artifacts); `--scope plugin` targets plugin forks. See `skills/conform/SKILL.md` and `skills/conform/references/main.md` for the full schema-detection rules and migration tables.
 
 ---
 
