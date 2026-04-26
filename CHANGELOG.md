@@ -2,40 +2,44 @@
 
 All notable changes to the blitz plugin are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — v1.9.1 polish
+## [1.10.0] — 2026-04-26
 
-Six follow-up commits after the v1.9.0 overhaul. No breaking changes; conformance tightening, regression fix, and preventive coverage.
+Eleven follow-up commits after the v1.9.0 overhaul, capped by the new `/blitz:conform` skill that brings legacy projects into current spec. No breaking changes; one new feature, one regression fix, broad conformance tightening, and preventive coverage.
+
+### Added
+
+- **`/blitz:conform` skill** (`skills/conform/`) — detects + fixes drift in an existing project's blitz runtime artifacts against the canonical schemas in `skills/_shared/`. Schema-version aware: detects pre-v1.9.0 story frontmatter (`epic` + `verify` + `done`) and migrates to current spec (`epic_id` + `acceptance_criteria` + `registry_entries`) while preserving project-specific extension fields. Three-format STATE.md parser (field-form / bold-prefix-line / table-form). Optional-feature semantics (carry-forward and developer-profile absent + zero consumer signals = NO ACTION, not MISSING). Session model flexibility (file-style `<id>.json` AND directory-style `<id>/`). Sample mode auto-engages on >50 sprints or >300 stories (random sample of latest-3 + 10 older via `shuf`, with extrapolation). Project-extension awareness (39+ non-canonical roadmap files like `roadmap-registry.json`, `.bak` archives stay INFO, never deleted). Read-only by default; `--fix` applies migrations idempotently with per-file `.pre-conform.<ts>` backups. Plugin-fork mode via `--scope plugin`. Dry-run validated against a 123-sprint / 1,018-story / 160-session project. Skill 285 lines + references/main.md 288 lines.
+- **`hooks/scripts/markdown-link-validate.sh`** — pre-commit warn-only hook for broken relative `.md` links across `skills/`. Strips fenced code blocks, inline code, http URLs, anchors, `/_shared/` plugin-absolute links. Closes the gap that allowed pass-3's renames to silently break links until pass-4 swept them.
+- **`hooks/scripts/README.md`** — discoverability index for the 19 hook scripts. Tables grouped by hook event with matcher + purpose + blocking-vs-non-blocking conventions.
+- **`scripts/maint/v1.9.0/`** — archived 5 migration scripts that performed the v1.9.0 mechanical work (`blitz-restructure.py`, `blitz-trim-preamble.py`, `blitz-rewrite-desc.py`, `blitz-fix-frontmatter.sh`, `blitz-xref-audit.py`) plus README documenting each script's purpose, idempotency contract, and re-run safety. Now also referenced by `/blitz:conform --scope plugin`.
 
 ### Fixed
 
 - **🔴 sprint-review Invariant 5 silent regression** (`sprint-review/SKILL.md`) — Phase 3.6 audit script grepped `skills/*/reference.md`, which matched zero files post-v1.9.0 restructure. Invariant silently passed for any missing OUTPUT STYLE snippet. Updated all 4 path references (lines 389, 405, 419, 420) to `skills/*/references/main.md`. Now correctly identifies 8 references/main.md files with embedded agent-prompt templates.
 - **`reference-compression-validate.sh` find pattern** — `find -name 'references/main.md.original'` never matched (slash in `-name`); switched to `-path '*/references/main.md.original'`. Hook now correctly checks all 16 .original/main.md pairs.
-- **`installer/install.sh` banner version drift** — banner read `v1.4.1 · 33 skills · 12 hooks` (5 versions stale); updated to `v1.9.0 · 36 skills · 19 hooks`. Caught by `check-version-sync.sh`, which had been emitting warnings on every commit.
-- **README hook count drift** — said "17 hooks" in 3 places; actual is 19 (added `skill-frontmatter-validate.sh` in v1.9.0 + `markdown-link-validate.sh` in v1.9.1).
+- **`installer/install.sh` banner version drift** — banner read `v1.4.1 · 33 skills · 12 hooks` (5 versions stale); now `v1.10.0 · 36 skills · 19 hooks`. Caught by `check-version-sync.sh`, which had been emitting warnings on every commit.
+- **README hook count drift** — said "17 hooks" in 3 places; now 19 (added `skill-frontmatter-validate.sh` in v1.9.0 + `markdown-link-validate.sh` in v1.10.0).
 - **Hook script JSON-escaping bugs** — `blitz-prompt-expansion.sh` and `post-compact-log.sh` used `printf`/sed pipelines for activity-feed JSON; rewritten with `jq -nc --arg` for safe escaping.
 - **`session-start.sh` portability** — added portable epoch parser (GNU `date -d` → BSD `date -j` → python3 fallback) for stale-session detection. Per-session context counter now reset on `SessionStart` (was monotonically accumulating across sessions).
 - **`task-completed-validate.sh` regex** — story-id check `^S\d+-\d+:` now accepts gap-fix IDs `^S\d+-G?\d+:` (e.g., `S3-G001`).
+- **`sprint-review` allowed-tools** — removed unused `ToolSearch` declaration (per-skill manual audit confirmed zero invocations in body).
 
 ### Changed
 
+- **All `disable-model-invocation: true` flags removed** — 5 skills (`ask`, `quick`, `next`, `health`, `codebase-audit`) are now eligible for description-based auto-invocation. Added `allowed-tools` to the 4 that previously omitted it (was implied by the disable flag): `ask` (Read, Bash, Glob, AskUserQuestion), `quick` (Read, Write, Edit, Bash, Glob, Grep), `next` (Read, Bash, Glob, Grep), `health` (Read, Bash, Glob, Grep). `codebase-audit` already had `allowed-tools` declared.
 - **Companion file restructure to canonical Anthropic layout** — 46 file moves: `reference.md` → `references/main.md` (27 skills + 16 `.original` siblings), `ui-audit/CHECKS.md` → `references/checks.md`, `ui-audit/PATTERNS.md` → `references/patterns.md`, `setup/conflict-catalog.json` → `assets/conflict-catalog.json`. 202 cross-reference substitutions across 30 files.
 - **Inline duplication trim** — 21 SKILL.md files had a verbose ~500-char session-registration preamble inlined; replaced with a canonical ~270-char citation referencing `/_shared/session-protocol.md` §Session Registration and `/_shared/verbose-progress.md`. ~5.4 KB saved per session start.
-- **Description triggerability rewrite** — every skill's `description:` field rewritten in third-person + front-loaded explicit trigger phrases for better Claude Code skill discovery (per Anthropic skill-authoring best practices).
+- **Description triggerability rewrite** — every skill's `description:` field rewritten in third-person + front-loaded explicit trigger phrases for better Claude Code skill discovery.
 - **Stale `reference.md` string sweep** — pass-3 markdown-link regex missed 15 path-fragment refs in 12 files (cross-skill cites in compress/quality-metrics/doc-gen/roadmap/review SKILLs, self-references inside moved files, fixture script comments). All cleaned; one intentional historical narrative preserved in `_shared/story-frontmatter.md`.
 - **`agent-prompt-boilerplate.md` self-consistency** — protocol's own 7 internal `reference.md` paths updated to `references/main.md` (it's actively cited from 7 references/main.md files via `<!-- import: -->` markers).
 - **`state-handoff.md` consumer wiring (3 → 7)** — added citations in `bootstrap`, `ship`, `roadmap`, `next` SKILL.md (was only sprint-plan/dev/review). Pipeline contract now visible to every producer/consumer.
 - **CLAUDE.md Hooks section** — replaced single sentence with event-grouped overview (8 events × 19 scripts) and link to new `hooks/scripts/README.md`. Added `agent-prompt-boilerplate.md` to "Required for skills that spawn agents".
-
-### Added
-
-- **`hooks/scripts/markdown-link-validate.sh`** — pre-commit warn-only hook for broken relative `.md` links across `skills/`. Strips fenced code blocks, inline code, http URLs, anchors, `/_shared/` plugin-absolute links. Closes the gap that allowed pass-3's renames to silently break links until pass 4 swept them.
-- **`hooks/scripts/README.md`** — discoverability index for the 19 hook scripts. Tables grouped by hook event with matcher + purpose + blocking-vs-non-blocking conventions.
-- **`scripts/maint/v1.9.0/`** — archived 5 throwaway migration scripts that performed the v1.9.0 mechanical work (`blitz-restructure.py`, `blitz-trim-preamble.py`, `blitz-rewrite-desc.py`, `blitz-fix-frontmatter.sh`, `blitz-xref-audit.py`) plus README documenting each script's purpose, idempotency contract, and re-run safety.
+- **README hooks table + architecture diagram** — both now accurately list 19 scripts with one-line purposes; added `conform/` to named-skill list; new "Conforming after upgrades" subsection in Runtime Artifacts pointing at `/blitz:conform`.
 
 ### Audit findings (no code change)
 
-- **`allowed-tools` precision audit** — refined heuristic across all 36 SKILL.md files: 0 true cases of "missing tool declaration." The earlier 14-skill flag list was entirely false positives from prose mentions ("Spawn Research Agent") and example arrays (`REQUIRED_TOOLS=(...)` declarations of what setup *checks for*, not what it uses). Current declarations are accurate.
-- **Markdown link health** — 71 relative `.md` links across `skills/`, all valid (post-`markdown-link-validate.sh` hook activation).
+- **`allowed-tools` precision audit** — manual per-skill review across all 37 SKILL.md files via spawned Explore agent + spot-check verification: 31 CLEAN, 4 EXEMPT (no `allowed-tools` field; ask/health/next/quick previously had `disable-model-invocation: true`), 1 EXTRA fixed (sprint-review ToolSearch removed), 0 true MISSING (the initial heuristic flag list of 14 was entirely false positives).
+- **Markdown link health** — 72 relative `.md` links across `skills/`, all valid (now enforced on every commit by `markdown-link-validate.sh`).
 
 ## [1.9.0] — 2026-04-26
 

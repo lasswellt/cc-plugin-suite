@@ -11,7 +11,7 @@
       "name": "blitz",
       "source": "./",
       "description": "Production-grade development skills for Vue/Nuxt + Firebase with 36 skills, 6 agents, and 17 hook scripts",
-      "version": "1.9.0"
+      "version": "1.10.0"
     }
   ]
 }
