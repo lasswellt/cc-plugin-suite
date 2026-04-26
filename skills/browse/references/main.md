@@ -875,7 +875,7 @@ Before loading state, check for concurrent ticks:
    - `RE-VERIFY` — queue empty, but `crawl-visited.json` has pages with `status: "has_issues"` not yet re-verified
    - `COMPLETE` — queue empty AND all pages clean or re-verified. Print final site map and exit.
 
-See reference.md for full state file schemas.
+See references/main.md for full state file schemas.
 
 ---
 
@@ -914,7 +914,7 @@ See reference.md for full state file schemas.
   - **Dead links**: Links with `href="#"` or `href="javascript:void(0)"`
   - **Empty containers**: Visible sections with no content (missing empty state)
 
-- **Extract structural metadata** from snapshot (see reference.md for full schema). Record for each page:
+- **Extract structural metadata** from snapshot (see references/main.md for full schema). Record for each page:
   - `has_breadcrumbs`, `has_pagination`, `has_sidebar`, `has_search`, `has_footer`
   - `card_count`, `table_row_count`, `image_count`, `broken_image_count`
   - `heading_levels` (which h1-h6 present)
@@ -1016,7 +1016,7 @@ JSON.stringify(
 ```
 
 #### 5.2 Normalize & Filter URLs
-For each extracted link, apply normalization rules from reference.md:
+For each extracted link, apply normalization rules from references/main.md:
 
 1. Parse URL. If relative, resolve against `BASE_URL`.
 2. **Skip if**:
@@ -1140,7 +1140,7 @@ For each Critical and Error finding on current page (max 2 fixes per tick):
 
 #### 6.2 Apply Minimal Fix
 - Fix ONLY specific error — do not refactor surrounding code
-- Use same fix templates as Phase 5 (non-loop mode) — see reference.md
+- Use same fix templates as Phase 5 (non-loop mode) — see references/main.md
 - Common fixes: optional chaining, missing imports, wrong API endpoints, missing error states
 
 #### 6.3 Verify

@@ -12,7 +12,7 @@ argument-hint: "(no arguments — runs analysis automatically)"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
-- For pattern taxonomy, proposal templates, and safety classification rules, see [reference.md](reference.md)
+- For pattern taxonomy, proposal templates, and safety classification rules, see [references/main.md](references/main.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 
@@ -50,7 +50,7 @@ These rules override ALL other instructions. Violating any of these is a critica
 
 ### 0.0 Register Session
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
+Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch.
 
 ### 0.1 Check Minimum Sessions
 
@@ -218,11 +218,11 @@ Check if certain agent types in multi-agent skills are consistently skipped.
 
 ### 2.1 Classify Each Proposal
 
-Every proposal MUST be classified into exactly one category using the rules from `reference.md`:
+Every proposal MUST be classified into exactly one category using the rules from `references/main.md`:
 
 | Classification | Auto-Apply? | Examples |
 |---------------|-------------|---------|
-| **safe** | Yes | Adding a grep pattern to reference.md, updating a template, adding a codemod to the registry, fixing a typo in a skill, adding a routing row to ask skill |
+| **safe** | Yes | Adding a grep pattern to references/main.md, updating a template, adding a codemod to the registry, fixing a typo in a skill, adding a routing row to ask skill |
 | **review** | No — needs user confirmation | Modifying a skill's phase structure, changing verification gates, updating agent instructions, adding new safety rules, changing model assignments |
 | **never-auto-apply** | Never | Removing safety rules, reducing verification checks, changing session protocol, modifying lock behavior, altering conflict matrix |
 
@@ -237,7 +237,7 @@ For each pattern identified in Phase 1, generate a concrete proposal:
 
 **From Efficiency Patterns:**
 - If lock conflicts are frequent → propose expanding the conflict matrix documentation
-- If research queries repeat → propose caching results or adding to reference.md
+- If research queries repeat → propose caching results or adding to references/main.md
 - If sessions are longer than expected → propose better entry-point guidance
 
 **From Quality Patterns:**

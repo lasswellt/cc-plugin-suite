@@ -12,7 +12,7 @@ compatibility: ">=2.1.71"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
-- For agent prompt templates, pillar checklists, severity schema, and report templates, see [reference.md](reference.md)
+- For agent prompt templates, pillar checklists, severity schema, and report templates, see [references/main.md](references/main.md)
 - For context window hygiene (10 parallel agents), see [context-management.md](/_shared/context-management.md)
 - For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
@@ -36,7 +36,7 @@ Run a comprehensive 5-pillar code quality audit by spawning 10 parallel agents. 
 
 ### 0.0 Register Session
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
+Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch.
 
 ### 0.1 Create Working Directories
 
@@ -104,7 +104,7 @@ Per-spawn parameters:
 - `subagent_type: general-purpose` (agents must Write findings files; `Explore` is read-only and silently fails)
 - `model: sonnet` (explicit — prevents `[1m]` inheritance from Opus orchestrator)
 - `description: codebase-audit <agent-name>`
-- `prompt`: the pillar prompt template from `reference.md`, filled per the roster below
+- `prompt`: the pillar prompt template from `references/main.md`, filled per the roster below
 - `run_in_background: true`
 
 The previous `TeamCreate`+`SendMessage` spawn mechanism was removed in v1.4.0 — agents no longer send peer-to-peer cross-findings. Cross-pillar patterns are synthesized by the orchestrator in Phase 2 from the individual findings files. See [spawn-protocol.md](/_shared/spawn-protocol.md).
@@ -116,7 +116,7 @@ Every agent receives:
 2. The stack profile from Phase 0.
 3. Its specific pillar, scope, and file cap.
 4. Its output file path under `${AUDIT_RUN}/findings/`.
-5. The pillar-specific checklist from `reference.md`.
+5. The pillar-specific checklist from `references/main.md`.
 6. Instructions to write findings incrementally (not all at the end).
 
 **Agent Roster:**
@@ -136,14 +136,14 @@ Every agent receives:
 
 ### 1.3 Agent Prompt Construction
 
-For each agent, construct the prompt using the template from `reference.md`. The prompt MUST include:
+For each agent, construct the prompt using the template from `references/main.md`. The prompt MUST include:
 
 1. **Role statement**: "You are a senior code auditor specializing in {PILLAR}."
 2. **Scope definition**: "{SCOPE} — examine up to {FILE_CAP} files."
 3. **Stack context**: The detected stack profile.
 4. **Entry points**: Relevant subset from inventory (frontend agents get frontend paths, backend agents get backend paths, security agents get both).
-5. **Checklist**: The pillar-specific audit checklist from `reference.md`.
-6. **Output format**: Findings must use the severity schema from `reference.md`.
+5. **Checklist**: The pillar-specific audit checklist from `references/main.md`.
+6. **Output format**: Findings must use the severity schema from `references/main.md`.
 7. **Output path**: Absolute path to the agent's findings file.
 8. **Write-as-you-go rule**: "Write each finding to your output file as you discover it. Do NOT accumulate findings in memory and write once at the end."
 
@@ -200,7 +200,7 @@ Calculate:
 
 ### 2.6 Write Consolidated Report
 
-Write `${AUDIT_RUN}/reports/audit-report.md` using the report template from `reference.md`:
+Write `${AUDIT_RUN}/reports/audit-report.md` using the report template from `references/main.md`:
 
 ```markdown
 # Codebase Audit Report
@@ -278,7 +278,7 @@ Sort themes by priority descending.
 
 ### 3.3 Generate Proposed Epics
 
-For each theme, write a proposed epic using the format from `reference.md`:
+For each theme, write a proposed epic using the format from `references/main.md`:
 
 ```markdown
 ## PROPOSED EPIC: <theme-name>

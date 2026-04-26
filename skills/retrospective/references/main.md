@@ -150,7 +150,7 @@ Rules for classifying proposals. When in doubt, classify at MORE restrictive lev
 Proposal is "safe" if ALL true:
 
 1. **Additive only**: Change adds content without removing or modifying existing content.
-2. **Reference material only**: Change in `reference.md` file, template, or non-executable section.
+2. **Reference material only**: Change in `references/main.md` file, template, or non-executable section.
 3. **No behavioral impact**: Change does not alter how any skill executes its phases.
 4. **No safety rule interaction**: Change does not touch, reference, or affect any safety rule.
 5. **Easily reversible**: Change revertable via single `git checkout -- <file>`.

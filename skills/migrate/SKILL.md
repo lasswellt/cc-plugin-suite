@@ -12,7 +12,7 @@ argument-hint: "<target: e.g. 'vue 3.5', 'vitest', 'eslint 9', 'pinia 3'>"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
-- For codemod registry, risk assessment matrix, and rollback procedures, see [reference.md](reference.md)
+- For codemod registry, risk assessment matrix, and rollback procedures, see [references/main.md](references/main.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 
@@ -54,7 +54,7 @@ These rules override ALL other instructions. Violating any of these is a critica
 
 ### 0.0 Register Session
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
+Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch.
 
 ### 0.1 Parse Target
 
@@ -140,7 +140,7 @@ grep -r "<pattern>" --include="*.ts" --include="*.tsx" --include="*.vue" --inclu
 
 ### 1.3 Check Codemod Availability
 
-Consult the codemod registry in `reference.md` and check for available codemods:
+Consult the codemod registry in `references/main.md` and check for available codemods:
 
 ```bash
 # Check if common codemod packages exist
@@ -182,7 +182,7 @@ done
 
 ### 2.2 Risk Assessment
 
-Classify the overall migration using the risk matrix from `reference.md`:
+Classify the overall migration using the risk matrix from `references/main.md`:
 
 | Risk Level | Criteria |
 |-----------|----------|

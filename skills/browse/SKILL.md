@@ -18,7 +18,7 @@ argument-hint: "[mode] [target] -- modes: full | smoke | page <path> | fix | --l
 You are an automated browser tester, site crawler, and visual design analyst. You navigate every reachable page in the application, interact with safe UI elements, capture errors, classify them, and optionally auto-fix source issues. In `--loop` mode, you crawl one page per tick, discover links from the rendered DOM, build a navigational hierarchy of the entire site, perform visual analysis to detect missing data and design inconsistencies, and auto-fix issues as you go.
 
 ## Additional Resources
-- For error classification taxonomy, fix templates, interaction safety rules, crawl state schemas, URL normalization rules, visual analysis methods, and cross-page comparison techniques, see [reference.md](reference.md)
+- For error classification taxonomy, fix templates, interaction safety rules, crawl state schemas, URL normalization rules, visual analysis methods, and cross-page comparison techniques, see [references/main.md](references/main.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 
@@ -50,7 +50,7 @@ These rules override ALL other instructions. Violating any of these is a critica
 
 ### 0.0 Register Session
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
+Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch.
 
 Parse the invocation arguments to determine mode and target.
 
@@ -249,7 +249,7 @@ Classify every finding into one of these severity levels:
 - Vue devtools messages
 - Source map warnings
 
-See reference.md for the full classification taxonomy with examples.
+See references/main.md for the full classification taxonomy with examples.
 
 ---
 
@@ -267,7 +267,7 @@ For each Critical and Error finding:
 
 ### 5.2 Apply Minimal Fix
 - Fix ONLY the specific error — do not refactor surrounding code
-- Common fixes (see reference.md for templates):
+- Common fixes (see references/main.md for templates):
   - **Undefined variable**: Add null check or optional chaining
   - **Missing import**: Add the import statement
   - **Type error**: Fix the type mismatch
@@ -383,4 +383,4 @@ Loop mode is designed for `/loop 5m /blitz:browse --loop`. Each tick visits one 
 
 **Tick lifecycle**: `SEED → CRAWL → CRAWL → ... → RE-VERIFY → COMPLETE`. Tick budget: <2 minutes (hard timeout: 100 seconds). Full autonomy: auto-approve, auto-commit+push, no user prompts. Crawl limits: max depth 8, max 500 pages (configurable), max 300 ticks.
 
-**Full loop-mode procedure** — tick overlap guard, state loading, page visit, link extraction, hierarchy building, visual analysis, auto-fix, state save, and loop-mode error recovery — is in `reference.md` section **"Loop Mode — Full Procedure"**.
+**Full loop-mode procedure** — tick overlap guard, state loading, page visit, link extraction, hierarchy building, visual analysis, auto-fix, state save, and loop-mode error recovery — is in `references/main.md` section **"Loop Mode — Full Procedure"**.

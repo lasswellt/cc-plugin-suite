@@ -11,7 +11,7 @@ compatibility: ">=2.1.71"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
-- For research document template, research types, and section guidelines, see [reference.md](reference.md)
+- For research document template, research types, and section guidelines, see [references/main.md](references/main.md)
 - For context window hygiene, see [context-management.md](/_shared/context-management.md)
 - For quantified scope → registry ingestion, see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
 - For subagent spawning (type selection, workload sizing, HEARTBEAT/PARTIAL, waves), see [spawn-protocol.md](/_shared/spawn-protocol.md)
@@ -34,14 +34,14 @@ Investigate a topic by spawning parallel research agents, collecting findings, a
 
 ### 0.0 Register Session
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
+Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch.
 
 ### 0.1 Extract Research Topic
 
 Parse the user's request to identify:
 - **Topic**: The primary subject to research (library, API, pattern, architecture decision, etc.)
 - **Topic slug**: Lowercase, hyphenated version for file naming (e.g., `auth-strategy`, `state-machine-libs`)
-- **Research type**: One of: Library Evaluation, Architecture Decision, Feature Investigation, Comparison (see reference.md)
+- **Research type**: One of: Library Evaluation, Architecture Decision, Feature Investigation, Comparison (see references/main.md)
 - **Scope constraints**: Any constraints the user mentioned (must work with X, needs Y, cannot use Z)
 - **Decision context**: Why this research is needed (new feature, migration, performance issue, etc.)
 
@@ -261,7 +261,7 @@ mkdir -p docs/_research
 
 **Terse exemptions (LITE intensity):** §7 Risks section + Open Questions (reasoning chain must survive compression). Full sentences + reasoning chain required in these sections. Resume terse on next section.
 
-Use the template from `reference.md`. The document MUST include all of these sections:
+Use the template from `references/main.md`. The document MUST include all of these sections:
 
 1. **Summary** — 3-5 sentence executive summary of findings and recommendation.
 2. **Research Questions** — The questions posed, each with a concise answer.

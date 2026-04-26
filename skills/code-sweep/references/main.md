@@ -13,7 +13,7 @@ Used in Phase 2 when spawning scan workers. The main skill fills in `{{…}}` pl
 
 ```
 You are a code-sweep tier-{{TIER}} scan worker. Your job: run the Tier-{{TIER}}
-checks (see reference.md "Grep Patterns by Check", section "Tier {{TIER}}")
+checks (see references/main.md "Grep Patterns by Check", section "Tier {{TIER}}")
 against the provided file list, then write every finding to the output file as
 a JSON array.
 
@@ -25,7 +25,7 @@ Source files (apply all Tier-{{TIER}} checks):
 {{SOURCE_FILES_JSON}}
 
 Test files (apply only checks whose "Test File Override" permits — see
-reference.md "Test File Override"):
+references/main.md "Test File Override"):
 {{TEST_FILES_JSON}}
 
 {{#if TIER == 2}}
@@ -35,9 +35,9 @@ standard with state=enforced):
 {{/if}}
 
 Rules:
-1. Read only the "Tier {{TIER}}" section of reference.md for grep patterns and
+1. Read only the "Tier {{TIER}}" section of references/main.md for grep patterns and
    false-positive mitigations. Do NOT load the whole reference file.
-2. Use the Grep tool with the exact regex from reference.md. Apply every
+2. Use the Grep tool with the exact regex from references/main.md. Apply every
    false-positive mitigation listed for that check.
 3. For each match, build a finding object matching the schema below.
 4. Write the full JSON array to {{OUTPUT_PATH}} in one Write call at the end.

@@ -18,25 +18,25 @@ The extracted `parsed` value is `null` — the selector matched nothing, or matc
 
 Raw text matches a placeholder regex. Default pattern: `/lorem|TODO|FIXME|N\/A|--|\?\?\?|xxx|placeholder|fpo|coming soon/i`. Configurable via `.ui-audit.json[placeholder_patterns]` (array of regex strings — compiled at config-load with try/catch; malformed regex emits CONFIG_ERROR, not crash). Severity: HIGH (production placeholder leakage).
 
-**Detection:** inline in Phase 2 § 2.4 extraction JS against the compiled union of built-in + user patterns. See `reference.md § Phase 2 § 2.4` + `§ Phase 4 § 4.1` (aggregation).
+**Detection:** inline in Phase 2 § 2.4 extraction JS against the compiled union of built-in + user patterns. See `references/main.md § Phase 2 § 2.4` + `§ Phase 4 § 4.1` (aggregation).
 
 ## FORMAT_MISMATCH
 
 The raw string's format (currency symbol, decimal separator, thousands separator, negative style) differs from the mode of prior observations of the same `(role, page, label)`. Fires after ≥2 observations. Severity: MED.
 
-**Detection:** reducer in Phase 4 § 4.2 — jq over registry history + bash format-tuple extraction (`extract_fmt`). See `reference.md § Phase 4 § 4.2`.
+**Detection:** reducer in Phase 4 § 4.2 — jq over registry history + bash format-tuple extraction (`extract_fmt`). See `references/main.md § Phase 4 § 4.2`.
 
 ## STALE_ZERO
 
 `parsed === 0` but the latest-wins registry history for the same `(role, page, label)` has ≥1 non-zero observation over the prior 5 ticks. Requires ≥3 observations. Suggests cache miss or silent fetch failure rendered a placeholder zero. Severity: MED.
 
-**Detection:** reducer in Phase 4 § 4.3. See `reference.md § Phase 4 § 4.3`.
+**Detection:** reducer in Phase 4 § 4.3. See `references/main.md § Phase 4 § 4.3`.
 
 ## BROKEN_TOTAL
 
 Configured parent/child relationship: sum of declared child `parsed` values != parent `parsed` within `tolerance` (default 0.01). Requires author to declare a `totals[]` entry in `.ui-audit.json` with `{id, parent:{page,key}, children:[{page,key}], tolerance}`. Severity: HIGH.
 
-**Detection:** evaluator in Phase 4 § 4.4 — jq over reduced registry snapshot. `children[].key` may resolve to multiple observations per page (one per row); all matches are summed. See `reference.md § Phase 4 § 4.4`.
+**Detection:** evaluator in Phase 4 § 4.4 — jq over reduced registry snapshot. `children[].key` may resolve to multiple observations per page (one per row); all matches are summed. See `references/main.md § Phase 4 § 4.4`.
 
 ## NEGATIVE_COUNT
 

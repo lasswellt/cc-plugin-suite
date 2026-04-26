@@ -78,7 +78,7 @@ For each agent, call the `Agent` tool with:
 - `subagent_type: general-purpose` (agents must Write findings files — never `Explore`)
 - `model: sonnet` (explicit — prevents `[1m]` inheritance from Opus orchestrator)
 - `description: codebase-map <dimension> analysis`
-- `prompt`: the dimension-agent prompt template (see `reference.md` section "Dimension Agent Prompt Template")
+- `prompt`: the dimension-agent prompt template (see `references/main.md` section "Dimension Agent Prompt Template")
 - `run_in_background: false` (orchestrator waits on all 4 synchronously)
 
 **Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)). The prompt MUST declare: file cap from the roster, max 25 tool calls, max 250-line output, 5-min wall-clock, stub-then-append write pattern.
@@ -88,7 +88,7 @@ For each agent, call the `Agent` tool with:
 1. Its dimension name (Technology / Architecture / Quality / Concerns).
 2. Absolute path to the shared inventory dir: `${SESSION_TMP_DIR}/`.
 3. Its output file path (from the roster).
-4. The dimension-specific checklist (see `reference.md`).
+4. The dimension-specific checklist (see `references/main.md`).
 5. The stack profile from Phase 0.
 
 ---

@@ -27,11 +27,11 @@ if [ -z "$RECENT_ACTIVITY" ]; then
   exit 0
 fi
 
-# Build additionalContext injection
-CONTEXT="Recent blitz activity:\n${RECENT_ACTIVITY}"
+# Build additionalContext injection — use jq for safe JSON encoding
+# (the prior sed/tr/sed sequence mangled backslashes from escaped quotes).
+CONTEXT=$(printf 'Recent blitz activity:\n%s' "$RECENT_ACTIVITY")
 
-# Output JSON per PreToolUse/UserPromptExpansion hook output spec
-printf '{"hookSpecificOutput":{"hookEventName":"UserPromptExpansion","additionalContext":"%s"}}' \
-  "$(echo "$CONTEXT" | sed 's/"/\\"/g' | tr '\n' '\\' | sed 's/\\/\\n/g')"
+jq -nc --arg ctx "$CONTEXT" \
+  '{hookSpecificOutput: {hookEventName: "UserPromptExpansion", additionalContext: $ctx}}'
 
 exit 0

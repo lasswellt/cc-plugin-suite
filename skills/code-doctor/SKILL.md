@@ -12,7 +12,7 @@ argument-hint: "[scope] [--scan|--fix|--fix-all] [--rules firestore,vuefire,vue,
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
-- For rule tables, severity matrix, fix recipes, JSON schema, and ratchet protocol, see [reference.md](reference.md) — load on-demand, only the sections you need
+- For rule tables, severity matrix, fix recipes, JSON schema, and ratchet protocol, see [references/main.md](references/main.md) — load on-demand, only the sections you need
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 - For session registration and activity feed, see [/_shared/session-protocol.md](/_shared/session-protocol.md)
 - For verbose progress format, see [/_shared/verbose-progress.md](/_shared/verbose-progress.md)
@@ -36,7 +36,7 @@ Detect framework-API anti-patterns, misuse, dead exports, and duplication candid
 
 1. **Never modify files in `--scan` mode** (the default).
 2. **Never auto-fix without explicit `--fix` or `--fix-all`.**
-3. `--fix` applies only rules where `auto_fix: true` in reference.md.
+3. `--fix` applies only rules where `auto_fix: true` in references/main.md.
 4. `--fix-all` applies all fixable rules; print `⚠ fix-all mode: modifying files` before any edit.
 5. Never suppress `// code-doctor-ignore` comments silently — log each suppression in the report.
 6. If ratchet detects a count regression (new violations since last run), print `⚠ RATCHET FAIL` and list the increased rule ids.
@@ -66,7 +66,7 @@ From ARGUMENTS:
 - **mode**: `--scan` (default), `--fix`, `--fix-all`
 - **rule sets**: `--rules <comma-list>` (default: all applicable sets)
 - **no-confirm**: `--no-confirm` skips LLM judge in Phase 2
-- **config**: read `.code-doctor.json` if present (see reference.md §E)
+- **config**: read `.code-doctor.json` if present (see references/main.md §E)
 
 ### 0.3 Detect Applicable Rule Sets
 
@@ -92,7 +92,7 @@ Print which rule sets will run:
 
 ### 1.1 Load Rule Table
 
-Read the **Rule Table** section of reference.md. Extract only the rows for active rule sets.
+Read the **Rule Table** section of references/main.md. Extract only the rows for active rule sets.
 
 ### 1.2 Execute Grep Rules
 
@@ -151,7 +151,7 @@ For each `severity: critical` finding, spawn a single `Agent` (subagent_type: ge
 ```
 You are a code reviewer. Confirm if this is a real violation of rule <ruleId>.
 
-Rule: <rule description from reference.md>
+Rule: <rule description from references/main.md>
 File: <file path>
 Relevant code (±10 lines around line <line>):
 <code excerpt>
@@ -180,7 +180,7 @@ For each finding, include:
 - `file:line` — exact location
 - Rule id + description
 - Matched code (1–3 lines)
-- Fix recipe from reference.md
+- Fix recipe from references/main.md
 
 ### 3.2 Write Audit Document
 
@@ -188,7 +188,7 @@ For each finding, include:
 mkdir -p docs/_audits
 ```
 
-Write to `docs/_audits/YYYY-MM-DD_code-doctor.md` using the schema from reference.md §D.
+Write to `docs/_audits/YYYY-MM-DD_code-doctor.md` using the schema from references/main.md §D.
 
 ### 3.3 Console Output
 
@@ -235,14 +235,14 @@ Skip entirely if mode is `--scan` (default).
 
 ### 4.1 Determine Fix Scope
 
-- `--fix`: apply only rules with `auto_fix: true` in reference.md (F5, V3, P2)
+- `--fix`: apply only rules with `auto_fix: true` in references/main.md (F5, V3, P2)
 - `--fix-all`: apply all rules with a `fix_recipe` — print `⚠ fix-all mode: modifying files` first
 
 ### 4.2 Apply Fixes
 
 For each fixable finding:
 1. Read the file
-2. Apply the fix recipe from reference.md using Edit tool
+2. Apply the fix recipe from references/main.md using Edit tool
 3. Log `file_change` to activity feed
 
 Print per fix:

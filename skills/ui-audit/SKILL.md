@@ -18,9 +18,9 @@ effort: low
 You are a cross-page UI/UX auditor. On each run you extract labeled values from every page, persist them to an append-only registry, evaluate declared invariants (numeric equality, bounded tolerance, event-prop consistency, per-role privilege boundaries), and produce a findings report. You are **read-only on the target application** — you never click destructive buttons, submit forms, or interact with logout. Auto-fix is out of scope for this skill; file issues to be resolved elsewhere.
 
 ## Additional Resources
-- For phase procedures (extraction JS, registry schema, reducer, invariant evaluator, tick-diff taxonomy, reporter), see [reference.md](reference.md)
-- For data-quality flag catalog (NULL_VALUE, PLACEHOLDER, FORMAT_MISMATCH, STALE_ZERO, BROKEN_TOTAL, NEGATIVE_COUNT), see [CHECKS.md](CHECKS.md)
-- For UI/UX heuristic rule set (Vercel guidelines + severity tiers + a11y), see [PATTERNS.md](PATTERNS.md)
+- For phase procedures (extraction JS, registry schema, reducer, invariant evaluator, tick-diff taxonomy, reporter), see [references/main.md](references/main.md)
+- For data-quality flag catalog (NULL_VALUE, PLACEHOLDER, FORMAT_MISMATCH, STALE_ZERO, BROKEN_TOTAL, NEGATIVE_COUNT), see [references/checks.md](references/checks.md)
+- For UI/UX heuristic rule set (Vercel guidelines + severity tiers + a11y), see [references/patterns.md](references/patterns.md)
 - For session registration + conflict matrix, see [/_shared/session-protocol.md](/_shared/session-protocol.md)
 - For verbose progress + activity-feed events, see [/_shared/verbose-progress.md](/_shared/verbose-progress.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
@@ -47,8 +47,7 @@ These rules override ALL other instructions. Violating any of these is a critica
 
 ### 0.0 Register Session
 
-Follow the session protocol from [/_shared/session-protocol.md](/_shared/session-protocol.md) **and** the [/_shared/verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions (see Conflict Matrix), read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
-
+**Register session.** Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch (agent spawn, wave completion, etc.) per verbose-progress.md.
 ### 0.1 Parse Arguments
 
 | Mode | Argument | Behavior |
@@ -56,16 +55,16 @@ Follow the session protocol from [/_shared/session-protocol.md](/_shared/session
 | **Full** | `full` or no argument | All configured roles × all pages. Extraction + consistency + quality + heuristics + reporter. |
 | **Smoke** | `smoke` | Only `anonymous` + `admin` roles (or single default role if none configured). All pages. |
 | **Data** | `data` | Extraction + registry write only. No consistency, no heuristics. Current role only. |
-| **Buttons** | `buttons` | Enumerate every interactive element per page (ARIA roles + native HTML). Apply 6 per-element checks (NO_LABEL, DEAD_HREF, EMPTY_HANDLER, TABINDEX_POSITIVE, TABINDEX_NEGATIVE_VISIBLE, NO_FOCUS_STATE). Safe-click gating (destructive-label classifier blocks Delete/Save/Submit/etc). Writes `interactive_audit_summary` + `button_finding` registry lines. See reference.md § Phase INTERACTIVE. |
-| **Events** | `events` | Intercept analytics events via 3-layer stack: `window.dataLayer` push proxy + `navigator.sendBeacon` wrap + network-level filter (Segment/PostHog/Amplitude/GA4). Drain per-click + per-page, key by `(page, action_trigger)`, persist to registry. Detect cross-page drift + evaluate `event_invariants` (required_props / forbidden_props / scope). See reference.md § Phase EVENTS. |
+| **Buttons** | `buttons` | Enumerate every interactive element per page (ARIA roles + native HTML). Apply 6 per-element checks (NO_LABEL, DEAD_HREF, EMPTY_HANDLER, TABINDEX_POSITIVE, TABINDEX_NEGATIVE_VISIBLE, NO_FOCUS_STATE). Safe-click gating (destructive-label classifier blocks Delete/Save/Submit/etc). Writes `interactive_audit_summary` + `button_finding` registry lines. See references/main.md § Phase INTERACTIVE. |
+| **Events** | `events` | Intercept analytics events via 3-layer stack: `window.dataLayer` push proxy + `navigator.sendBeacon` wrap + network-level filter (Segment/PostHog/Amplitude/GA4). Drain per-click + per-page, key by `(page, action_trigger)`, persist to registry. Detect cross-page drift + evaluate `event_invariants` (required_props / forbidden_props / scope). See references/main.md § Phase EVENTS. |
 | **Consistency** | `consistency` | Reduce existing registry, evaluate invariants. No browser. Cheap. |
 | **Heuristics** | `heuristics` | Vercel + a11y + severity-tier checks. No data extraction. |
-| **Role** | `role <name>` | Run `full` phases for a single named role. Valid names: `anonymous`, `viewer`, `member`, `admin`, `superadmin`. Unknown name → exit 1 with usage. Creds from env: `AUDIT_<ROLE>_EMAIL` + `AUDIT_<ROLE>_PASS` (anonymous: `AUDIT_ANONYMOUS=true`, default true). Missing env → `ROLE_SKIP` activity-feed event, role skipped silently. See reference.md § Phase ROLE. |
+| **Role** | `role <name>` | Run `full` phases for a single named role. Valid names: `anonymous`, `viewer`, `member`, `admin`, `superadmin`. Unknown name → exit 1 with usage. Creds from env: `AUDIT_<ROLE>_EMAIL` + `AUDIT_<ROLE>_PASS` (anonymous: `AUDIT_ANONYMOUS=true`, default true). Missing env → `ROLE_SKIP` activity-feed event, role skipped silently. See references/main.md § Phase ROLE. |
 | **Loop** | `--loop` | One `(role, page)` pair per tick. Exits cleanly after the tick completes. Use with `/loop 2m /blitz:ui-audit --loop`. After each tick, `ScheduleWakeup(delaySeconds: 120, prompt: "/blitz:ui-audit --loop")` keeps the audit running through idle periods if invoked directly (not via `/loop`). Skip `ScheduleWakeup` when `CLAUDE_CODE_LOOP_MANAGED=1`. For nightly full-matrix runs use a cloud Routine via `/schedule`. |
-| **Yes flag** | `--yes` | ETA-gate bypass for interactive sessions. On presence, exports `UI_AUDIT_YES=1` to child procedures so the >60min gate in reference.md § 7.2 does not halt. Equivalent to answering "yes, proceed" at the prompt. |
+| **Yes flag** | `--yes` | ETA-gate bypass for interactive sessions. On presence, exports `UI_AUDIT_YES=1` to child procedures so the >60min gate in references/main.md § 7.2 does not halt. Equivalent to answering "yes, proceed" at the prompt. |
 | **CI flag** | `--ci` | ETA-gate bypass for automation. On presence, exports `UI_AUDIT_CI=1` AND writes one `ci_run` activity-feed event at start for audit trail. Used by nightly pipelines. |
 
-Arg-parse sets these env vars before any reference.md procedure runs:
+Arg-parse sets these env vars before any references/main.md procedure runs:
 
 ```bash
 case "$arg" in
@@ -104,7 +103,7 @@ Read `docs/crawls/latest-tick.json` (if exists). If `status == "crawling"`, emit
 
 ## Phase 1: LOAD STATE
 
-See `reference.md` § **"Phase 1 — LOAD STATE"** for the full procedure. In brief:
+See `references/main.md` § **"Phase 1 — LOAD STATE"** for the full procedure. In brief:
 1. Attempt to read `docs/crawls/crawl-visited.json` + `docs/crawls/hierarchy.json`. On success, derive the page list from those.
 2. On absence, fall back to a lightweight internal crawl: load Playwright MCP tools via `ToolSearch`, navigate each route from the declared route manifest (or `.ui-audit.json[pages]` keys), no fix, no screenshots, no interactions.
 3. On Playwright MCP unavailable → exit with error.
@@ -113,7 +112,7 @@ See `reference.md` § **"Phase 1 — LOAD STATE"** for the full procedure. In br
 
 ## Phase 2: DATA EXTRACTION
 
-See `reference.md` § **"Phase 2 — DATA EXTRACTION"** for full procedure (per-page `browser_navigate` → settle → `browser_evaluate(label-map)` → type-coerce + hash + quality-flags → append JSONL line to `docs/crawls/page-data-registry.jsonl`).
+See `references/main.md` § **"Phase 2 — DATA EXTRACTION"** for full procedure (per-page `browser_navigate` → settle → `browser_evaluate(label-map)` → type-coerce + hash + quality-flags → append JSONL line to `docs/crawls/page-data-registry.jsonl`).
 
 Skipped in `consistency` and `heuristics` modes.
 
@@ -121,7 +120,7 @@ Skipped in `consistency` and `heuristics` modes.
 
 ## Phase 3: CONSISTENCY + INVARIANTS
 
-See `reference.md` §§ **"Phase 3 — CONSISTENCY"**, **"Phase 3 — INVARIANTS"**, and **"Phase 3 — FLAPPING/STALE"**. In brief:
+See `references/main.md` §§ **"Phase 3 — CONSISTENCY"**, **"Phase 3 — INVARIANTS"**, and **"Phase 3 — FLAPPING/STALE"**. In brief:
 - Reduce the append-only registry to latest-per-(role,page,label) state via `jq group_by`.
 - Detect cross-page value divergence; suppress divergences covered by declared invariants.
 - Evaluate `equal` / `gte` / `lte` invariants with tolerance. Emit `invariant_fail` + `invariant_pass` events to the activity feed.
@@ -131,19 +130,19 @@ See `reference.md` §§ **"Phase 3 — CONSISTENCY"**, **"Phase 3 — INVARIANTS
 
 ## Phase 4: QUALITY CHECKS
 
-See [CHECKS.md](CHECKS.md) for the flag catalog. Implementation body lands in E-009 / CAP-011. For sprint-6, this phase executes the basic NULL_VALUE / PLACEHOLDER / NEGATIVE_COUNT checks inline during extraction (Phase 2) and aggregates findings here.
+See [references/checks.md](references/checks.md) for the flag catalog. Implementation body lands in E-009 / CAP-011. For sprint-6, this phase executes the basic NULL_VALUE / PLACEHOLDER / NEGATIVE_COUNT checks inline during extraction (Phase 2) and aggregates findings here.
 
 ---
 
 ## Phase 5: HEURISTICS
 
-See [PATTERNS.md](PATTERNS.md). Implementation body lands in E-009 / CAP-012. For sprint-6, this phase is a no-op stub that emits INFO "heuristics not yet implemented — see E-009".
+See [references/patterns.md](references/patterns.md). Implementation body lands in E-009 / CAP-012. For sprint-6, this phase is a no-op stub that emits INFO "heuristics not yet implemented — see E-009".
 
 ---
 
 ## Phase 6: REPORT
 
-See `reference.md` § **"Phase 6 — REPORT"** for full procedure. Writes `docs/crawls/ui-audit-report.md`, prints a stdout severity summary + top 3 invariant failures, appends `skill_complete` event to the activity feed with a detail block containing finding counts.
+See `references/main.md` § **"Phase 6 — REPORT"** for full procedure. Writes `docs/crawls/ui-audit-report.md`, prints a stdout severity summary + top 3 invariant failures, appends `skill_complete` event to the activity feed with a detail block containing finding counts.
 
 ---
 
@@ -159,7 +158,7 @@ LOAD_AUTH[current_role] → NAVIGATE[current_page] → EXTRACT → QUALITY
 
 The reporter emits a rolling report each tick but does not call `skill_complete` with `mode: "loop-matrix-complete"` until the full matrix has run twice (pass 1 seeds registry, pass 2 detects drift via § Phase 3 FLAPPING/STALE). After pass 2, the loop enters `matrix_idle` — subsequent ticks are no-ops until the app changes.
 
-Tick state persists in `.cc-sessions/${SESSION_ID}/tmp/loop-state.json` and `docs/crawls/latest-tick.json` gains a `ui_audit_matrix` block (see reference.md § Phase 6 + § Phase ROLE).
+Tick state persists in `.cc-sessions/${SESSION_ID}/tmp/loop-state.json` and `docs/crawls/latest-tick.json` gains a `ui_audit_matrix` block (see references/main.md § Phase 6 + § Phase ROLE).
 
 Budget: tick <2 minutes. Full matrix runtime varies by `|roles| × |pages|`. ETA printed upfront:
 - **ETA gate (R10):** `full` mode computes `eta = roles_active × len(pages) × 120s`. If `eta > 3600s` (60 min) AND neither `--yes` nor `--ci` flag present, skill exits 1 with a clear message. `CLAUDE_CODE_AUTONOMY ∈ {high, full}` is treated as implicit `--ci` (so `/loop` doesn't block).

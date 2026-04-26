@@ -26,8 +26,8 @@ done
 # Skip validation if not in a blitz project
 [ -z "$ROOT" ] && exit 0
 
-# Only validate sprint story tasks (format: "S{N}-{NNN}: ...")
-if [[ ! "$TASK_SUBJECT" =~ ^S[0-9]+-[0-9]+: ]]; then
+# Only validate sprint story tasks (format: "S{N}-{NNN}: ..." or "S{N}-G{NNN}: ..." for gap-closure)
+if [[ ! "$TASK_SUBJECT" =~ ^S[0-9]+-G?[0-9]+: ]]; then
   exit 0
 fi
 

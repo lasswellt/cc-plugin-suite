@@ -12,7 +12,7 @@ argument-hint: "<mode: audit|upgrade|report>"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
-- For package manager commands, license tables, and report templates, see [reference.md](reference.md)
+- For package manager commands, license tables, and report templates, see [references/main.md](references/main.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 
@@ -45,7 +45,7 @@ All code produced must satisfy the [Definition of Done](/_shared/definition-of-d
 
 ### 0.0 Register Session
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID = `"dep-health-<8-char-random-hex>"`, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
+Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch.
 
 ### 0.1 Parse Mode
 
@@ -97,7 +97,7 @@ Read `package.json` and extract:
 
 ### 1.1 Run Security Audit
 
-Execute the appropriate audit command (see [reference.md](reference.md) for PM-specific variants):
+Execute the appropriate audit command (see [references/main.md](references/main.md) for PM-specific variants):
 
 ```bash
 ${PM} audit --json 2>&1 ```
@@ -181,7 +181,7 @@ done
 
 ### 3.2 Classify Licenses
 
-Use the license classification table from [reference.md](reference.md):
+Use the license classification table from [references/main.md](references/main.md):
 
 | Classification | Licenses | Action |
 |---------------|----------|--------|
@@ -325,7 +325,7 @@ Assign grade:
 
 ### 5.2 Write Report
 
-Write the full report to `${SESSION_TMP_DIR}/dep-health-report.md` using the template from [reference.md](reference.md).
+Write the full report to `${SESSION_TMP_DIR}/dep-health-report.md` using the template from [references/main.md](references/main.md).
 
 The report includes:
 - Summary table with health score and grade

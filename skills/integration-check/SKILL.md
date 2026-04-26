@@ -80,7 +80,7 @@ For each active agent, call the `Agent` tool with:
 - `subagent_type: general-purpose` (agents must Write findings JSON — never `Explore`)
 - `model: sonnet` (explicit — prevents `[1m]` inheritance from Opus orchestrator)
 - `description: integration-check <domain>`
-- `prompt`: the check-agent prompt template (see `reference.md` section "Check Agent Prompt Template")
+- `prompt`: the check-agent prompt template (see `references/main.md` section "Check Agent Prompt Template")
 - `run_in_background: false`
 
 **Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)). Each agent prompt declares: max 12 file reads, max 20 tool calls, 5-min wall-clock, stub-then-append JSON output.
@@ -90,7 +90,7 @@ For each active agent, call the `Agent` tool with:
 1. Agent domain (wiring / auth / ui).
 2. Path to shared inventory: `${SESSION_TMP_DIR}/source-files.txt`.
 3. Output file path (from roster).
-4. Domain-specific check definitions (see `reference.md`).
+4. Domain-specific check definitions (see `references/main.md`).
 5. Output JSON schema.
 
 ---

@@ -12,7 +12,7 @@ argument-hint: "<scope: path or 'all'>"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
-- For grep patterns, severity rules, and output schemas, see [reference.md](reference.md)
+- For grep patterns, severity rules, and output schemas, see [references/main.md](references/main.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 
@@ -42,7 +42,7 @@ You are a production readiness scanner. You check code for placeholder patterns,
 
 ### 0.0 Register Session
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID = `"completeness-gate-<8-char-random-hex>"`, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
+Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch.
 
 ### 0.1 Parse Arguments
 
@@ -109,7 +109,7 @@ Run all 11 check categories against target files. For each violation, record a f
 }
 ```
 
-Use the exact grep patterns from [reference.md](reference.md) for each check.
+Use the exact grep patterns from [references/main.md](references/main.md) for each check.
 
 ### 2.1 Placeholder Returns
 

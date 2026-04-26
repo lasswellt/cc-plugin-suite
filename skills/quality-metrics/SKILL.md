@@ -32,7 +32,7 @@ Collect code quality signals, store snapshots over time, and produce dashboards 
 
 ### 0.0 Register Session
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
+Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch.
 
 ### 0.1 Parse Mode
 
@@ -70,7 +70,7 @@ For each collector, call the `Agent` tool with:
 - `subagent_type: general-purpose` (must Write JSON output — never `Explore`)
 - `model: sonnet` (explicit)
 - `description: quality-metrics <tool> collector`
-- `prompt`: the collector prompt template from `reference.md`
+- `prompt`: the collector prompt template from `references/main.md`
 - `run_in_background: false`
 
 **Weight class**: Light (per [spawn-protocol.md](/_shared/spawn-protocol.md)). Each collector prompt declares: max 1 bash command, max 5 file reads (for parsing output), max 8 tool calls, 3-min wall-clock (typescript/tests/build may be slow on large projects — bump to 5 min for those specifically), output-file existence check.

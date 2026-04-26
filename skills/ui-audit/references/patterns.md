@@ -32,7 +32,7 @@ Mirror (for runtime fetch): https://github.com/vercel-labs/web-interface-guideli
 
 URL must reflect stateful UI (filters, tabs, pagination). Stateful views must be deep-linkable. Back/forward navigation must restore state.
 
-**Detection:** Phase 5 § 5.3 (`nav_state` category). Consumes click records from Phase INTERACTIVE § I.5 which capture `url_before` + `url_after` on every safe-click. Finding `STATE_NOT_IN_URL` severity HIGH when URL unchanged after click on tab / sort / pagination. Exempt-types configurable. See `reference.md § Phase 5 § 5.3`.
+**Detection:** Phase 5 § 5.3 (`nav_state` category). Consumes click records from Phase INTERACTIVE § I.5 which capture `url_before` + `url_after` on every safe-click. Finding `STATE_NOT_IN_URL` severity HIGH when URL unchanged after click on tab / sort / pagination. Exempt-types configurable. See `references/main.md § Phase 5 § 5.3`.
 
 ### Category 16 — Content & Copy
 
@@ -42,7 +42,7 @@ Active voice. Title Case in headings. **Numerals for counts** (`"3 items"` not `
 - **16a NUMERIC_COLUMN_NOT_TABULAR** severity MED — `browser_evaluate` scans `<table>` columns where ≥70% of cells match `/^-?\d/`; flags if computed `fontVariantNumeric` lacks `tabular-nums`. Threshold configurable via `heuristics.tabular_column_threshold`.
 - **16b WRITTEN_OUT_COUNT** severity LOW — regex scan for `/\b(one..nine)\s+(item|items|user|users|...)\b/i` in headings, paragraphs, list items. High false-positive tolerance — informational only.
 
-See `reference.md § Phase 5 § 5.4`.
+See `references/main.md § Phase 5 § 5.4`.
 
 ---
 

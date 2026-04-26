@@ -12,7 +12,7 @@ argument-hint: "<file-path>"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
-- For Vitest/Jest patterns, Vue component testing, and Firestore rules testing, see [reference.md](reference.md)
+- For Vitest/Jest patterns, Vue component testing, and Firestore rules testing, see [references/main.md](references/main.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 
@@ -30,7 +30,7 @@ Generate tests for a target file by analyzing its exports, parameters, side effe
 
 ### 0.0 Register Session
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
+Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch.
 
 ### 0.1 Parse Arguments
 
@@ -308,7 +308,7 @@ const wrapper = mount(Component, {
 
 ### When Testing Firestore Rules
 
-See reference.md for the Firestore rules testing pattern using `@firebase/rules-unit-testing`.
+See references/main.md for the Firestore rules testing pattern using `@firebase/rules-unit-testing`.
 
 ---
 

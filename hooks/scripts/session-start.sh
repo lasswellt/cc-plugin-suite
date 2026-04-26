@@ -37,21 +37,34 @@ if [ -f "$FEED" ] && [ -s "$FEED" ]; then
   fi
 fi
 
-# Check for stale sessions (active but last_activity > 30 min ago)
+# Reset the per-session context-utilization counter so warnings track THIS session.
+# (Without this reset, the monotonic counter accumulates across sessions and stays
+# above the 80% threshold forever after any long session.)
+echo 0 > "$SESSIONS_DIR/context-char-count" 2>/dev/null || true
+
+# Check for stale sessions (active but >4h old). Use a portable epoch parser:
+# GNU date first, BSD date fallback, python3 last-ditch. If all fail, skip
+# the session — better silent skip than every session reporting "stale".
+parse_iso_epoch() {
+  local iso="$1"
+  date -d "$iso" +%s 2>/dev/null && return 0
+  date -j -f "%Y-%m-%dT%H:%M:%SZ" "$iso" +%s 2>/dev/null && return 0
+  python3 -c "from datetime import datetime; print(int(datetime.fromisoformat('$iso'.replace('Z', '+00:00')).timestamp()))" 2>/dev/null && return 0
+  return 1
+}
+
 NOW=$(date +%s)
 for f in "$SESSIONS_DIR"/*.json; do
   [ -f "$f" ] || continue
   STATUS=$(grep -o '"status"[[:space:]]*:[[:space:]]*"[^"]*"' "$f" | head -1 | sed 's/.*"status"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
-  if [ "$STATUS" = "active" ]; then
-    STARTED=$(grep -o '"started"[[:space:]]*:[[:space:]]*"[^"]*"' "$f" | head -1 | sed 's/.*"started"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
-    if [ -n "$STARTED" ]; then
-      START_EPOCH=$(date -d "$STARTED" +%s 2>/dev/null || echo "0")
-      AGE=$(( NOW - START_EPOCH ))
-      if [ "$AGE" -gt 14400 ]; then
-        SID=$(basename "$f" .json)
-        echo "[blitz] WARNING: Stale session detected: $SID (started ${AGE}s ago)"
-      fi
-    fi
+  [ "$STATUS" = "active" ] || continue
+  STARTED=$(grep -o '"started"[[:space:]]*:[[:space:]]*"[^"]*"' "$f" | head -1 | sed 's/.*"started"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
+  [ -n "$STARTED" ] || continue
+  START_EPOCH=$(parse_iso_epoch "$STARTED") || continue
+  AGE=$(( NOW - START_EPOCH ))
+  if [ "$AGE" -gt 14400 ]; then
+    SID=$(basename "$f" .json)
+    echo "[blitz] WARNING: Stale session detected: $SID (started ${AGE}s ago)"
   fi
 done
 

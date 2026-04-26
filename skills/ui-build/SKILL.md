@@ -17,7 +17,7 @@ compatibility: ">=2.1.50"
 You build production-grade Vue 3 UI that feels native to any project. Follow the 5-phase workflow below strictly in order. Never skip phases. Each phase produces an artifact that feeds the next.
 
 ## Additional Resources
-- For UX design principles, wireframe templates, and accessibility checklist, see [reference.md](reference.md)
+- For UX design principles, wireframe templates, and accessibility checklist, see [references/main.md](references/main.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 
@@ -27,7 +27,7 @@ OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fille
 
 ## Phase 0: SESSION — Register and Check for Conflicts
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
+Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch.
 
 ---
 
@@ -109,7 +109,7 @@ Produce an ASCII wireframe showing:
 - Component placement with names
 - Responsive breakpoint behavior (sm/md/lg)
 
-Use the wireframe template format from reference.md.
+Use the wireframe template format from references/main.md.
 
 ### 3.3 Component Specs
 For each new component, produce a spec:

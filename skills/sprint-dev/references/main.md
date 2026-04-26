@@ -558,7 +558,7 @@ Full item definitions for the integration agent (Phase 3.5.2):
 
 Every dev agent prompt (Phase 2.3) must include all 12 items:
 
-1. Agent role and responsibilities (see the agent-specific prompt templates in this reference.md).
+1. Agent role and responsibilities (see the agent-specific prompt templates in this references/main.md).
 2. List of assigned stories in dependency order, with their `verify` and `done` fields. Capped at 4 stories per wave per agent.
 3. **Budget declaration** (add verbatim to prompt):
    ```

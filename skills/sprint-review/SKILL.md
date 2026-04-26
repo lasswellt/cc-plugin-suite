@@ -14,7 +14,7 @@ compatibility: ">=2.1.71"
 ## Additional Resources
 - For story YAML schema (canonical, producer/consumer matrix), see [story-frontmatter.md](/_shared/story-frontmatter.md)
 - For pipeline state contracts (which artifacts this skill produces and requires), see [state-handoff.md](/_shared/state-handoff.md)
-- For review report template, reviewer checklists, and auto-fix strategies, see [reference.md](reference.md)
+- For review report template, reviewer checklists, and auto-fix strategies, see [references/main.md](references/main.md)
 - For context window hygiene (reviewer agents), see [context-management.md](/_shared/context-management.md)
 - For checkpoint awareness, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
 - For handling reviewer agent escalations, see [deviation-protocol.md](/_shared/deviation-protocol.md)
@@ -36,8 +36,7 @@ Review sprint quality through automated checks and parallel reviewer agents. Run
 
 ## Phase 0: CONTEXT — Load Sprint State
 
-0. **Register session.** Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
-
+0. **Register session.** Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch (agent spawn, wave completion, etc.) per verbose-progress.md.
 1. **Find the sprint to review.** Read `sprint-registry.json` and find the sprint with `status: review` or `status: in-progress`. If the user specified a sprint number, use that. If no sprint is ready for review, inform the user and STOP.
 
 1b. **Check for STATE.md.** If the sprint has a `STATE.md` checkpoint file, read it for context on blocked stories and their reasons. Include blocked story details in the review report. See [checkpoint-protocol.md](/_shared/checkpoint-protocol.md).
@@ -60,7 +59,7 @@ Review sprint quality through automated checks and parallel reviewer agents. Run
    git diff --name-only ${SPRINT_BASE}..HEAD 2>/dev/null || git diff --name-only HEAD~20..HEAD
    ```
 
-5. **Detect changed packages.** From the changed files, determine which packages/workspaces were modified (see reference.md for detection rules).
+5. **Detect changed packages.** From the changed files, determine which packages/workspaces were modified (see references/main.md for detection rules).
 
 6. **Load registry.** Read `sprint-registry.json` for sprint metadata.
 
@@ -214,7 +213,7 @@ Per-spawn parameters:
 - `subagent_type: general-purpose` (reviewers must Write; `Explore` cannot)
 - `model: sonnet` (explicit — prevents `[1m]` inheritance from Opus orchestrator)
 - `description: sprint-<N> <reviewer-role>`
-- `prompt`: reviewer prompt from reference.md with diff slice, story ACs, and Phase 1 gate results
+- `prompt`: reviewer prompt from references/main.md with diff slice, story ACs, and Phase 1 gate results
 - `run_in_background: true`
 
 **Weight class**: Medium (per [spawn-protocol.md](/_shared/spawn-protocol.md)). Each reviewer prompt MUST include:
@@ -238,7 +237,7 @@ Each reviewer receives:
 1. The full diff or relevant subset of changed files.
 2. The list of story acceptance criteria for context.
 3. Quality gate results from Phase 1.
-4. Their specific review checklist (see reference.md).
+4. Their specific review checklist (see references/main.md).
 
 ### 2.5 Cross-Cutting Findings — Synthesized by Orchestrator
 
@@ -381,13 +380,13 @@ After auto-fix:  type-errors=0,  lint-errors=1,  test-failures=2
 
 This phase is a **hard gate**: failing any invariant fails the sprint close. Its purpose is to make silent scope drops impossible by auditing the carry-forward registry against the current sprint's state.
 
-Full invariant procedures (Invariants 1-4, the hard-gate decision, report schema, and escalation rules) are in `reference.md` section **"Registry Invariants — Phase 3.6 Detailed Procedures"**. See also [carry-forward-registry.md](/_shared/carry-forward-registry.md) and `docs/_research/2026-04-08_sprint-carryforward-registry.md`.
+Full invariant procedures (Invariants 1-4, the hard-gate decision, report schema, and escalation rules) are in `references/main.md` section **"Registry Invariants — Phase 3.6 Detailed Procedures"**. See also [carry-forward-registry.md](/_shared/carry-forward-registry.md) and `docs/_research/2026-04-08_sprint-carryforward-registry.md`.
 
 **Outline**:
 1. Run the canonical Reader Algorithm from [/_shared/carry-forward-registry.md](/_shared/carry-forward-registry.md) §Reader Algorithm with `MODE=review`. The algorithm consolidates Invariants 1, 2, 4 + rollover-ceiling escalation into one executable script — exit 2 = INVARIANT FAILURE; exit 3 = ESCALATION; both block sprint close.
 2. Run skill-local Invariants 3 and 5 (not yet in the canonical algorithm):
    - **Invariant 3**: every epic claiming `status: done|complete` has all its registry entries at `status: complete`.
-   - **Invariant 5**: every SKILL.md under `skills/*/SKILL.md` AND every reference.md under `skills/*/reference.md` containing an Agent-prompt template contains the canonical `OUTPUT STYLE: … per /_shared/terse-output.md` snippet from `spawn-protocol.md` §7. Missing snippet → Critical finding → sprint FAILs (BLOCKER).
+   - **Invariant 5**: every SKILL.md under `skills/*/SKILL.md` AND every references/main.md under `skills/*/reference.md` containing an Agent-prompt template contains the canonical `OUTPUT STYLE: … per /_shared/terse-output.md` snippet from `spawn-protocol.md` §7. Missing snippet → Critical finding → sprint FAILs (BLOCKER).
 3. Write the Invariants Report section to the review report.
 4. **Hard gate**: Reader Algorithm exit 0 + Invariants 3, 5 pass → proceed to Phase 4. Any fail → `CONDITIONAL` at best; ESCALATION (exit 3) or Invariant 5 fail → FAIL.
 
@@ -405,7 +404,7 @@ already evident in the diff or tool output. Format: fragments OK.
 
 MUST appear in every `skills/*/reference.md` that contains an agent-prompt template (7 files as of Sprint 3: codebase-audit, codebase-map, code-sweep, integration-check, quality-metrics, sprint-dev, sprint-plan). Any missing snippet is a Critical finding; sprint status transitions to **FAIL**.
 
-Audit command (sprint-review runs this in Phase 3.6 — covers SKILL.md AND reference.md):
+Audit command (sprint-review runs this in Phase 3.6 — covers SKILL.md AND references/main.md):
 
 ```bash
 SNIPPET_RE='OUTPUT STYLE: (terse-technical|lite|full|ultra) per /_shared/terse-output.md'
@@ -416,14 +415,14 @@ SKILL_PRESENT=$(grep -lE "$SNIPPET_RE" skills/*/SKILL.md | wc -l)
 [ "$SKILL_PRESENT" -eq "$SKILL_TOTAL" ] \
   || echo "Invariant 5 FAIL (SKILL.md): $SKILL_PRESENT / $SKILL_TOTAL contain canonical OUTPUT STYLE snippet"
 
-# Every reference.md that contains an Agent-prompt template must include the snippet.
+# Every references/main.md that contains an Agent-prompt template must include the snippet.
 REF_WITH_PROMPTS=$(grep -l "Agent Prompt Template\|prompt:" skills/*/reference.md 2>/dev/null | wc -l)
 REF_PRESENT=$(grep -lE "$SNIPPET_RE" skills/*/reference.md 2>/dev/null | wc -l)
 [ "$REF_PRESENT" -ge "$REF_WITH_PROMPTS" ] \
-  || echo "Invariant 5 FAIL (reference.md): $REF_PRESENT / $REF_WITH_PROMPTS contain canonical OUTPUT STYLE snippet"
+  || echo "Invariant 5 FAIL (references/main.md): $REF_PRESENT / $REF_WITH_PROMPTS contain canonical OUTPUT STYLE snippet"
 ```
 
-The check is total-coverage on SKILL.md (no exemptions) and present-where-needed on reference.md (only files with embedded agent prompts). Adding a new SKILL.md without the snippet auto-fails the next review.
+The check is total-coverage on SKILL.md (no exemptions) and present-where-needed on references/main.md (only files with embedded agent prompts). Adding a new SKILL.md without the snippet auto-fails the next review.
 
 ---
 
@@ -433,7 +432,7 @@ The check is total-coverage on SKILL.md (no exemptions) and present-where-needed
 
 **Output style:** terse-technical per [/_shared/terse-output.md](/_shared/terse-output.md). Tables preferred over prose. Executive Summary: 2-3 fragments. Recommendations: imperative bullets. Preserve verbatim: quality-gate table structure, severity prefixes, file paths, grep patterns, JSON invariant records. **LITE intensity** (full sentences, reasoning-chain preserved) for: critical/major findings explanations, security/CVE details, root-cause sections, registry-invariant mismatch deltas. `full` intensity for info-level and cosmetic findings. Finding format: `L<line>: <severity-prefix> <problem>. <fix>.` with 🔴/🟡/🔵/❓ prefixes (see S3-003 review-format absorption). If no findings in a severity bucket, write `LGTM` and stop — do not pad.
 
-Write `${SPRINT_DIR}/review-report.md` using the template from reference.md. Include:
+Write `${SPRINT_DIR}/review-report.md` using the template from references/main.md. Include:
 
 1. **Executive Summary** — Sprint number, date, overall status (PASS/CONDITIONAL/FAIL).
 2. **Quality Gates** — Pass/fail table for all automated checks (before and after auto-fix).
@@ -508,5 +507,5 @@ This stores a timestamped JSON snapshot in `docs/metrics/` that can be used for 
 
 ### 4.6 Final Output and Error Recovery
 
-Print the summary block and apply recovery rules from `reference.md` sections **"Final Output Template"** and **"Error Recovery"**.
+Print the summary block and apply recovery rules from `references/main.md` sections **"Final Output Template"** and **"Error Recovery"**.
 - **No test runner found**: Skip test gate, mark as "SKIPPED" (not "FAIL") in report.

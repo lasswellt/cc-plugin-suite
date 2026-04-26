@@ -1,4 +1,4 @@
-# ui-audit — reference.md
+# ui-audit — references/main.md
 
 Phase procedures + schemas + JS templates for `skills/ui-audit/SKILL.md`. Read this file when executing the skill's phases.
 
@@ -182,13 +182,13 @@ esac
 HASH=$(printf '%s' "${RAW:-}" | (sha256sum 2>/dev/null || shasum -a 256) | cut -c1-8)
 ```
 
-Inline quality flags (Phase 4 subset — full catalog in `CHECKS.md`):
+Inline quality flags (Phase 4 subset — full catalog in `references/checks.md`):
 
 - `NULL_VALUE` — `RAW` is null or empty.
 - `PLACEHOLDER` — `RAW` matches the compiled union of `BUILTIN_PATTERN` (`/lorem|TODO|FIXME|N\/A|--|\?\?\?|xxx|placeholder|fpo|coming soon/i`) and any user-supplied `.ui-audit.json.placeholder_patterns` (compiled once at config-load with try/catch — malformed pattern emits `CONFIG_ERROR` finding at start, doesn't crash). **ReDoS guard:** before compile, reject any pattern that (a) exceeds 200 characters or (b) contains nested quantifiers `(x+)+` / `(x*)*` / `(x+)*` / `(x*)+` (detected via regex `/\([^)]*[+*][^)]*\)[+*]/`). Rejected patterns emit `CONFIG_ERROR` with `detail.issue: "pattern_redos_risk"` and are not compiled. See S8-004 for the configurable-patterns contract.
 - `NEGATIVE_COUNT` — `LABEL_TYPE == count && PARSED < 0`.
 
-Each flag emits an additional JSONL line with `label: "quality_flag"` and `detail: {flag, target_label, severity}` (schema in `CHECKS.md`).
+Each flag emits an additional JSONL line with `label: "quality_flag"` and `detail: {flag, target_label, severity}` (schema in `references/checks.md`).
 
 ### 2.5 Append to registry
 
@@ -968,7 +968,7 @@ NULL_TRANSITION is detectable at `len(hist) >= 2`.
 
 Runs in `full`, `smoke`, `data`, `role <name>`, and `--loop` modes. Skipped in `consistency`-only and `heuristics`-only.
 
-Per-flag detection catalog in `CHECKS.md`. This section documents the coordinator that runs them all and hands results to the reporter. Three inline flags (NULL_VALUE, PLACEHOLDER, NEGATIVE_COUNT) are already written by Phase 2 extraction (sprint-6). The three reducer flags (FORMAT_MISMATCH, STALE_ZERO, BROKEN_TOTAL) run here.
+Per-flag detection catalog in `references/checks.md`. This section documents the coordinator that runs them all and hands results to the reporter. Three inline flags (NULL_VALUE, PLACEHOLDER, NEGATIVE_COUNT) are already written by Phase 2 extraction (sprint-6). The three reducer flags (FORMAT_MISMATCH, STALE_ZERO, BROKEN_TOTAL) run here.
 
 ### 4.1 Inline flag collection
 
@@ -1111,7 +1111,7 @@ When `pages.length > 30`, run § 4.2 / 4.3 / 4.4 reducers in parallel via backgr
 
 Runs in `heuristics` and `full` modes. Skipped elsewhere.
 
-Rule sources in `PATTERNS.md`. This section documents the coordinator that dispatches category checks + severity tier mapping + parallelization decision.
+Rule sources in `references/patterns.md`. This section documents the coordinator that dispatches category checks + severity tier mapping + parallelization decision.
 
 ### 5.1 Category dispatcher
 
@@ -1142,7 +1142,7 @@ numbers. No preamble. No trailing summary of work already evident in the diff or
 output. Format: fragments OK.
 
 You run the <category> heuristic over exactly the pages listed between the delimiters.
-Per-page procedure: see reference.md § 5.<cat-sec>.
+Per-page procedure: see references/main.md § 5.<cat-sec>.
 Write findings to: ${SESSION_TMP_DIR}/heuristic-<category>-findings.jsonl.
 
 ---BEGIN PAGE LIST---
@@ -1346,7 +1346,7 @@ if [ "${ETA_SECONDS}" -gt 3600 ]; then
 fi
 ```
 
-`--yes` / `--ci` are parsed in SKILL.md Phase 0.1 and exported to the shell env before reference.md procedures run. They are equivalent except for audit trail: `--ci` also writes one `ci_run` activity-feed event at start.
+`--yes` / `--ci` are parsed in SKILL.md Phase 0.1 and exported to the shell env before references/main.md procedures run. They are equivalent except for audit trail: `--ci` also writes one `ci_run` activity-feed event at start.
 
 ### 7.3 2-pass termination
 
@@ -1412,7 +1412,7 @@ Reporter maps findings without explicit `detail.severity` using this table. Prod
 | NULL_VALUE (quality flag) | `quality_flag` with `flag: NULL_VALUE` | HIGH (if label declared), MED otherwise |
 | PLACEHOLDER | `quality_flag` with `flag: PLACEHOLDER` | HIGH |
 | NEGATIVE_COUNT | `quality_flag` with `flag: NEGATIVE_COUNT` | HIGH |
-| Heuristic | `heuristic` | From producer (see PATTERNS.md tiers) |
+| Heuristic | `heuristic` | From producer (see references/patterns.md tiers) |
 
 ### 6.3 Write `docs/crawls/ui-audit-report.md`
 

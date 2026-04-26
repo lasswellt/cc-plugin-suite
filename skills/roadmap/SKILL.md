@@ -13,7 +13,7 @@ argument-hint: "[full | refresh | extend | status]"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
-- For capability schema, document classification, and Phases 5-8 procedures, see [reference.md](reference.md)
+- For capability schema, document classification, and Phases 5-8 procedures, see [references/main.md](references/main.md)
 - For the carry-forward registry (written in Phase 1 from research doc scope: blocks; re-scanned in refresh mode), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
@@ -55,7 +55,7 @@ If no argument is provided, default to `full`.
 
 ### 0.0 Register Session
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
+Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch.
 
 ### 0.1 Locate Registry Files
 
@@ -122,7 +122,7 @@ For `status` mode: Print the status report now and STOP.
 
 Read every file found in Phase 0.2. For each document:
 
-1. **Classify the document** using the 8-type classification table from `reference.md`:
+1. **Classify the document** using the 8-type classification table from `references/main.md`:
    - `product_definition` — Vision, goals, target users, value propositions
    - `feature_spec` — Detailed feature descriptions, user stories, acceptance criteria
    - `competitive_analysis` — Market research, competitor features, differentiators
@@ -136,7 +136,7 @@ Read every file found in Phase 0.2. For each document:
 
 ### 1.1.5 Parse `scope:` YAML Frontmatter (Carry-Forward Registry Ingestion)
 
-Before extracting capabilities, check the research doc for a **`scope:` YAML frontmatter block**. This is the structured-scope contract emitted by `skills/research` Phase 3.1.1. Each entry in the block becomes both a capability `scope_metric` (see `reference.md`) **and** an append-only line in `.cc-sessions/carry-forward.jsonl`. See [carry-forward-registry.md](/_shared/carry-forward-registry.md) for the full registry protocol.
+Before extracting capabilities, check the research doc for a **`scope:` YAML frontmatter block**. This is the structured-scope contract emitted by `skills/research` Phase 3.1.1. Each entry in the block becomes both a capability `scope_metric` (see `references/main.md`) **and** an append-only line in `.cc-sessions/carry-forward.jsonl`. See [carry-forward-registry.md](/_shared/carry-forward-registry.md) for the full registry protocol.
 
 **Parse step (all modes):**
 
@@ -165,7 +165,7 @@ Before extracting capabilities, check the research doc for a **`scope:` YAML fro
    {"ts":"<ISO-8601>","session":"${SESSION_ID}","skill":"roadmap","event":"registry_write","message":"Ingested scope entry <id> from <doc-path>","detail":{"registry_id":"<id>","unit":"<unit>","target":<target>}}
    ```
 
-6. **Propagate to capability extraction.** Each parsed scope entry is attached to its derived capability in Phase 1.2 as the capability's `scope_metric` field, with `registry_entry_id` pointing at the line just written. See `reference.md` Capability Extraction Schema.
+6. **Propagate to capability extraction.** Each parsed scope entry is attached to its derived capability in Phase 1.2 as the capability's `scope_metric` field, with `registry_entry_id` pointing at the line just written. See `references/main.md` Capability Extraction Schema.
 
 ### 1.1.6 Quantified-Claim Fallback Scan
 
@@ -257,7 +257,7 @@ Cache results in `${SESSION_TMP_DIR}/roadmap-research/web/`.
 
 ### 1B.4 Synthesize Research Cache
 
-Write `docs/roadmap/research-cache.json` using the schema from `reference.md`. Each entry includes:
+Write `docs/roadmap/research-cache.json` using the schema from `references/main.md`. Each entry includes:
 - Source (context7 or web)
 - Query used
 - Key findings (bulleted)
@@ -347,7 +347,7 @@ Write `docs/roadmap/gap-analysis.md`:
    {"ts":"<ISO-8601>","session":"${SESSION_ID}","skill":"roadmap","event":"registry_complete","message":"Entry <id> recomputed to complete (coverage 1.0)","detail":{"registry_id":"<id>","parent_epic":"<E-NNN>"}}
    ```
 
-5. **Propagate to epic-registry.** For each entry whose status changed, recompute the parent epic's `coverage`, `acceptance_criteria_met`, and `carry_forward_count` fields in `docs/roadmap/epic-registry.json` (see `reference.md` Epic Registry JSON Schema). If all of an epic's `registry_entries` are now `complete`, the epic is eligible to transition to `status: done` — but DO NOT auto-transition here; that's the operator's call via `sprint-review` invariant 3 or manual update.
+5. **Propagate to epic-registry.** For each entry whose status changed, recompute the parent epic's `coverage`, `acceptance_criteria_met`, and `carry_forward_count` fields in `docs/roadmap/epic-registry.json` (see `references/main.md` Epic Registry JSON Schema). If all of an epic's `registry_entries` are now `complete`, the epic is eligible to transition to `status: done` — but DO NOT auto-transition here; that's the operator's call via `sprint-review` invariant 3 or manual update.
 
 6. **Report.** Print a refresh summary:
    ```
@@ -390,7 +390,7 @@ Align domains to the detected project structure:
 
 ### 3.3 Write Domain Index
 
-For each domain, write `docs/roadmap/domains/<domain-slug>/overview.md` using the template from `reference.md`.
+For each domain, write `docs/roadmap/domains/<domain-slug>/overview.md` using the template from `references/main.md`.
 
 Write `docs/roadmap/domain-index.json`:
 ```json
@@ -479,7 +479,7 @@ Write `docs/roadmap/phase-plan.json`:
 
 ## Phases 5-8: IMPLEMENTATION SPECS, CROSS-CUTTING, EPICS, SUMMARY
 
-These phases are loaded on demand from `reference.md` to keep this skill file lean. Read the "Phases 5-8 Detailed Procedures" section from `${CLAUDE_SKILL_DIR}/reference.md` before executing.
+These phases are loaded on demand from `references/main.md` to keep this skill file lean. Read the "Phases 5-8 Detailed Procedures" section from `${CLAUDE_SKILL_DIR}/reference.md` before executing.
 
 **Phase 5**: Spawn agents per domain to generate implementation specs (data models, API contracts, component trees, workflow diagrams).
 
@@ -489,7 +489,7 @@ These phases are loaded on demand from `reference.md` to keep this skill file le
 ```jsonl
 {"id":"<registry-id>","ts":"<ISO-8601>","event":"correction","parent":{"capability":"CAP-NNN","epic":"E<NNN>"},"notes":"Parent backfilled by roadmap Phase 7 after epic generation"}
 ```
-Also write the registry entry's id into the epic's `registry_entries` array in `docs/roadmap/epic-registry.json` (see `reference.md` Epic Registry JSON Schema).
+Also write the registry entry's id into the epic's `registry_entries` array in `docs/roadmap/epic-registry.json` (see `references/main.md` Epic Registry JSON Schema).
 
 **Phase 8**: Write summary, update indexes, generate tracker, write manifest. **In `refresh` mode, Phase 8 also runs the registry coverage recompute** — see the refresh-mode addendum below.
 
@@ -497,4 +497,4 @@ Also write the registry entry's id into the epic's `registry_entries` array in `
 
 ## Autonomous Execution Rules and Error Recovery
 
-See `reference.md` sections **"Autonomous Execution Rules"** and **"Error Recovery"**.
+See `references/main.md` sections **"Autonomous Execution Rules"** and **"Error Recovery"**.

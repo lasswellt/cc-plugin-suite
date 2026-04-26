@@ -38,7 +38,7 @@ One or more file paths. Supported extensions: `.md`, `.txt`, `.rst`, or extensio
 
 ## Phase 1 — Backup
 
-1.1 For each accepted target, write a backup to `<file>.original` (preserving the original extension order: `reference.md` → `reference.md.original`). Use Read + Write. Never skip this step.
+1.1 For each accepted target, write a backup to `<file>.original` (preserving the original extension order: `references/main.md` → `references/main.md.original`). Use Read + Write. Never skip this step.
 
 1.2 Verify the backup: its byte count must match the source. If not, abort with error.
 

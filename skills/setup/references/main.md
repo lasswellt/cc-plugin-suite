@@ -89,7 +89,7 @@ For MVP, `fix` field is advisory text only.
 
 To add a new conflict pattern:
 
-1. Add new object to `conflict-catalog.json` following schema above.
+1. Add new object to `assets/conflict-catalog.json` following schema above.
 2. Pick stable `id` (no spaces, lowercase-hyphenated).
 3. Provide 2-4 regex patterns matching common phrasings of user rule.
 4. List blitz skills affected.

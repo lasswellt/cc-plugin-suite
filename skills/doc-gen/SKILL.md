@@ -34,7 +34,7 @@ All generated documentation must satisfy the [Definition of Done](/_shared/defin
 
 ### 0.0 Register Session
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
+Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch.
 
 ### 0.1 Parse Mode
 
@@ -216,7 +216,7 @@ Spawn 4 agents using `SendMessage`, each with `model: "sonnet"`, `mode: "auto"`,
 Each agent receives:
 1. The file inventory from Phase 1 (relevant subset for its mode).
 2. The stack profile from Phase 0.
-3. The appropriate template from `reference.md`.
+3. The appropriate template from `references/main.md`.
 4. Its output file path.
 5. **Incremental-write instructions** (replaces the previously banned "write the full document" rule): Stub the output file at start with `# IN PROGRESS`, then append each section as you complete it. If you time out or hit a budget ceiling, at least a partial document with completed sections is on disk rather than nothing.
 6. **HEARTBEAT + PARTIAL protocol** (add verbatim to prompt):
@@ -235,7 +235,7 @@ Each agent receives:
 
 ### 3.3 Single Mode — Direct Generation
 
-For single-mode runs, generate documentation directly using the templates from `reference.md`.
+For single-mode runs, generate documentation directly using the templates from `references/main.md`.
 
 Write to `docs/generated/<mode>.md`.
 

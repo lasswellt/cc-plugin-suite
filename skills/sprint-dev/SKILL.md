@@ -14,7 +14,7 @@ compatibility: ">=2.1.71"
 ## Additional Resources
 - For story YAML schema (canonical, producer/consumer matrix, validation algorithm), see [story-frontmatter.md](/_shared/story-frontmatter.md)
 - For pipeline state contracts (which artifacts this skill produces and requires), see [state-handoff.md](/_shared/state-handoff.md)
-- For agent prompt templates, coordination patterns, and story distribution rules, see [reference.md](reference.md)
+- For agent prompt templates, coordination patterns, and story distribution rules, see [references/main.md](references/main.md)
 - For autonomy modes (low/medium/high/full), see [session-protocol.md](/_shared/session-protocol.md) §Autonomy Levels
 - For checkpoint/resume behavior, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
 - For agent deviation handling, see [deviation-protocol.md](/_shared/deviation-protocol.md)
@@ -73,7 +73,7 @@ Then validate every story file against [story-frontmatter.md](/_shared/story-fro
 
 ## Phase 0: CONTEXT — Load Project State
 
-0. **Register session.** Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, agent spawn, story distribution, and progress dashboard per verbose-progress.md.
+0. **Register session.** Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch (agent spawn, wave completion, etc.) per verbose-progress.md.
 1. **Check for checkpoint (STATE.md).** Before anything else, check if the target sprint has a `STATE.md` file:
    ```bash
    SPRINT_DIR="sprints/sprint-${SPRINT_NUMBER}"
@@ -115,7 +115,7 @@ Before any agent writes code, build a conventions guide. Read 2-3 representative
 find . -path '*/composables/*' -o -path '*/utils/*' -o -path '*/shared/*' -o -path '*/components/base/*' | grep -v node_modules | head -30
 ```
 
-Produce a **REUSE THESE — do not recreate** list with file paths and what each provides. Full checklist and conventions-guide schema in `reference.md` section **"Project Conventions Discovery"**.
+Produce a **REUSE THESE — do not recreate** list with file paths and what each provides. Full checklist and conventions-guide schema in `references/main.md` section **"Project Conventions Discovery"**.
 
 **Gate:** Conventions guide must be complete before spawning agents.
 
@@ -222,7 +222,7 @@ Agent(
 
 **Per-wave story cap (CRITICAL)**: distribute at most **4 stories per agent per wave**. If a single wave assigns more than 4 stories to any one agent, split the excess to the next wave — even if this creates an otherwise-empty wave. A 6-story agent needs ~54 tool calls (5 reads + 3 writes + 1 verify × 6), well past the ~20/turn server cap.
 
-**Agent prompt content** — the full 12-item prompt specification (role, stories, BUDGET block, project conventions, commit format, conventions guide, reusable assets, anti-mock rules, deviation protocol, wave assignment, context management, HEARTBEAT+PARTIAL protocol) is in `reference.md` section **"Dev Agent Prompt Specification"**. Every spawn must include all 12 items.
+**Agent prompt content** — the full 12-item prompt specification (role, stories, BUDGET block, project conventions, commit format, conventions guide, reusable assets, anti-mock rules, deviation protocol, wave assignment, context management, HEARTBEAT+PARTIAL protocol) is in `references/main.md` section **"Dev Agent Prompt Specification"**. Every spawn must include all 12 items.
 
 ### 2.5 Create Tasks with Dependency Ordering
 
@@ -321,7 +321,7 @@ The orchestrator (you) must:
 
 ### 3.3 Cross-Agent Communication Protocol
 
-Agents communicate through the orchestrator using prefixed messages (DONE, BLOCKED, DEVIATION, ESCALATE, UNBLOCK, ASSIST, SYNC, HALT). Full direction/purpose table in `reference.md` section **"Communication Prefix Table"**. See also [deviation-protocol.md](/_shared/deviation-protocol.md).
+Agents communicate through the orchestrator using prefixed messages (DONE, BLOCKED, DEVIATION, ESCALATE, UNBLOCK, ASSIST, SYNC, HALT). Full direction/purpose table in `references/main.md` section **"Communication Prefix Table"**. See also [deviation-protocol.md](/_shared/deviation-protocol.md).
 
 ### 3.4 Story Distribution Rules
 
@@ -355,11 +355,11 @@ This step is **mandatory** because integration gaps caught at Phase 3.5.0 cost o
 
 ### 3.5.1 Spawn Integration Agent
 
-Spawn `blitz:frontend-dev` (reused or fresh as `ui-integrator`) as a Medium-class agent on a dedicated `sprint-${N}/integration` worktree branch. Full spawn parameters, progress-file schema, HEARTBEAT inclusion, and the mandatory-fallback rule when the agent exits mid-checklist are in `reference.md` section **"Integration Agent Spawn + Fallback"**. See also [spawn-protocol.md](/_shared/spawn-protocol.md).
+Spawn `blitz:frontend-dev` (reused or fresh as `ui-integrator`) as a Medium-class agent on a dedicated `sprint-${N}/integration` worktree branch. Full spawn parameters, progress-file schema, HEARTBEAT inclusion, and the mandatory-fallback rule when the agent exits mid-checklist are in `references/main.md` section **"Integration Agent Spawn + Fallback"**. See also [spawn-protocol.md](/_shared/spawn-protocol.md).
 
 ### 3.5.2 Integration Checklist
 
-The integration agent verifies and implements: **Navigation entries**, **Design tokens**, **Layout consistency**, **State wiring**, **Accessibility**, **Loading states**, **Route guards**. Full item definitions in `reference.md` section **"Integration Checklist"**.
+The integration agent verifies and implements: **Navigation entries**, **Design tokens**, **Layout consistency**, **State wiring**, **Accessibility**, **Loading states**, **Route guards**. Full item definitions in `references/main.md` section **"Integration Checklist"**.
 
 ### 3.5.3 Integration Commit
 
@@ -384,7 +384,7 @@ git merge sprint-${SPRINT_NUMBER}/tests --no-edit
 
 ### 4.2 Full Build Verification (Selective Re-Runs)
 
-Run the initial full verification sweep (type-check, lint, test, build). On re-runs during Phase 4.3 fix iterations, use the selective re-verification strategy in `reference.md` section **"Selective Re-Verification Strategy"**. The final fix round always gets one full sweep to catch cross-package regressions.
+Run the initial full verification sweep (type-check, lint, test, build). On re-runs during Phase 4.3 fix iterations, use the selective re-verification strategy in `references/main.md` section **"Selective Re-Verification Strategy"**. The final fix round always gets one full sweep to catch cross-package regressions.
 
 ### 4.2.5 Completeness Gate
 
@@ -398,7 +398,7 @@ If the score is below C (70), flag critical findings in the integration report b
 
 ### 4.2.1 Cross-Phase Regression Testing
 
-If `SPRINT_NUMBER > 1`, run regression tests from prior sprints. Full procedure (pre-existing test identification, selective run, fix rounds, report schema) in `reference.md` section **"Cross-Phase Regression Testing"**.
+If `SPRINT_NUMBER > 1`, run regression tests from prior sprints. Full procedure (pre-existing test identification, selective run, fix rounds, report schema) in `references/main.md` section **"Cross-Phase Regression Testing"**.
 
 ### 4.3 Fix Integration Issues
 
@@ -498,7 +498,7 @@ git push origin HEAD
 
 ### 4.10 Final Output and Error Recovery
 
-Print the summary block and apply recovery rules from `reference.md` sections **"Final Output Template"** and **"Error Recovery"**.
+Print the summary block and apply recovery rules from `references/main.md` sections **"Final Output Template"** and **"Error Recovery"**.
 
 ### 4.11 Push Completion Notification
 

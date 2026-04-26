@@ -12,7 +12,7 @@ argument-hint: "<mode: prepare|verify|publish|rollback> [version]"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
-- For conventional commit patterns, changelog templates, and rollback procedures, see [reference.md](reference.md)
+- For conventional commit patterns, changelog templates, and rollback procedures, see [references/main.md](references/main.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 
@@ -52,7 +52,7 @@ These rules override ALL other instructions. Violating any of these is a critica
 
 ### 0.0 Register Session
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID = `"release-<8-char-random-hex>"`, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
+Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch.
 
 ### 0.1 Parse Mode and Version
 
@@ -114,7 +114,7 @@ If no commits exist since the last tag, inform the user: "No unreleased changes 
 
 ### 2.1 Parse Conventional Commits
 
-Categorize commits since last tag using patterns from `reference.md`:
+Categorize commits since last tag using patterns from `references/main.md`:
 
 | Commit Prefix | Bump | Changelog Section |
 |---------------|------|-------------------|
@@ -180,7 +180,7 @@ Update version in all relevant files:
 
 ### 3.3 Generate Changelog
 
-Parse commits and generate/update `CHANGELOG.md` following Keep a Changelog format. Use the template from `reference.md`.
+Parse commits and generate/update `CHANGELOG.md` following Keep a Changelog format. Use the template from `references/main.md`.
 
 Structure:
 ```markdown
@@ -476,7 +476,7 @@ Print a mode-appropriate summary:
 - **Push fails (no remote)**: Save tag locally, instruct user to push manually when remote is available.
 - **GitHub release fails**: Tag is still valid on remote. Instruct user to create the release manually via `gh release create` or the GitHub UI. Provide the release notes content.
 - **Quality gates fail during publish**: Abort publish immediately. Keep the release branch intact for fixes. Instruct user to fix issues and re-run `release verify`.
-- **Rollback fails**: Provide manual rollback steps from `reference.md`. List each artifact that needs manual cleanup.
+- **Rollback fails**: Provide manual rollback steps from `references/main.md`. List each artifact that needs manual cleanup.
 - **No conventional commits found**: Warn user that version calculation cannot proceed automatically. Ask for an explicit version.
 - **Monorepo version sync fails**: List which packages have mismatched versions. Ask user to resolve manually before retrying.
 - **Merge conflict on merge-back**: Stop and inform user. Provide the branch names and suggest manual resolution.

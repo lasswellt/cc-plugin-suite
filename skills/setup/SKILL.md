@@ -12,7 +12,7 @@ argument-hint: "[--fix | --check | --scope <global|project|all>]"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
-- For conflict catalog schema and detailed pattern list, see [reference.md](reference.md)
+- For conflict catalog schema and detailed pattern list, see [references/main.md](references/main.md)
 - For session protocol, see [session-protocol.md](/_shared/session-protocol.md)
 - For the research driving this skill, see `docs/_research/2026-04-16_plugin-agent-strategy.md`
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
@@ -193,6 +193,6 @@ Advice:
 ## Error Recovery
 
 - **No CLAUDE.md found at any scope**: Exit 0 with "No CLAUDE.md files found. blitz is ready with defaults."
-- **Conflict catalog missing or malformed**: Exit 1 with "ERROR: conflict-catalog.json is invalid; reinstall the blitz plugin." Link to GitHub issues.
+- **Conflict catalog missing or malformed**: Exit 1 with "ERROR: assets/conflict-catalog.json is invalid; reinstall the blitz plugin." Link to GitHub issues.
 - **settings.json unparseable**: Record a LOW finding noting the file is malformed; continue with other checks.
 - **jq not installed**: Fall back to basic grep-based permission checks; note in the report that detection was incomplete.

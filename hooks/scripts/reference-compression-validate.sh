@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# PreToolUse hook — validates that any compressed reference.md still preserves
-# the structural elements of its sibling reference.md.original backup.
+# PreToolUse hook — validates that any compressed references/main.md still preserves
+# the structural elements of its sibling references/main.md.original backup.
 #
 # Dual-mode:
 #   - With hook JSON on stdin (PreToolUse/Bash): only fires on `git commit`,
@@ -87,7 +87,7 @@ while IFS= read -r orig; do
     echo "FAIL $compressed: table-row count $ct != $ot (original)"
     FAILED=1
   fi
-done < <(find skills -type f -name 'reference.md.original' 2>/dev/null)
+done < <(find skills -type f -path '*/references/main.md.original' 2>/dev/null)
 
 if [[ "$FAILED" -ne 0 ]]; then
   echo "reference-compression-validate: $FAILED check(s) failed across $CHECKED pair(s)"

@@ -146,7 +146,7 @@ jq -s '
 
 # Canonical evaluator — mirrors skills/ui-audit/reference.md § 3I.1.
 # Hydrates each invariant's sources from the reduced registry, then runs the
-# same cmp_equal / cmp_gte / cmp_lte functions documented in reference.md.
+# same cmp_equal / cmp_gte / cmp_lte functions documented in references/main.md.
 # For "equal" with string values (INV-002 plan_tier), cmp_equal falls back to
 # direct equality — tolerance only applies to numeric pairs.
 jq --slurpfile cfg "${CONFIG}" --slurpfile reg "${REDUCED}" -n '
@@ -227,7 +227,7 @@ jq -c -n --arg ts "${TS}" --arg sid fixture \
 tail -1 "${FEED}" | jq -e '.event == "invariant_fail"' >/dev/null || { echo "FAIL: activity-feed did not log invariant_fail" >&2; exit 7; }
 
 # --- 6. Interactive-element fixture (S7-004) ---------------------------------
-# Parse the /#/interactive section and apply the 4 static checks from reference.md § I.3.
+# Parse the /#/interactive section and apply the 4 static checks from references/main.md § I.3.
 # Assertions: exactly 1×NO_LABEL, 1×DEAD_HREF, 1×TABINDEX_POSITIVE, and destructive link isSafe=false.
 
 INTERACTIVE_HTML=$(awk '/<section id="\/interactive">/,/<\/section>/' <<<"${HTML}")
@@ -290,7 +290,7 @@ EMIT_EVENT "/events-a" "page_view" '{"page_path":"/events-a","page_title":"Event
 EMIT_EVENT "/events-b" "page_view" '{"page_path":"/events-b","page_title":"Events B","user_email":"leaked@example.com"}'
 EMIT_EVENT "/events"   "cta_click" '{"cta_label":"Upgrade","cta_location":"hero"}'
 
-# Drift detection (from reference.md § E.6): page_view fires on 2 pages with differing hashes → 1 drift.
+# Drift detection (from references/main.md § E.6): page_view fires on 2 pages with differing hashes → 1 drift.
 DRIFT=$(jq -s '
   [.[] | select(.label == "analytics_event")]
   | group_by(.detail.event_name)

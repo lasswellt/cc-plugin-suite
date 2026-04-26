@@ -14,7 +14,7 @@ compatibility: ">=2.1.71"
 ## Additional Resources
 - For story YAML schema (canonical, producer/consumer matrix, validation algorithm), see [story-frontmatter.md](/_shared/story-frontmatter.md)
 - For pipeline state contracts (which artifacts this skill produces and requires), see [state-handoff.md](/_shared/state-handoff.md)
-- For agent assignment rules and partition logic, see [reference.md](reference.md)
+- For agent assignment rules and partition logic, see [references/main.md](references/main.md)
 - For context window hygiene (research agents), see [context-management.md](/_shared/context-management.md)
 - For checkpoint awareness, see [checkpoint-protocol.md](/_shared/checkpoint-protocol.md)
 - For the carry-forward registry (Reader Algorithm in Phase 0, writer contract in Phase 4.1), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
@@ -76,8 +76,7 @@ The carry-forward registry (`.cc-sessions/carry-forward.jsonl`) is OPTIONAL at t
 
 ## Phase 0: CONTEXT — Load Project State
 
-0. **Register session.** Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
-
+0. **Register session.** Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch (agent spawn, wave completion, etc.) per verbose-progress.md.
 1. **Locate registry files.** Search the repo for sprint/roadmap registry files:
    ```
    Glob: **/sprint-registry.json, **/roadmap-registry.json, **/epic-registry.json, **/epics/**/*.md
@@ -172,7 +171,7 @@ Per-spawn parameters:
 - `subagent_type: general-purpose` (agents must Write findings files; `Explore` is read-only and silently fails the write)
 - `model: sonnet` (explicit — prevents `[1m]` inheritance from the Opus orchestrator)
 - `description: sprint-<N> <agent-role>`
-- `prompt`: the template from reference.md "Agent Prompt Templates" filled with epic list, stack profile, and output path
+- `prompt`: the template from references/main.md "Agent Prompt Templates" filled with epic list, stack profile, and output path
 - `run_in_background: true` (orchestrator polls output files in Phase 2.4)
 
 Cross-cutting findings are synthesized by the orchestrator in Phase 2.4 from the written output files — the previous STEER: SendMessage cross-steering was removed in v1.4.0 because it was advisory-only with no ack mechanism. See [spawn-protocol.md](/_shared/spawn-protocol.md).
@@ -195,7 +194,7 @@ Cross-cutting findings are synthesized by the orchestrator in Phase 2.4 from the
 
 ### 2.2 Agent Prompt Content
 
-Each agent prompt (filled from the template in reference.md) contains:
+Each agent prompt (filled from the template in references/main.md) contains:
 1. The list of selected epics (IDs, titles, descriptions).
 2. The agent's specific research focus.
 3. Output file path: `${SESSION_TMP_DIR}/sprint-${SPRINT_NUMBER}-research-<agent-name>.md`.
@@ -316,7 +315,7 @@ The guard is advisory warnings in `low`/`medium`, mandatory splits in `high`/`fu
 
 Write each story to `${SPRINT_DIR}/stories/S${SPRINT_NUMBER}-XXX-<slug>.md` where XXX is a zero-padded sequence number.
 
-Use the YAML frontmatter schema defined in `reference.md`. Every story MUST include:
+Use the YAML frontmatter schema defined in `references/main.md`. Every story MUST include:
 - `id`, `title`, `epic`, `status` (always `planned`), `priority`, `points`
 - `depends_on` (list of story IDs this blocks on)
 - `assigned_agent` (one of: `backend-dev`, `frontend-dev`, `test-writer`, `infra-dev`)
@@ -393,7 +392,7 @@ Do not proceed to Phase 4.2 without either 100% coverage or an explicit user wai
 
 1. **Add uncovered story IDs** to `carry_forward` in the sprint manifest (`sprints/sprint-${SPRINT_NUMBER}/manifest.json`). This preserves existing behavior for sprint-dev and STATE.md consumers.
 
-2. **Update the manifest waiver fields** (see `reference.md` Sprint Manifest JSON Schema):
+2. **Update the manifest waiver fields** (see `references/main.md` Sprint Manifest JSON Schema):
    ```json
    "waived_ac_count": <N>,
    "reason_waivers": "autonomy=<mode>"
@@ -424,7 +423,7 @@ Do not proceed to Phase 4.2 without either 100% coverage or an explicit user wai
 
 ### 4.2 Partition Stories to Agent Roles
 
-Apply the partition rules from `reference.md`:
+Apply the partition rules from `references/main.md`:
 
 | Story Type | Assigned Agent |
 |---|---|
@@ -509,4 +508,4 @@ Sprint ${SPRINT_NUMBER} planned successfully.
 
 ## Error Recovery
 
-See `reference.md` section **"Error Recovery"**.
+See `references/main.md` section **"Error Recovery"**.

@@ -13,16 +13,28 @@ if [ ! -f "$SNAPSHOT_FILE" ]; then
 fi
 
 TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-SPRINT=$(jq -r '.sprint // "unknown"' "$SNAPSHOT_FILE")
-DONE=$(jq -r '.stories_done // 0' "$SNAPSHOT_FILE")
-REMAINING=$(jq -r '.stories_remaining // 0' "$SNAPSHOT_FILE")
-CF=$(jq -r '.carry_forward_active // 0' "$SNAPSHOT_FILE")
+# Coerce snapshot fields to JSON-valid types (numeric or null). Prior version
+# embedded raw "unknown" string into a numeric position, producing invalid JSON.
+SPRINT_JSON=$(jq 'if (.sprint | type) == "number" then .sprint else null end' "$SNAPSHOT_FILE" 2>/dev/null || echo "null")
+DONE_JSON=$(jq '.stories_done // 0 | tonumber? // 0' "$SNAPSHOT_FILE" 2>/dev/null || echo "0")
+REM_JSON=$(jq '.stories_remaining // 0 | tonumber? // 0' "$SNAPSHOT_FILE" 2>/dev/null || echo "0")
+CF_JSON=$(jq '.carry_forward_active // 0 | tonumber? // 0' "$SNAPSHOT_FILE" 2>/dev/null || echo "0")
 
-# Append restoration hint to activity feed
-printf '{"ts":"%s","session":"hook-post-compact","skill":"freeform","event":"decision","message":"Context compacted. Sprint %s: %s stories done, %s remaining, %s CF active. Resume: /blitz:implement --resume","detail":{"sprint":%s,"stories_done":%s,"stories_remaining":%s,"cf_active":%s}}\n' \
-  "$TS" "$SPRINT" "$DONE" "$REMAINING" "$CF" \
-  "$SPRINT" "$DONE" "$REMAINING" "$CF" \
-  >> "$ACTIVITY_FEED" 2>/dev/null || true
+# Build line via jq for safe JSON encoding.
+jq -nc \
+  --arg ts "$TS" \
+  --argjson sprint "$SPRINT_JSON" \
+  --argjson done "$DONE_JSON" \
+  --argjson rem "$REM_JSON" \
+  --argjson cf "$CF_JSON" \
+  '{
+    ts: $ts,
+    session: "hook-post-compact",
+    skill: "freeform",
+    event: "decision",
+    message: ("Context compacted. Sprint \($sprint // "unknown"): \($done) stories done, \($rem) remaining, \($cf) CF active. Resume: /blitz:implement --resume"),
+    detail: {sprint: $sprint, stories_done: $done, stories_remaining: $rem, cf_active: $cf}
+  }' >> "$ACTIVITY_FEED" 2>/dev/null || true
 
-echo "[blitz:post-compact] Sprint ${SPRINT}: ${DONE} done, ${REMAINING} remaining. Activity feed updated." >&2
+echo "[blitz:post-compact] Sprint ${SPRINT_JSON}: ${DONE_JSON} done, ${REM_JSON} remaining. Activity feed updated." >&2
 exit 0

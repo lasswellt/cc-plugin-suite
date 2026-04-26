@@ -12,7 +12,7 @@ argument-hint: "<scope> | --fix | --scan-only | --fix-all | --deep | --loop | --
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Reference Material
-All grep patterns, auto-fix strategies, severity rules, state schemas, and convention discovery details are in `reference.md` (same directory as this file). **Read it on-demand** — only load the specific section you need for the current phase. Do NOT read the entire file at once.
+All grep patterns, auto-fix strategies, severity rules, state schemas, and convention discovery details are in `references/main.md` (same directory as this file). **Read it on-demand** — only load the specific section you need for the current phase. Do NOT read the entire file at once.
 
 ## Additional Resources
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
@@ -39,7 +39,7 @@ Iterative code improvement using **Observe-Diff-Act-Report**. 30 static checks +
 1. `--scan-only` (default) is **READ-ONLY** — never modify source files.
 2. `--fix`: fix exactly **ONE** finding per invocation, then verify and commit.
 3. `--fix-all`: fix one **CATEGORY** at a time, verify after each.
-4. Never auto-fix findings marked `fixable: false` in reference.md.
+4. Never auto-fix findings marked `fixable: false` in references/main.md.
 5. Always verify after fixing (typecheck + lint). If verification fails, revert ALL changes and mark `needs-human`.
 6. Never delete files. Never modify test files.
 7. **Circuit breaker**: 2 consecutive fix failures → switch to `--scan-only`.
@@ -69,7 +69,7 @@ Read `/_shared/session-protocol.md` and `/_shared/verbose-progress.md` for proto
 When `--loop`: auto-approve all, auto-commit+push, exit after one fix cycle. Tick type: first run → DISCOVERY; `run % 10 == 0` → RE-DISCOVERY; fixable findings → FIX; else → SCAN.
 
 ### 0.2 Load Configuration
-Read `.code-sweep.json` (if exists). Schema in reference.md. Defaults: scope = whichever of `src/, functions/, server/, pages/, components/, composables/, stores/, lib/, utils/, api/, middleware/` exist. Exclude `node_modules, dist, .nuxt, .output, coverage, .cc-sessions, __snapshots__, generated, vendor`.
+Read `.code-sweep.json` (if exists). Schema in references/main.md. Defaults: scope = whichever of `src/, functions/, server/, pages/, components/, composables/, stores/, lib/, utils/, api/, middleware/` exist. Exclude `node_modules, dist, .nuxt, .output, coverage, .cc-sessions, __snapshots__, generated, vendor`.
 
 ### 0.3 Validate Scope
 Verify at least one scope directory exists. Stop if none found.
@@ -91,11 +91,11 @@ Verify at least one scope directory exists. Stop if none found.
 **When**: first run, `--discover`, or every `revalidate_every_n_runs` runs. **Budget**: ~60s.
 
 1. **Sample files**: stratified sampling (40% recent, 30% most-imported, 20% random, 10% hotspots). Cap at 200.
-2. **Extract patterns** across 8 dimensions (file-naming, import-ordering, error-handling, async-pattern, component-style, export-style, indentation, quote-style). See reference.md for detection methods.
+2. **Extract patterns** across 8 dimensions (file-naming, import-ordering, error-handling, async-pattern, component-style, export-style, indentation, quote-style). See references/main.md for detection methods.
 3. **Decide**: ≥70% adoption → `enforced`; 30-70% → `needs-review`; <30% → `no-consensus`.
-4. **Write** `.code-sweep-standards.json` (schema in reference.md).
-5. **Initialize file queue** with priority scoring (schema in reference.md).
-6. **Initialize ratchet** for each enforced standard (schema in reference.md).
+4. **Write** `.code-sweep-standards.json` (schema in references/main.md).
+5. **Initialize file queue** with priority scoring (schema in references/main.md).
+6. **Initialize ratchet** for each enforced standard (schema in references/main.md).
 
 ---
 
@@ -155,7 +155,7 @@ For each active tier, call the `Agent` tool with:
 - `subagent_type`: `general-purpose`
 - `model`: `sonnet` (explicit — prevents `[1m]` inheritance from parent)
 - `description`: `code-sweep tier <N> scan`
-- `prompt`: the tier-agent prompt — see "Tier Agent Prompt Template" in reference.md. The prompt contains the tier number, the file list (separated source vs test), the scope, and the absolute path of the findings file the agent must write.
+- `prompt`: the tier-agent prompt — see "Tier Agent Prompt Template" in references/main.md. The prompt contains the tier number, the file list (separated source vs test), the scope, and the absolute path of the findings file the agent must write.
 
 **Inputs each agent receives:**
 1. Tier number (1/2/3).
@@ -194,7 +194,7 @@ If any agent failed or produced invalid JSON: log a warning, mark coverage as `i
 
 1. **Auto-detect verify command**: check for `tsconfig.json` (tsc --noEmit) and eslint config.
 2. **Select fix target**: pop highest-priority fixable finding.
-3. **Apply fix**: read the "Auto-Fix Strategies" section of reference.md for the specific check. Read file, confirm finding exists, apply edit.
+3. **Apply fix**: read the "Auto-Fix Strategies" section of references/main.md for the specific check. Read file, confirm finding exists, apply edit.
 4. **Verify**: run verify command. Pass → commit. Fail → revert, mark `needs-human`, increment circuit breaker.
 5. **Commit**: `sweep(<check_id>): <description> in <file>`. In `--loop` mode, also push.
 6. **`--fix-all`**: repeat per category, verify after each, revert failed categories.
@@ -203,8 +203,8 @@ If any agent failed or produced invalid JSON: log a warning, mark coverage as `i
 
 ## Phase 5: REPORT
 
-1. **Update ledger**: append to `docs/sweeps/sweep-ledger.jsonl` (schema in reference.md).
-2. **Write snapshot**: `docs/sweeps/YYYY-MM-DD.json` + `latest.json` (schema in reference.md).
+1. **Update ledger**: append to `docs/sweeps/sweep-ledger.jsonl` (schema in references/main.md).
+2. **Write snapshot**: `docs/sweeps/YYYY-MM-DD.json` + `latest.json` (schema in references/main.md).
 3. **Score**: `100 - (critical*10) - (high*5) - (medium*2) - (low*0.5)`, clamped 0-100. Grade: A(90+), B(80+), C(70+), D(60+), F(<60).
 4. **Print summary**:
 ```
@@ -219,7 +219,7 @@ Top issues:
   1. [sev] file:line — message
 ```
 5. **Ratchet update**: log score trend, update standard budgets.
-6. **Suggestions**: based on findings (see reference.md for condition→suggestion mapping).
+6. **Suggestions**: based on findings (see references/main.md for condition→suggestion mapping).
 7. **Session cleanup**: complete session, release locks, log `skill_complete`.
 
 ---

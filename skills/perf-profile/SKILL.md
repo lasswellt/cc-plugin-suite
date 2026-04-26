@@ -12,7 +12,7 @@ argument-hint: "<mode: bundle|runtime|lighthouse|full>"
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
 ## Additional Resources
-- For bundle analysis commands, runtime anti-pattern catalog, and Lighthouse thresholds, see [reference.md](reference.md)
+- For bundle analysis commands, runtime anti-pattern catalog, and Lighthouse thresholds, see [references/main.md](references/main.md)
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 
@@ -48,7 +48,7 @@ These rules override ALL other instructions. Violating any of these is a critica
 
 ### 0.0 Register Session
 
-Follow the session protocol from [session-protocol.md](/_shared/session-protocol.md) **and** the [verbose-progress.md](/_shared/verbose-progress.md) protocol. Generate a SESSION_ID = `"perf-profile-<8-char-random-hex>"`, create session directory, set `SESSION_TMP_DIR=".cc-sessions/${SESSION_ID}/tmp/"`, check for conflicting sessions, read the activity feed for recent cross-instance activity, and log `skill_start` to the activity feed. Print verbose progress at every phase transition, decision point, and substep per verbose-progress.md.
+Follow [session-protocol.md](/_shared/session-protocol.md) §Session Registration (steps 1-9) and [verbose-progress.md](/_shared/verbose-progress.md). Print verbose progress at every phase transition, decision point, and skill-specific dispatch.
 
 ### 0.1 Parse Mode
 
@@ -197,7 +197,7 @@ Skip this phase if mode is `bundle` or `lighthouse`.
 
 ### 2.1 Vue-Specific Anti-Patterns
 
-Scan source files for performance anti-patterns. Use the patterns from `reference.md`.
+Scan source files for performance anti-patterns. Use the patterns from `references/main.md`.
 
 **Reactive overhead:**
 - Reactive objects in module scope (should be in `setup()` or composables)
