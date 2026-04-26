@@ -2,10 +2,10 @@
 name: next
 description: "Reads current project, sprint, and carry-forward state and tells the user what action to take next (run sprint-plan, resume sprint-dev, ship, address a registry escalation, etc.). Use when the user asks 'what should I do next?', 'where are we?', 'is anything blocked?', or just '/blitz:next'. Always cite the specific blitz command to run."
 argument-hint: "(no arguments — reads state automatically)"
+allowed-tools: Read, Bash, Glob, Grep
 model: sonnet
 effort: low
 compatibility: ">=2.1.50"
-disable-model-invocation: true
 ---
 
 

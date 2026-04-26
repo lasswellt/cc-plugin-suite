@@ -102,7 +102,7 @@ Skills should check the autonomy level at these decision points:
 
 7. Log skill_start to the activity feed per verbose-progress.md.
 
-8. **(Optional) Write workflow tracking file.** Skills with `disable-model-invocation: true` and explicit phases SHOULD write:
+8. **(Optional) Write workflow tracking file.** Skills with explicit numbered phases (sprint family, ship, codebase-audit, etc.) SHOULD write:
    ```json
    .cc-sessions/${SESSION_ID}-workflow.json:
    {
