@@ -12,6 +12,9 @@ description: |
 tools: Read, Glob, Grep, Bash
 # Note: permissionMode is not supported for plugin agents (silently ignored by Claude Code)
 maxTurns: 15
+# Sonnet by default per /_shared/token-budget.md routing matrix. For genuinely
+# heavy multi-system architectural reasoning (cross-package dependency overhauls,
+# security-architecture review), the spawning skill MAY override to opus.
 model: sonnet
 background: true
 ---

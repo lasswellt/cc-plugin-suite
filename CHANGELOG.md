@@ -2,6 +2,62 @@
 
 All notable changes to the blitz plugin are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] — 2026-05-01
+
+The "autonomous holistic-machine" release. Two research investigations (`docs/_research/2026-05-01_skills-to-agents-architecture.md` and `docs/_research/2026-05-01_autonomous-blitz-quality-efficiency.md`) drove a six-wave implementation: P0 anti-shortcut hooks, token-efficiency protocol, autonomy primitives (PreCompact handoff + auto-resume), critic adversarial review, frontend-design integration, and a top-level orchestrator agent that provides freeform-input routing alongside the existing slash commands.
+
+### Added
+
+- **`agents/orchestrator.md`** — top-level holistic-machine router. Receives freeform input ("research X", "implement the sprint"), surfaces in-flight state from `.cc-sessions/HANDOFF.json` + activity-feed, and routes to the right slash skill. Activated via new `.claude-plugin/settings.json {"agent": "orchestrator"}` (Claude Code ≥2.1.117). Slash commands bypass the orchestrator and run unchanged. Disable per-session via `BLITZ_DISABLE_ORCHESTRATOR=1`. Read-only by construction (no Write/Edit/Agent — subagents cannot spawn subagents).
+- **`agents/critic.md`** — read-only adversarial pre-PASS reviewer (Read/Grep/Glob/Bash only). Runs the 19-detector shortcut taxonomy + ratchet + acceptance-checks + hallucinated-symbol spot-check. Returns canonical JSON `{verdict: LGTM | REJECT}`. `sprint-review` Phase 3.6 Invariant 7 cannot reach PASS without LGTM.
+- **`agents/design-critic.md`** — vision-model design-quality scorer (5 dimensions 0-10: Prompt Adherence, Aesthetic Fit, Visual Polish, UX, Creative Distinction). Reads `/tmp/ui-build-screenshots/*.png` against `DESIGN.md` or `frontend-design-heuristics.md`. Verdicts PASS/ITERATE/REWORK. Wired into `ui-build` Phase 5.4.2 with `design_quality: skip|standard|high` story switch.
+- **`skills/design-extract/SKILL.md`** — reads brownfield project tokens (Tailwind config, CSS variables, font sources, accent-color usage) and emits `DESIGN.md` (Google Labs Apache-2.0 spec). Bootstraps the design-critic / ui-build / frontend-design pipeline.
+- **7 anti-shortcut hooks** (all `exit 2` blocking, registered in `hooks/hooks.json`):
+  - `block-no-verify.sh` — blocks `git commit --no-verify`. Emergency override `BLITZ_OVERRIDE_NO_VERIFY=1` (logged). Closes anthropics/claude-code#40117 (March 2026 incident: 6 commits with 63 failing tests landed via --no-verify).
+  - `block-destructive-git.sh` — blocks `git reset --hard`, `checkout -- .`, `clean -f`, force-push to main, `branch -D` on current branch when working tree dirty.
+  - `block-destructive-sql.sh` — blocks DROP TABLE / DELETE FROM-no-WHERE / TRUNCATE / FLUSHDB / Mongo `.drop()` outside migration paths. Closes Cursor+Railway production-DB deletion class.
+  - `block-test-deletion.sh` — blocks `rm` of test files, renames test→non-test, Write that drops all assertions to zero.
+  - `post-edit-typecheck-block.sh` — runs `tsc --noEmit` after Write to .ts/.vue and rejects edit if error count rose vs `.cc-sessions/typecheck-baseline.json`. Replaces always-exit-0 behavior for type errors specifically.
+  - `block-as-any-insertion.sh` — PreToolUse on Write/Edit/MultiEdit. Counts `as any` / `@ts-ignore` / `@ts-nocheck` deltas in non-test source. Blocks introductions without an inline `// blitz:any-allowed: <reason>` justification (escape hatch from `shortcut-taxonomy.md` §4).
+  - `block-test-disabling.sh` — PreToolUse on Write/Edit/MultiEdit to test files. Blocks insertions of `.skip(`, `.only(`, `xit`, `xdescribe`, `xtest`, `test.todo(` without an inline `// blitz:skip-pinned: #<issue>` justification.
+- **`skills/_shared/token-budget.md`** — model routing (60% Haiku / 35% Sonnet / 5% Opus), mandatory `cache_control: {ttl: "1h"}` on orchestrator system prompts ≥1024 tokens (default 5min TTL — silently dropped from 60min — is net negative without opt-in). Canonical JSON subagent reply contract. Lazy skill loading. Deferred MCP via ToolSearch. Combined target: 50-70% cut on top of 15× multi-agent baseline.
+- **`skills/_shared/ratchet-protocol.md`** — 7 monotonic quality metrics (`test_count`, `type_errors`, `as_any_count`, `lint_violations`, `completeness_score`, `mocks_in_src`, `todo_count`). `docs/sweeps/ratchet.json` schema. Tighten-on-improvement, never loosen. Multi-agent worktree merge takes `min(max_allowed)` deterministically. Auto-revert on deterministic regression; test_count regressions only flag (could be flaky removal).
+- **`skills/_shared/shortcut-taxonomy.md`** — 19-detector catalog with canonical grep patterns, severity tiers (P0/P1/P2/P3), false-positive escape hatches.
+- **`skills/_shared/knowledge-protocol.md`** + bootstrapped **`.cc-sessions/KNOWLEDGE.md`** — cross-session lessons format (`Context / Lesson / How to apply`). Append-only paragraphs. Injected into autonomous-loop dispatches. Pruned at 500 lines; archived past 365 days. `.gitignore`d by default. Three seed entries about plugin-agent restrictions, subagent-spawn constraints, the cache TTL pitfall.
+- **`skills/_shared/frontend-design-heuristics.md`** — paraphrased Anthropic frontend-design philosophy (license-safe; upstream ships under non-standard `LICENSE.txt`). 13-tone selector, NEVER list (Inter/Roboto/Arial/Space Grotesk + purple-on-white + uniform corners + all-centered + default Tailwind palette).
+- **`skills/_shared/agent-routing.md`** — orchestrator routing decision tree. Documents the constraint that subagents cannot spawn subagents; super-orchestrator skills stay slash-invoked. 4-class skill taxonomy with per-class routing rule.
+- **`.claude-plugin/settings.json`** — activates `orchestrator` as plugin main-thread agent.
+- **`spawn-protocol.md` §9 + §3 additions** — Token Budget & Reply Contract; WRAP_UP signal at 70% context ceiling; three-tier timeout (soft 20m / idle 10m / hard 30m); stuck-loop detection via dispatch-history pattern match.
+- **`pre-compact-snapshot.sh` HANDOFF.json extension** — every PreCompact event now writes `.cc-sessions/HANDOFF.json` (sprint/phase/branch/head_sha/uncommitted/recent_files/last_activity/resume_hint). Generic resume artifact, not sprint-specific.
+- **`session-start.sh` auto-resume** — surfaces fresh HANDOFF.json (≤24h) with one-line state summary; user opts to resume or archives.
+- **`sprint-review` Phase 3.6 Invariants 6 + 7** — ratchet-regression hard gate + critic LGTM hard gate. Detailed procedures in `references/main.md`.
+- **`ui-build` Phase 3.0 + 5.4.2** — mandatory aesthetic-direction step before wireframe (or invoke `frontend-design:frontend-design`); design-critic vision-iteration loop with up-to-3 revisions on `design_quality: high` stories. Implementation Gate gains banned-font + `prefers-reduced-motion` + `console.log`-zero + inline-style-ban checks.
+- **`completeness-gate` §2.13 + §2.14** — new env-var-fallback detector (matches `process.env.X || '...'` near credential-named identifiers; Major severity in `src/`) and hardcoded-localhost / port detector (matches `https?://localhost|127.0.0.1|0.0.0.0` and 4-5-digit ports outside test fixtures and dev configs). Both have inline escape hatches (`// blitz:fallback-allowed:`, `// blitz:localhost-allowed:`).
+- **`story-frontmatter.md` `acceptance_checks:` schema** — optional executable-predicate array for stories. Four check types: `grep_present` (with `min`), `grep_absent`, `shell` (with `assert_eq`), `ast_absent` (best-effort tree-sitter). `agents/critic.md` §2.5 contains the dispatcher; sprint-review Phase 3.6 Invariant 7 routes through it. Producer/consumer matrix updated with the new fields and the optional `design_quality:` enum (`skip` | `standard` | `high`).
+
+### Changed
+
+- **`agents/doc-writer.md` → model: haiku** — mechanical pattern-following per the new routing matrix. ~5× per-output-token saving vs prior Sonnet default.
+- **architect / backend-dev / frontend-dev / reviewer / test-writer** — added explicit model rationale comments per `token-budget.md`. Models unchanged (sonnet); now self-documenting.
+- **`CLAUDE.md`** — describes the orchestrator entry point, 5 new shared protocols, 7-invariant Phase 3.6 gate, 26-hook count (was 19). Stays under the 200-line CLAUDE.md token-budget rule.
+- **Skill count**: 38 (was 37; added `design-extract`).
+- **Agent count**: 9 plugin agents (was 6; added `orchestrator`, `critic`, `design-critic`).
+- **Hook count**: 26 scripts (was 19; added 5 P0 blockers + 2 P1 blockers).
+- **Shared-protocol count**: 19 files (was 14; added `token-budget`, `ratchet-protocol`, `shortcut-taxonomy`, `knowledge-protocol`, `frontend-design-heuristics`, `agent-routing`).
+
+### Compatibility
+
+- Compatibility floor for orchestrator-activation features remains `>=2.1.117`. P0 hooks have no version dependency.
+
+### Migration notes
+
+1. The orchestrator activation is plugin-default. Per-project override: set `{"agent": null}` in your `.claude/settings.json`, or env `BLITZ_DISABLE_ORCHESTRATOR=1`.
+2. Ratchet bootstraps on the first `sprint-review` PASS in a project; greenfield starts at 0 and tightens.
+3. The 5 P0 hooks fire on any Bash command in a blitz-aware project. False positives surface via `BLITZ_OVERRIDE_*` env vars (documented in each hook's stderr message).
+4. `KNOWLEDGE.md` is `.gitignore`d by default; team-shared lessons go in a separate committed `docs/engineering-notes.md`.
+
+---
+
 ## [1.10.0] — 2026-04-26
 
 Eleven follow-up commits after the v1.9.0 overhaul, capped by the new `/blitz:conform` skill that brings legacy projects into current spec. No breaking changes; one new feature, one regression fix, broad conformance tightening, and preventive coverage.

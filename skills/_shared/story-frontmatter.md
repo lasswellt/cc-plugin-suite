@@ -61,6 +61,29 @@ registry_entries:                     # Carry-forward registry ids this story ad
   - id: "cf-2026-04-02-modal-consistency"
     delta: 10                         # Integer units toward scope.target
 
+# ─── Acceptance checks (optional; consumed by critic + sprint-review) ────
+acceptance_checks:                    # Executable predicates; ALL must pass before PASS
+  - type: "grep_present"
+    pattern: "export.*useUserProfileStore"
+    file: "src/stores/user-profile.ts"
+    min: 1
+    message: "store must export useUserProfileStore"
+  - type: "grep_absent"
+    pattern: "TODO|FIXME|Not implemented"
+    file: "src/stores/user-profile.ts"
+    message: "no placeholders in store"
+  - type: "shell"
+    command: "npx tsc --noEmit 2>&1 | grep -c 'error TS' || true"
+    assert_eq: "0"
+    message: "zero type errors"
+  - type: "ast_absent"
+    node: "TSAsExpression[typeAnnotation.type='TSAnyKeyword']"
+    file: "src/stores/user-profile.ts"
+    message: "no `as any` in store"
+
+# ─── Design quality (optional; consumed by ui-build Phase 5.4.2) ─────────
+design_quality: "skip"                # skip | standard | high — drives design-critic spawning
+
 # ─── Source traceability (gap-closure only) ──────────────────────────────
 source_finding:                       # OMIT unless type == "gap-closure"
   report: "sprint-review"             # sprint-review | completeness-gate | STATE.md
@@ -96,8 +119,35 @@ Required = R, Optional = O, Conditional = C (required iff condition).
 | `registry_entries[*].id` | string | sprint-plan | sprint-dev (registry id validation; hard-fail on unknown) | R if `registry_entries` present |
 | `registry_entries[*].delta` | int | sprint-plan | sprint-dev (passed as `delivered.actual` increment) | O (defaults to `len(files)`) |
 | `source_finding` | object | sprint-plan `--gaps` mode | sprint-review (gap-closure traceability) | C (required iff `type == "gap-closure"`) |
+| `acceptance_checks` | object[] | sprint-plan Phase 3.2 (recommended), or sprint-dev Phase 3 if missing and adding | `agents/critic.md` §2.5, `sprint-review` Phase 3.6 Invariant 7 (executable predicates) | O |
+| `acceptance_checks[*].type` | enum | sprint-plan / sprint-dev | critic + sprint-review (dispatcher) | R if `acceptance_checks` present |
+| `acceptance_checks[*].message` | string | sprint-plan / sprint-dev | critic (failure surfacing) | R if `acceptance_checks` present |
+| `design_quality` | enum | sprint-plan (UI stories only) | `ui-build` Phase 5.4.2 (design-critic spawning) | O (default `skip`) |
 
-**Producer hard rules.** `sprint-plan` is the only skill that creates story files. `sprint-dev` may transition `status` and append a `progress_notes` block to the body, but MUST NOT add or remove frontmatter fields outside `status`, `github_issue`, and `progress_notes`. `sprint-review` may transition `status` to `done` or `dropped` only.
+**Producer hard rules.** `sprint-plan` is the only skill that creates story files. `sprint-dev` may transition `status` and append a `progress_notes` block to the body, but MUST NOT add or remove frontmatter fields outside `status`, `github_issue`, `progress_notes`, and `acceptance_checks` (sprint-dev MAY add executable checks if absent and the implementation has settled). `sprint-review` may transition `status` to `done` or `dropped` only.
+
+### Acceptance check types
+
+The four `type:` values map to executable predicates. Critic (`agents/critic.md` §2.5) and sprint-review Phase 3.6 Invariant 7 dispatch on `type` and run each in turn. Failure of any check → REJECT verdict.
+
+| Type | Required fields | Optional fields | Predicate |
+|---|---|---|---|
+| `grep_present` | `pattern`, `file` | `min` (default 1) | `grep -cE '<pattern>' <file>` returns count `≥ min` |
+| `grep_absent` | `pattern`, `file` | — | `grep -E '<pattern>' <file>` returns no match (exit 1) |
+| `shell` | `command`, `assert_eq` | — | running `<command>` produces stdout exactly equal to `<assert_eq>` (after rstrip) |
+| `ast_absent` | `node`, `file` | — | tree-sitter / AST query for `<node>` on `<file>` returns zero matches |
+
+`grep_present` accepts directories in `file:` (recurses with `-r`).
+
+`message:` is required on every entry — it's the human-readable surface text the critic uses when reporting REJECT.
+
+### Validator implementation
+
+Reference implementation lives in `agents/critic.md` §2.5 (consumes the schema) and the spec for sprint-review Phase 3.6 Invariant 7 (`skills/sprint-review/references/main.md`). Skills MAY emit additional check types via prefix `x-<vendor>-<type>` — unknown prefixes are skipped with a warning, not failed.
+
+### Wiring with `verify:`
+
+`verify:` is a story-local pre-commit gate (sprint-dev story-done check). `acceptance_checks:` is a critic-level pre-PASS gate (sprint-review). They overlap intentionally: `verify:` ensures the story implementation passes its own tests; `acceptance_checks:` ensures the artifact contains the right shape (specific symbols exported, no `as any`, etc.). Both must pass for sprint PASS; failure surfaces at different phases.
 
 **Consumer hard rules.** Consumers MUST treat unknown fields as forward-compatible (don't reject), but MUST hard-fail on missing required fields. The `registry_entries` inference fallback (parent-epic pro-rata with `delta: 1`) lives in sprint-dev Phase 3.2 step 1a — see [carry-forward-registry.md](carry-forward-registry.md) §Writers.
 

@@ -1,0 +1,5 @@
+{
+  "$schema": "https://code.claude.com/schemas/plugin-settings.json",
+  "agent": "orchestrator",
+  "_comment_agent": "Activates agents/orchestrator.md as the main-thread agent for plugin consumers. Requires Claude Code >= 2.1.117. Users can opt out by setting BLITZ_DISABLE_ORCHESTRATOR=1 in env or by overriding in their own ~/.claude/settings.json. Slash commands (/blitz:*) bypass the orchestrator and route directly to the named skill."
+}

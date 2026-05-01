@@ -45,13 +45,15 @@ If no activity feed exists or is empty, skip the summary silently.
 
 ## Skill System
 
-This repo contains **37 development skills** in `skills/`. Skills are auto-discovered by Claude Code from `skills/<name>/SKILL.md` (Anthropic-canonical layout — no central registry). Skills are invoked via `/blitz:<skill-name>`.
+This repo contains **38 development skills** in `skills/` and **8 plugin agents** in `agents/`. Skills are auto-discovered by Claude Code from `skills/<name>/SKILL.md` (Anthropic-canonical layout — no central registry). Skills are invoked via `/blitz:<skill-name>`.
 
 Every SKILL.md must satisfy the canonical frontmatter contract enforced by `hooks/scripts/skill-frontmatter-validate.sh`: third-person description ≤1024 chars, body ≤500 lines, required fields (`name`, `description`, `model`, `effort`, `compatibility`, `allowed-tools` when invokable), and the verbatim OUTPUT STYLE snippet from `/_shared/terse-output.md`.
 
+**Holistic-machine entry point**: `agents/orchestrator.md` is activated as the plugin's main-thread agent via `.claude-plugin/settings.json {"agent": "orchestrator"}` (Claude Code ≥2.1.117). Freeform user input lands on the orchestrator; explicit slash commands bypass it. See `skills/_shared/agent-routing.md` for the constraint-aware routing protocol (subagents cannot spawn subagents → super-orchestrator skills stay slash-invoked).
+
 ## Shared Protocols
 
-All skills follow the protocols in `skills/_shared/` (14 files). Required for every skill:
+All skills follow the protocols in `skills/_shared/` (19 files). Required for every skill:
 - **session-protocol.md** — Multi-session safety (locks, conflict matrix, session registration, autonomy levels)
 - **verbose-progress.md** — Verbose output format and activity feed logging
 - **terse-output.md** — Output style + canonical exemptions list
@@ -62,9 +64,29 @@ Required for the sprint family:
 - **carry-forward-registry.md** — Carry-forward registry (canonical Reader Algorithm + writer contracts)
 
 Required for skills that spawn agents:
-- **spawn-protocol.md** — Subagent type selection, weight classes, HEARTBEAT/PARTIAL, **Agent Output Contract** (success/failure/partial gate thresholds — never redefine inline)
+- **spawn-protocol.md** — Subagent type selection, weight classes, HEARTBEAT/PARTIAL/WRAP_UP, three-tier timeout, stuck-loop detection, **Agent Output Contract** + **Token Budget & Reply Contract** (§9)
 - **agent-prompt-boilerplate.md** — Author-time dedup target for recurring Agent() prompt sections (BUDGET, WRITE-AS-YOU-GO, HEARTBEAT/PARTIAL, CONFIRMATION). Cited via `<!-- import: -->` markers in 7 `references/main.md` files
+- **token-budget.md** (v1.11+) — model routing matrix (60/35/5 Haiku/Sonnet/Opus), 1-hr cache TTL, JSON reply contract, lazy MCP/skill load, anti-patterns
+- **agent-routing.md** (v1.11+) — orchestrator routing decision tree + the subagents-cannot-spawn-subagents constraint
+
+Required for autonomous loops + quality:
+- **ratchet-protocol.md** (v1.11+) — 7 monotonic metrics, schema, multi-agent worktree merge, auto-revert on regression
+- **shortcut-taxonomy.md** (v1.11+) — 19 anti-shortcut detectors with grep patterns + escape-hatch rules
+- **knowledge-protocol.md** (v1.11+) — `.cc-sessions/KNOWLEDGE.md` cross-session lessons format
+- **frontend-design-heuristics.md** (v1.11+) — paraphrased aesthetic philosophy, NEVER list, density-vs-whitespace guidance
 
 ## Hooks
 
-19 hook scripts wired through `hooks/hooks.json` across 8 events (`SessionStart`, `UserPromptExpansion`, `PreToolUse`, `PostToolUse`, `PreCompact`, `PostCompact`, `TaskCompleted`, `TeammateIdle`). They handle file protection, auto-formatting, auto-linting, auto-testing, commit validation (frontmatter lint, version sync, link rot, reference compression), context monitoring, and activity-feed logging. See [hooks/scripts/README.md](hooks/scripts/README.md) for the full index grouped by event.
+26 hook scripts wired through `hooks/hooks.json` across 8 events (`SessionStart`, `UserPromptExpansion`, `PreToolUse`, `PostToolUse`, `PreCompact`, `PostCompact`, `TaskCompleted`, `TeammateIdle`). They handle file protection, auto-formatting, auto-linting, auto-testing, commit validation (frontmatter lint, version sync, link rot, reference compression), context monitoring, activity-feed logging, and **7 anti-shortcut blockers**: 5 P0 (block-no-verify, block-destructive-git, block-destructive-sql, block-test-deletion, post-edit-typecheck-block) plus 2 P1 (block-as-any-insertion, block-test-disabling). See [hooks/scripts/README.md](hooks/scripts/README.md) for the full index grouped by event.
+
+## Quality Gates (v1.11+)
+
+`sprint-review` Phase 3.6 enforces 7 invariants. Sprint cannot reach PASS while any fails:
+
+1. Carry-forward Reader Algorithm — registry consistency
+2. Reserved (canonical algorithm)
+3. Epic completion — no `done` epics with `incomplete` registry entries
+4. Reserved (canonical algorithm)
+5. OUTPUT STYLE snippet present in every SKILL.md + agent-prompt template
+6. **Ratchet** — 7 monotonic metrics never regress without carry-forward (`type_errors > 0` is absolute floor)
+7. **Critic** — `agents/critic.md` adversarial review must emit LGTM (it runs the 19-detector shortcut taxonomy)

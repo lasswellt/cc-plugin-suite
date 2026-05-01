@@ -82,12 +82,34 @@ mkdir -p "${RESEARCH_DIR}"
 
 Spawn 2-4 agents depending on the research type:
 
-| Agent Name | Role | Always Spawned | Focus |
-|---|---|---|---|
-| `library-docs` | Library & Documentation Research | Yes | Official docs, API surface, version history, migration guides, known issues, changelogs |
-| `web-researcher` | Web & Community Research | Yes | Blog posts, Stack Overflow, GitHub issues, benchmarks, community sentiment, alternatives |
-| `codebase-analyst` | Codebase Analysis | Yes | Existing patterns, integration points, migration impact, affected files, dependency graph |
-| `infra-analyst` | Infrastructure Analysis | If backend/cloud/infra detected | Cloud service docs, pricing, quotas, deployment implications, environment config |
+| Agent Name | Role | Always Spawned | Model | Focus |
+|---|---|---|---|---|
+| `library-docs` | Library & Documentation Research | Yes | haiku | Official docs, API surface, version history, migration guides, known issues, changelogs |
+| `web-researcher` | Web & Community Research (contrarian role) | Yes | haiku | Blog posts, GitHub issues, benchmarks, community sentiment, **counter-evidence + post-mortems** |
+| `codebase-analyst` | Codebase Analysis | Yes | sonnet | Existing patterns, integration points, migration impact, affected files, dependency graph |
+| `infra-analyst` | Infrastructure Analysis | Conditional (§1.2.5) | haiku | Cloud service docs, pricing, quotas, deployment implications, environment config |
+
+Model routing follows [token-budget.md](../_shared/token-budget.md): retrieval-class workloads (library-docs, web-researcher, infra-analyst) → Haiku 4.5 (12× cheaper than Sonnet, comparable hallucination rate per arxiv 2604.03173). Semantic codebase reasoning (codebase-analyst) → Sonnet 4.6.
+
+### 1.2.5 Spawn-N Gate (skip unneeded agents)
+
+`infra-analyst` is conditional — spawn only when stack has cloud/infra concerns:
+
+```bash
+SPAWN_INFRA=false
+# Detect via package.json deps + CLAUDE_PLUGIN env
+if grep -qE '"(firebase|firebase-admin|@google-cloud|aws-sdk|@aws-sdk|@azure|stripe|twilio)"' package.json 2>/dev/null \
+   || grep -qE 'firebase\.json|wrangler\.toml|serverless\.yml|terraform/' . 2>/dev/null; then
+  SPAWN_INFRA=true
+fi
+
+# Override: user can force via env var
+[ "${BLITZ_RESEARCH_FORCE_INFRA:-0}" = "1" ] && SPAWN_INFRA=true
+
+[ "$SPAWN_INFRA" = false ] && echo "[research] infra-analyst skipped (no cloud/infra detected; set BLITZ_RESEARCH_FORCE_INFRA=1 to override)" >&2
+```
+
+Saves ~$0.10/run on ~40% of runs (token-economics §9 Gap 6).
 
 ### 1.3 Spawn Agents via Agent Tool
 
@@ -122,85 +144,15 @@ Each agent must respect these limits to stay focused:
 
 ### 1.6 Agent Prompt Templates
 
-#### library-docs
-```
-You are library-docs, a research agent specializing in official documentation analysis.
+The 4 templates share a canonical preamble (OUTPUT STYLE + BUDGET + WRITE-AS-YOU-GO + JSON reply contract) so agents return parseable status to the orchestrator and write findings to a file. Full preamble + per-agent role text live in [`references/main.md`](references/main.md) §Agent Prompt Templates — paste from there into each Agent() spawn. Orchestrator MAY mark the canonical preamble `cache_control: {type: "ephemeral", ttl: "1h"}` once the total static prefix crosses 1024 tokens (after Haiku-routing migration).
 
-TOPIC: ${TOPIC}
-RESEARCH QUESTIONS: ${QUESTIONS}
-PROJECT STACK: ${STACK_PROFILE}
-OUTPUT FILE: ${SESSION_TMP_DIR}/research/library-docs.md
+**Templates by role** (all consume the canonical preamble; differences below):
+- `library-docs` — model: haiku. Official docs, API surface, version compat. Citation rule: structured entries, no `[QUOTE_UNVERIFIED]` text.
+- `web-researcher` — model: haiku. **Contrarian role** assigned (counter-evidence focus to mitigate agent-agreement bias per arxiv 2604.02923).
+- `codebase-analyst` — model: sonnet. Semantic codebase reasoning, no web search. file:LINE cites.
+- `infra-analyst` — model: haiku. **Conditional** (§1.2.5 spawn-N gate). Cloud + deployment.
 
-TASKS:
-1. Find official documentation for the topic/library.
-2. Document the API surface relevant to the project's use case.
-3. Check version compatibility with the project's stack.
-4. Note any migration guides, breaking changes, or deprecations.
-5. Find code examples that match the project's patterns.
-6. Document known issues and workarounds.
-
-Stub your output file with `# IN PROGRESS` before your first tool call. Append findings as you discover them.
-```
-
-#### web-researcher
-```
-You are web-researcher, a research agent specializing in community knowledge and real-world usage.
-
-TOPIC: ${TOPIC}
-RESEARCH QUESTIONS: ${QUESTIONS}
-PROJECT STACK: ${STACK_PROFILE}
-OUTPUT FILE: ${SESSION_TMP_DIR}/research/web-researcher.md
-
-TASKS:
-1. Search for recent blog posts, tutorials, and guides (prefer content from the last 12 months).
-2. Check GitHub issues for common problems and their resolutions.
-3. Find benchmarks or performance comparisons if relevant.
-4. Assess community sentiment (adoption rate, maintenance activity, contributor count).
-5. Identify alternatives and how they compare.
-6. Note any "gotchas" or lessons learned from real-world usage.
-
-Stub your output file with `# IN PROGRESS` before your first tool call. Append findings as you discover them.
-```
-
-#### codebase-analyst
-```
-You are codebase-analyst, a research agent specializing in impact analysis.
-
-TOPIC: ${TOPIC}
-RESEARCH QUESTIONS: ${QUESTIONS}
-PROJECT STACK: ${STACK_PROFILE}
-OUTPUT FILE: ${SESSION_TMP_DIR}/research/codebase-analyst.md
-
-TASKS:
-1. Identify all files and modules related to the research topic.
-2. Map the dependency graph of affected code.
-3. Assess integration points where the topic would connect to existing code.
-4. Identify existing patterns that should be followed or migrated.
-5. Estimate migration effort (files to change, complexity of changes).
-6. Note potential conflicts with existing dependencies.
-
-Do NOT use web search. Focus entirely on the codebase. Write findings immediately to your output file.
-```
-
-#### infra-analyst (optional)
-```
-You are infra-analyst, a research agent specializing in infrastructure and deployment implications.
-
-TOPIC: ${TOPIC}
-RESEARCH QUESTIONS: ${QUESTIONS}
-PROJECT STACK: ${STACK_PROFILE}
-OUTPUT FILE: ${SESSION_TMP_DIR}/research/infra-analyst.md
-
-TASKS:
-1. Check cloud service documentation for relevant features, quotas, and pricing.
-2. Assess deployment pipeline impact (new build steps, environment variables, secrets).
-3. Review security implications (new permissions, access patterns, data flow).
-4. Evaluate environment configuration changes needed.
-5. Check for compatibility with existing infrastructure setup.
-6. Note monitoring and observability considerations.
-
-Stub your output file with `# IN PROGRESS` before your first tool call. Append findings as you discover them.
-```
+Cross-cutting findings are NOT routed peer-to-peer. The orchestrator synthesizes cross-domain findings in Phase 2 from the written output files. (The previous STEER: SendMessage protocol was removed in v1.4.0 — it was advisory-only, had no ack mechanism, and findings could be silently truncated when the receiving agent was near its output budget.)
 
 ### 1.7 Wait for Completion
 
@@ -217,29 +169,116 @@ done
 
 ## Phase 2: COLLECT AND VALIDATE — Gather All Findings
 
-### 2.1 Read All Agent Output Files
+### 2.1 Classify Outputs (canonical gate from spawn-protocol §8)
 
-Read every file in `${SESSION_TMP_DIR}/research/`:
+Run the standard classifier BEFORE reading findings. MISSING / EMPTY / MALFORMED outputs MUST NOT silently pass through as SUCCESS:
+
+```bash
+EXPECTED_OUTPUTS=(
+  "${SESSION_TMP_DIR}/research/library-docs.md"
+  "${SESSION_TMP_DIR}/research/web-researcher.md"
+  "${SESSION_TMP_DIR}/research/codebase-analyst.md"
+)
+[ "$SPAWN_INFRA" = true ] && EXPECTED_OUTPUTS+=("${SESSION_TMP_DIR}/research/infra-analyst.md")
+
+# classify_output() and gate logic from /_shared/spawn-protocol.md §8
+classify_output() {
+  local f="$1"
+  if [ ! -f "$f" ]; then echo MISSING; return; fi
+  if [ ! -s "$f" ]; then echo EMPTY; return; fi
+  if grep -q '^PARTIAL: true' "$f"; then
+    grep -q '^COMPLETED:' "$f" && grep -q '^MISSING:' "$f" \
+      && echo PARTIAL || echo MALFORMED
+    return
+  fi
+  echo SUCCESS
+}
+
+declare -A COUNTS=()
+for f in "${EXPECTED_OUTPUTS[@]}"; do
+  c=$(classify_output "$f")
+  COUNTS[$c]=$((${COUNTS[$c]:-0} + 1))
+  echo "$f → $c"
+done
+
+MISSING_COUNT=$(( ${COUNTS[MISSING]:-0} + ${COUNTS[EMPTY]:-0} + ${COUNTS[MALFORMED]:-0} ))
+N=${#EXPECTED_OUTPUTS[@]}
+case $N in
+  1) THRESHOLD=1 ;;
+  2|3) THRESHOLD=2 ;;
+  *) THRESHOLD=$(( (N + 1) / 2 )) ;;
+esac
+
+if [ "$MISSING_COUNT" -ge "$THRESHOLD" ]; then
+  echo "[research] ABORT: $MISSING_COUNT/$N agents failed (threshold $THRESHOLD)" >&2
+  # Do NOT clean up — preserve findings dir for inspection
+  exit 1
+fi
 ```
-${SESSION_TMP_DIR}/research/library-docs.md
-${SESSION_TMP_DIR}/research/web-researcher.md
-${SESSION_TMP_DIR}/research/codebase-analyst.md
-${SESSION_TMP_DIR}/research/infra-analyst.md  (if spawned)
+
+### 2.2 Summarize Each Agent File (Haiku — token saving)
+
+Reading 4 raw 200-line agent files into the synthesizer costs ~100K input tokens (~$0.30 at Sonnet rates). Compress first via Haiku summarization-on-read (Pattern B from token-economics §5; saves ~$0.26/run, 22% of total cost):
+
+```bash
+for f in "${EXPECTED_OUTPUTS[@]}"; do
+  [ "$(classify_output "$f")" = "SUCCESS" ] || continue
+  Agent({
+    subagent_type: "general-purpose",
+    model: "haiku",
+    description: "Summarize $(basename $f .md) findings to ≤30 lines",
+    prompt: "Read ${f}. Output ≤30 lines listing the most important findings as
+             bullets. Preserve URLs, file:line refs, dates, version numbers verbatim.
+             Drop prose. Write to ${f}.summary.md. Return canonical JSON reply with
+             status + files_changed."
+  })
+done
+
+# Synthesizer reads SUMMARIES, not raw findings
+SYNTHESIS_INPUT_FILES=()
+for f in "${EXPECTED_OUTPUTS[@]}"; do
+  [ -f "${f}.summary.md" ] && SYNTHESIS_INPUT_FILES+=("${f}.summary.md") || SYNTHESIS_INPUT_FILES+=("$f")
+done
 ```
 
-### 2.2 Handle Agent Failures
-
-For each missing or empty output file:
-- Log the failure.
-- If fewer than 2 agents succeeded, warn the user that research is incomplete.
-- Do NOT retry. Proceed with available findings and note gaps.
+If a Haiku summarizer fails or times out, fall back to the raw file for that agent — never skip the agent's findings entirely.
 
 ### 2.3 Cross-Reference Findings
 
-Look for:
-- **Contradictions** — Does one agent's finding conflict with another's? Note and resolve.
-- **Gaps** — Are any research questions unanswered? Note for the user.
-- **Convergence** — Do multiple agents reach the same conclusion? Strengthen that finding.
+Read `SYNTHESIS_INPUT_FILES` and surface:
+- **Contradictions** — Does one agent's finding conflict with another's? Document explicitly in the `## Dissent / Contradictory Evidence` section of the produced doc — never silently collapse to consensus (mitigates agent-agreement bias per arxiv 2604.02923).
+- **Gaps** — Are any research questions unanswered? Mark via §2.4.
+- **Convergence** — Do multiple agents reach the same conclusion? Require ≥3 distinct source domains before treating consensus as established (single-domain consensus is rejected).
+
+### 2.4 Gap Detection (1 Haiku call → optional second wave)
+
+Before synthesis, check coverage:
+
+```bash
+GAPS=$(Agent({
+  subagent_type: "general-purpose",
+  model: "haiku",
+  description: "Identify research-question gaps in summarized findings",
+  prompt: "Read ${SYNTHESIS_INPUT_FILES[@]}. For each research question in:
+           ${QUESTIONS}
+           Return JSON array: [{q: '...', answered: bool, citations_count: int}].
+           If answered: false OR citations_count < 2, flag as GAP."
+}))
+NUM_GAPS=$(echo "$GAPS" | jq '[.[] | select(.answered == false or .citations_count < 2)] | length')
+ELAPSED_SEC=$(( $(date +%s) - SESSION_START ))
+
+# One narrow second wave (max 2 agents) if budget allows
+if [ "$NUM_GAPS" -gt 0 ] && [ "$NUM_GAPS" -le 2 ] && [ "$ELAPSED_SEC" -lt 600 ]; then
+  echo "[research] $NUM_GAPS gap(s) detected; spawning narrow second wave" >&2
+  # Spawn a Haiku web-researcher per gap, scoped to that single question
+  echo "$GAPS" | jq -c '.[] | select(.answered == false or .citations_count < 2)' | head -2 | while read -r gap; do
+    GAP_Q=$(echo "$gap" | jq -r '.q')
+    # Agent({...}) spawn here — scope: this single question, max 5 web searches, output to .gap-N.md
+  done
+fi
+```
+
+If gap-fill agents return findings, append summaries to `SYNTHESIS_INPUT_FILES` before synthesis. If still gaps remain, the synthesizer surfaces them in the doc's `## Open questions` section.
 
 ---
 
@@ -323,10 +362,45 @@ Before finalizing:
 - No agent's findings are silently dropped.
 - **Scope block present** whenever the doc contains quantified scope language — or an explicit `<!-- no-registry: <reason> -->` comment. No un-registered quantified claims are allowed to land in `docs/_research/`.
 
-### 3.3 Clean Up
+### 3.2.5 Citation Validation (research-critic agent)
+
+After §3.1 emits the draft research doc, spawn `agents/research-critic.md` to probe every cited URL via WebFetch HEAD-equivalent and verify quoted spans. Catches the documented 3-13% URL hallucination rate (arxiv 2604.03173) before the doc reaches downstream consumers like `/blitz:roadmap`:
+
+```
+Agent({
+  subagent_type: "blitz:research-critic",
+  description: "Citation + claim validity probe",
+  prompt: "Probe all citations in docs/_research/${TIMESTAMP}_${TOPIC_SLUG}.md.
+           Return canonical JSON with verdict (PASS | CITATIONS_MISSING) and
+           per-citation status (LIVE | DEAD | LIKELY_HALLUCINATED | UNKNOWN)."
+})
+```
+
+If verdict is `CITATIONS_MISSING`:
+- Surface failing citations to the user.
+- Skip Phase 3.3 cleanup (preserve `${SESSION_TMP_DIR}/research/` for inspection).
+- Mark the doc with a `<!-- WARNING: citation-validity check failed; see issues below -->` comment.
+- Do NOT auto-fix; let the user decide whether to retry, accept, or abandon.
+
+Optional: `BLITZ_RESEARCH_NO_CRITIC=1` skips this phase (default-on for docs destined for `/blitz:roadmap` ingestion).
+
+### 3.3 Clean Up (CONDITIONAL — preserve findings on failure)
 
 ```bash
-rm -rf ${SESSION_TMP_DIR}/research
+DOC_PATH="docs/_research/${TIMESTAMP}_${TOPIC_SLUG}.md"
+SYNTHESIS_OK=false
+if [ -f "$DOC_PATH" ] && [ "$(wc -l < "$DOC_PATH")" -ge 50 ]; then
+  # Doc exists and is substantive (≥50 lines)
+  if [ "${CRITIC_VERDICT:-PASS}" = "PASS" ]; then
+    SYNTHESIS_OK=true
+  fi
+fi
+
+if [ "$SYNTHESIS_OK" = true ]; then
+  rm -rf "${SESSION_TMP_DIR}/research"
+else
+  echo "[research] PRESERVING ${SESSION_TMP_DIR}/research for inspection (synthesis missing/short or critic flagged)" >&2
+fi
 ```
 
 ---

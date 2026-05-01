@@ -93,7 +93,34 @@ Cross-check the profile against actual code. If any field is uncertain, re-read 
 
 ## Phase 3: DESIGN
 
-**Goal**: Clarify requirements and produce component specs before writing code.
+**Goal**: Pick aesthetic direction, clarify requirements, produce component specs before writing code.
+
+### 3.0 Aesthetic Direction (mandatory; precedes wireframe)
+
+Before any wireframe, commit to an aesthetic direction. This step prevents the generic-AI-aesthetics failure mode (Inter/Roboto/purple-gradient sameness across every output) by forcing intentional design before implementation.
+
+**Brownfield projects (existing tokens detected in Phase 1.1):** stay native to the project. Reuse the project's typography pair, palette, and spacing scale. Skip to §3.0.2.
+
+**Greenfield / no existing design system:** invoke the Anthropic `frontend-design:frontend-design` skill if available (returns aesthetic direction + typography + motion plan). Otherwise execute §3.0.1 inline.
+
+#### 3.0.1 Inline tone selection (when frontend-design unavailable)
+
+Pick exactly ONE tone from this list (do not blend; commit to one):
+
+`brutalist/minimal`, `maximalist`, `retro-futuristic`, `organic/natural`, `luxury/refined`, `playful/toy-like`, `editorial/magazine`, `art-deco`, `soft/pastel`, `industrial`, `dark/moody`, `lo-fi/zine`, `handcrafted/artisanal`
+
+Commit to typography + color + motion principle:
+
+- **TYPOGRAPHY PAIR**: distinctive display font + refined body font. Both must be characterful. **BANNED**: Inter, Roboto, Arial, system-ui as primary, Space Grotesk.
+- **ACCENT COLOR**: one accent unless multi-color system genuinely required. **BANNED**: purple-gradient-on-white. Use CSS variables.
+- **MOTION PRINCIPLE**: pick one — `one orchestrated reveal (staggered animation-delay)`, `scattered micro-interactions`, or `none/static`. Do not blend.
+- **COMPOSITION**: pick one — `generous whitespace` or `controlled density`. Asymmetry, overlap, diagonal flow, grid-breaking are encouraged when they serve the tone.
+
+#### 3.0.2 Document choices to DESIGN.md
+
+Write or update `DESIGN.md` (Google Labs Apache-2.0 spec — see `skills/design-extract/SKILL.md`) with the chosen tone, typography, palette, motion principle. This file is the durable handoff between aesthetic decisions and implementation; subsequent ui-build runs read it instead of rediscovering.
+
+For brownfield projects without DESIGN.md, run `/blitz:design-extract` first to read the existing tokens and emit the file.
 
 ### 3.1 Requirements Clarification
 If the user's request is ambiguous on any of these, use the `AskUserQuestion` tool:
@@ -154,12 +181,36 @@ Before proceeding from implementation to Phase 5 (REFINE), verify:
 | Component size | No file > 300 lines | Extract sub-components |
 | Three-state coverage | All data views have loading, error, and empty states | Add missing states |
 | Hardcoded colors | None — design tokens only | Replace with tokens |
+| **Banned fonts** | None of `Inter`, `Roboto`, `Arial`, `Space Grotesk` as primary in CSS/Tailwind | Replace with project DESIGN.md typography pair |
+| **`prefers-reduced-motion`** | Required if any `animate-`, `transition-`, or motion library used | Add `@media (prefers-reduced-motion: reduce) { ... }` override |
+| **`console.log`** | Zero in `.vue`/`.ts` source | Remove or replace with structured logger |
+| **Inline `style="..."`** | Forbidden except for dynamic dimensions (e.g., calc'd widths) | Move to scoped styles or design tokens |
 
 Run these checks after completing all implementation steps:
 ```bash
 npm run type-check 2>&1 | tail -20
 npx eslint <new-files> 2>&1 | tail -20
 wc -l <new-vue-files> | sort -n | tail -5
+
+# Aesthetic gates
+CHANGED=$(git diff --name-only HEAD -- '*.vue' '*.css' '*.ts' '*.tsx')
+[ -z "$CHANGED" ] || {
+  # Banned-font check (allow as fallback after a custom font-family token, but not as primary)
+  grep -lE "font-family:\s*['\"]?(Inter|Roboto|Arial|Space Grotesk)" $CHANGED 2>/dev/null \
+    && echo "FAIL: banned font detected in primary position; use DESIGN.md typography pair"
+  # Hardcoded color check
+  grep -lE "#[0-9a-fA-F]{3,6}|rgb\(|hsl\(" $CHANGED 2>/dev/null \
+    && echo "WARN: hardcoded color detected; prefer CSS var / design token"
+  # prefers-reduced-motion required if animate-/transition- used
+  for f in $CHANGED; do
+    grep -qE "(animate-|transition-|@keyframes|motion\.|useMotion)" "$f" 2>/dev/null \
+      && ! grep -qE "prefers-reduced-motion" "$f" "$(dirname "$f")"/*.css 2>/dev/null \
+      && echo "FAIL: $f uses motion but no prefers-reduced-motion override"
+  done
+  # console.log
+  grep -lE "console\.(log|debug|info)\(" $CHANGED 2>/dev/null \
+    && echo "FAIL: console.log present"
+}
 ```
 
 If any check fails, fix before entering Phase 5. Maximum 3 fix iterations.
@@ -244,11 +295,37 @@ For every interactive element:
 - [ ] Images have dimensions set (no layout shift)
 - [ ] Heavy components use `defineAsyncComponent` if below the fold
 
-### 5.4 Visual Validation (Optional — if Playwright MCP available)
-Use ToolSearch to check for Playwright MCP tools. If available:
-1. Navigate to the new page/component
-2. Take screenshots at 3 viewports: 375px (mobile), 768px (tablet), 1440px (desktop)
-3. Verify: no overflow, no overlapping elements, correct spacing, readable text
+### 5.4 Visual Validation + Design-Quality Critique
+
+Use ToolSearch to check for Playwright MCP tools. If unavailable, skip and warn the user that visual validation is incomplete.
+
+#### 5.4.1 Layout sanity (existing)
+
+Navigate to the new page/component. Screenshot at 375 / 768 / 1440 widths. Verify: no overflow, no overlapping elements, correct spacing, readable text.
+
+#### 5.4.2 Design-quality critique (vision agent)
+
+Story frontmatter `design_quality:` controls this step:
+- `skip` (default for internal admin pages) — skip 5.4.2
+- `standard` (most user-facing UI) — run once
+- `high` (marketing, landing, customer-facing) — run with up to 3 iteration cycles
+
+When triggered, spawn `agents/design-critic.md` with the screenshots + DESIGN.md heuristics:
+
+```
+Agent({
+  subagent_type: "blitz:design-critic",
+  description: "Design-quality critique",
+  prompt: "Critique screenshots at /tmp/ui-build-screenshots/*.png against DESIGN.md (or frontend-design heuristics if no DESIGN.md). Score 5 dimensions 0–10: Prompt Adherence, Aesthetic Fit, Visual Polish, UX, Creative Distinction. Pass threshold ≥7 on all five. Return canonical JSON."
+})
+```
+
+On any dimension <7 (and `design_quality: high`):
+1. Surface the specific critique to the user.
+2. If user approves: feed critique back to Phase 4 IMPLEMENT for one revision.
+3. Max 3 revisions per page; then escalate to user choice (accept current, manual rework, or skip).
+
+For `design_quality: standard`: report scores; do not auto-iterate. User decides.
 
 ---
 

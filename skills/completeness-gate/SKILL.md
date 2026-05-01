@@ -226,6 +226,38 @@ IMPORTERS=$(grep -rl "from.*<module-name>" --include="*.ts" --include="*.vue" . 
 
 Level 1 failures are **Critical**. Level 2 failures follow existing severity rules. Level 3 failures are **Medium** (orphaned files may be intentional for new features not yet integrated).
 
+### 2.13 Env-Var Fallbacks Hiding Config Errors
+
+Scan source files for env-var dereferences with a string-literal fallback near credential-named identifiers. The pattern `process.env.X || ''` (or `??`) silently masks missing-config bugs at runtime — the app comes up "fine" with empty creds and fails confusingly later.
+
+```bash
+grep -rEn '(process\.env\.[A-Z_]+|import\.meta\.env\.[A-Z_]+)\s*(\|\||\?\?)\s*['\''"][^'\''"]*['\''"]' src/ \
+  --include='*.ts' --include='*.tsx' --include='*.vue' --include='*.js' \
+  | grep -iE 'password|secret|key|token|credential|host|port|url|endpoint|database|db_|api_'
+```
+
+**Severity**: each match Major. **Escape hatch**: inline `// blitz:fallback-allowed: <reason>` on the same line (the user explicitly intends the fallback, e.g., dev defaults that are clearly non-production).
+
+**Check ID**: `env-fallback`
+
+### 2.14 Hardcoded localhost / Ports / URLs
+
+Scan source files for hardcoded `localhost`, `127.0.0.1`, `0.0.0.0`, or 4–5-digit ports outside test fixtures. These leak from local dev into shipped code and break in any non-local environment.
+
+```bash
+grep -rEn '(https?://(localhost|127\.0\.0\.1|0\.0\.0\.0)|:[0-9]{4,5}\b)' src/ \
+  --include='*.ts' --include='*.tsx' --include='*.vue' --include='*.js' \
+  --exclude-dir=__tests__ --exclude='*.test.*' --exclude='*.spec.*'
+```
+
+Allow:
+- Files that match `vite.config.*`, `*.dev.*`, `dev/*` (genuine dev config).
+- Lines containing `// blitz:localhost-allowed: <reason>` (dev tooling hot-reload, etc.).
+
+**Severity**: each match Major in `src/**`, Minor in `scripts/**` and `dev/**`.
+
+**Check ID**: `hardcoded-localhost`
+
 ---
 
 ## Phase 3: ANALYZE — Classify and Score

@@ -387,8 +387,15 @@ Full invariant procedures (Invariants 1-4, the hard-gate decision, report schema
 2. Run skill-local Invariants 3 and 5 (not yet in the canonical algorithm):
    - **Invariant 3**: every epic claiming `status: done|complete` has all its registry entries at `status: complete`.
    - **Invariant 5**: every SKILL.md under `skills/*/SKILL.md` AND every `skills/*/references/main.md` containing an Agent-prompt template contains the canonical `OUTPUT STYLE: … per /_shared/terse-output.md` snippet from `spawn-protocol.md` §7. Missing snippet → Critical finding → sprint FAILs (BLOCKER).
-3. Write the Invariants Report section to the review report.
-4. **Hard gate**: Reader Algorithm exit 0 + Invariants 3, 5 pass → proceed to Phase 4. Any fail → `CONDITIONAL` at best; ESCALATION (exit 3) or Invariant 5 fail → FAIL.
+3. Run **Invariant 6** (ratchet — see [/_shared/ratchet-protocol.md](/_shared/ratchet-protocol.md)): read `docs/sweeps/ratchet.json`. For each metric, recompute `current` and verify direction. If any metric regresses without a covering carry-forward entry, the sprint cannot reach PASS. On improvements, tighten thresholds and append a history snapshot.
+4. Run **Invariant 7** (critic adversarial review — see [/_shared/shortcut-taxonomy.md](/_shared/shortcut-taxonomy.md) and `agents/critic.md`): spawn the `blitz:critic` agent. It returns `{verdict: "LGTM" | "REJECT", issues: [...]}`. REJECT verdict blocks PASS; the issues array describes the single reject reason.
+5. Write the Invariants Report section to the review report.
+6. **Hard gate**: Reader Algorithm exit 0 + Invariants 3, 5, 6, 7 pass → proceed to Phase 4. Any fail → `CONDITIONAL` at best; ESCALATION (exit 3), Invariant 5 fail, ratchet regression with no carry-forward, or critic REJECT → FAIL.
+
+### Invariants 6 and 7 — Ratchet + Critic (BLOCKERs)
+
+- **Invariant 6 (ratchet)**: see [`/_shared/ratchet-protocol.md`](/_shared/ratchet-protocol.md). Compute the 7 monotonic metrics, compare to `docs/sweeps/ratchet.json`, tighten on improvement, block PASS on regression without covering carry-forward. `type_errors > 0` is an absolute floor. Full procedure: `references/main.md` §Invariant 6 — Ratchet Procedures.
+- **Invariant 7 (critic)**: spawn `blitz:critic` (read-only adversarial — see `agents/critic.md`). It runs the 19-detector shortcut scan + ratchet + hallucinated-symbol spot-check and returns canonical JSON `{verdict: LGTM | REJECT, ...}`. REJECT blocks PASS. Spawn template: `references/main.md` §Invariant 7 — Critic Spawn.
 
 ### Invariant 5 — Agent-Prompt Output Style Snippet (BLOCKER)
 
@@ -445,9 +452,9 @@ Write `${SPRINT_DIR}/review-report.md` using the template from references/main.m
 
 | Status | Criteria |
 |---|---|
-| **PASS** | All quality gates pass. No critical or major findings. **All four Phase 3.6 registry invariants pass.** |
-| **CONDITIONAL** | Quality gates pass but major findings exist. Or: minor gate failures with no critical findings. Or: **any Phase 3.6 registry invariant fails** — the sprint cannot reach PASS while carry-forward state is inconsistent. |
-| **FAIL** | Any quality gate fails after auto-fix. Or: critical findings exist. Or: **a Phase 3.6 invariant failure escalates to `rollover_count >= 3`** on any entry and the operator has not resolved it. |
+| **PASS** | All quality gates pass. No critical or major findings. **All Phase 3.6 invariants 1–7 pass (registry, snippet, ratchet, critic LGTM).** |
+| **CONDITIONAL** | Quality gates pass but major findings exist. Or: minor gate failures with no critical findings. Or: **any Phase 3.6 invariant fails** — the sprint cannot reach PASS while registry, ratchet, or critic state is inconsistent. |
+| **FAIL** | Any quality gate fails after auto-fix. Or: critical findings exist. Or: **a Phase 3.6 invariant failure escalates to `rollover_count >= 3`** on any entry and the operator has not resolved it. Or: **critic verdict REJECT**. Or: **type_errors > 0 (absolute floor)**. |
 
 ### 4.3 Update Sprint Registry
 

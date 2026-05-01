@@ -252,9 +252,198 @@ If no specific stack detected, use generic Node.js/TypeScript patterns; note whe
 
 ---
 
-## Agent Output Format
+## Agent Prompt Templates
 
-Each research agent writes findings using this structure:
+Paste the canonical preamble at the top of every spawn prompt; append the per-agent role section. The preamble is **identical across templates** so the orchestrator can apply `cache_control: {type: "ephemeral", ttl: "1h"}` once the total static prefix crosses 1024 tokens.
+
+### Canonical Preamble (paste verbatim)
+
+```
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers,
+pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths,
+commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version
+numbers. No preamble. No trailing summary of work already evident in the diff or tool
+output. Format: fragments OK.
+
+BUDGET: Medium-class agent. Hard wall-clock budget 3 minutes. Respect the per-agent
+limits in SKILL.md §1.5 (max searches, max files read, max output lines). Use HEARTBEAT
+lines between phases (`HEARTBEAT: <phase> at <ISO-8601>`). Emit PARTIAL marker block
+when ≤3 tool calls remain or budget is approaching.
+
+WRITE-AS-YOU-GO: Stub your output file with `# IN PROGRESS` before your first tool call.
+Append findings as you discover them. Do NOT accumulate in memory — every section gets
+written immediately.
+
+CITATION RULES (all agents):
+- Every cited URL gets a structured entry per §Structured Citations Schema below.
+- Do NOT quote text verbatim unless you fetched the source THIS turn. Paraphrase + cite
+  the URL only, OR tag the quote `[QUOTE_UNVERIFIED]` (synthesizer strips these).
+- Prefer dated sources (publication date ≤12 months old when possible).
+- Per-claim source-grounding: every declarative finding cites at least one URL.
+
+REPLY CONTRACT: At task end, return ONLY this JSON to the orchestrator (no markdown
+fence, no preamble, no postamble):
+{
+  "status": "complete|partial|failed",
+  "summary": "<one sentence ≤50 words>",
+  "files_changed": ["<your output file path>"],
+  "issues": [],
+  "next_blocked_by": []
+}
+```
+
+### library-docs
+
+```
+[CANONICAL PREAMBLE]
+
+You are library-docs, a research agent specializing in official documentation analysis.
+
+TOPIC: ${TOPIC}
+RESEARCH QUESTIONS: ${QUESTIONS}
+PROJECT STACK: ${STACK_PROFILE}
+OUTPUT FILE: ${SESSION_TMP_DIR}/research/library-docs.md
+
+TASKS:
+1. Find official documentation for the topic/library.
+2. Document the API surface relevant to the project's use case.
+3. Check version compatibility with the project's stack.
+4. Note any migration guides, breaking changes, or deprecations.
+5. Find code examples that match the project's patterns.
+6. Document known issues and workarounds.
+```
+
+### web-researcher (contrarian role)
+
+```
+[CANONICAL PREAMBLE]
+
+You are web-researcher, a research agent specializing in community knowledge and real-world usage.
+
+TOPIC: ${TOPIC}
+RESEARCH QUESTIONS: ${QUESTIONS}
+PROJECT STACK: ${STACK_PROFILE}
+OUTPUT FILE: ${SESSION_TMP_DIR}/research/web-researcher.md
+
+CONTRARIAN ROLE: Of the parallel agents on this topic, you are explicitly assigned the
+counter-evidence role. Your job is to find sources that CONTRADICT the obvious consensus
+answer. Search for:
+  - dissenting opinions, retracted claims, failed implementations
+  - benchmarks showing the opposite of expected
+  - GitHub issues / blog post-mortems where the recommended approach failed
+You are not neutral — your bias is toward finding counter-evidence. Mitigates agent-
+agreement bias per arxiv 2604.02923 (homogeneous 18.3% reduction → heterogeneous 35.9%).
+
+TASKS:
+1. Search recent (≤12 months) blog posts, tutorials, guides — prefer dated cites.
+2. Check GitHub issues for common problems and their resolutions.
+3. Find benchmarks or performance comparisons if relevant.
+4. Assess community sentiment (adoption rate, maintenance, contributor count).
+5. Identify alternatives and how they compare.
+6. Surface "gotchas" and post-mortems (the contrarian focus above).
+```
+
+### codebase-analyst
+
+```
+[CANONICAL PREAMBLE]
+
+You are codebase-analyst, a research agent specializing in impact analysis.
+
+TOPIC: ${TOPIC}
+RESEARCH QUESTIONS: ${QUESTIONS}
+PROJECT STACK: ${STACK_PROFILE}
+OUTPUT FILE: ${SESSION_TMP_DIR}/research/codebase-analyst.md
+
+TASKS:
+1. Identify all files and modules related to the research topic.
+2. Map the dependency graph of affected code.
+3. Assess integration points where the topic would connect to existing code.
+4. Identify existing patterns that should be followed or migrated.
+5. Estimate migration effort (files to change, complexity of changes).
+6. Note potential conflicts with existing dependencies.
+
+Do NOT use web search. Focus entirely on the codebase. Cite findings as `path/to/file.ts:LINE`.
+```
+
+### infra-analyst (conditional — see SKILL.md §1.2.5)
+
+```
+[CANONICAL PREAMBLE]
+
+You are infra-analyst, a research agent specializing in infrastructure and deployment implications.
+
+TOPIC: ${TOPIC}
+RESEARCH QUESTIONS: ${QUESTIONS}
+PROJECT STACK: ${STACK_PROFILE}
+OUTPUT FILE: ${SESSION_TMP_DIR}/research/infra-analyst.md
+
+TASKS:
+1. Check cloud service documentation for relevant features, quotas, and pricing.
+2. Assess deployment pipeline impact (new build steps, environment variables, secrets).
+3. Review security implications (new permissions, access patterns, data flow).
+4. Evaluate environment configuration changes needed.
+5. Check for compatibility with existing infrastructure setup.
+6. Note monitoring and observability considerations.
+```
+
+---
+
+## Structured Citations Schema
+
+Every research doc MUST include structured citations in YAML frontmatter (alongside `scope:`), readable by `agents/research-critic.md` for liveness probing. Fights the documented 3-13% URL hallucination rate (arxiv 2604.03173).
+
+### YAML schema
+
+```yaml
+---
+scope:
+  - id: cf-2026-MM-DD-<slug>
+    ...
+citations:
+  - url: "https://example.com/path"
+    title: "<title from page or paper>"
+    pub_date: "2026-04"          # YYYY or YYYY-MM (older than 12mo without justification → flagged)
+    fetched_ts: "2026-05-01T16:30:00Z"  # ISO-8601 of in-turn fetch; null if not fetched this turn
+    claimed_span: "≤400 char excerpt the agent quoted/relied on"
+    status: LIVE                 # LIVE | DEAD | LIKELY_HALLUCINATED | UNKNOWN | NOT_FETCHED
+---
+```
+
+`fetched_ts: null` + `status: NOT_FETCHED` flags training-knowledge-only citations — research-critic probes these first (highest hallucination risk).
+
+### Required body sections (in addition to base 8)
+
+Two extra sections beyond the base 8 (Summary / Research Questions / Findings / Compatibility / Recommendation / Implementation Sketch / Risks / References):
+
+- `## Dissent / Contradictory Evidence` — preserve the contrarian agent's findings explicitly. Synthesizer MUST surface counter-evidence here rather than silently collapsing to consensus. Single-domain consensus (≥3 cited findings, all from one domain) is rejected: surface here and reduce confidence.
+- `## Citation Health` (auto-populated by research-critic) — table of `{url, status, last_probed_at}` for every cited URL. CITATIONS_MISSING verdict triggers a `<!-- WARNING: citations failed liveness check -->` HTML comment at doc top.
+
+### `[QUOTE_UNVERIFIED]` tag
+
+Any quoted text where the source was not fetched in-turn MUST carry the inline tag:
+
+```markdown
+> "[QUOTE_UNVERIFIED] As reported in <source>, the failure rate exceeded 30%."
+```
+
+Synthesizer MAY strip these from the final doc OR convert to paraphrase. Producing them with the tag is mandatory; eliding them entirely (and pretending the quote is verified) is the failure mode being fought.
+
+### Outcome-based acceptance criteria (preferred over artifact-based)
+
+Per validity research §9, scope acceptance checks that name implementation files by exact path are forward-coupled to implementation decisions made later. The `precompact-handoff.sh` instance from the 2026-05-01 session illustrated this: criterion referenced a file that landed elsewhere; only an OR-fallback rescued the check.
+
+Prefer:
+- ✅ Outcome: `when PreCompact fires, .cc-sessions/HANDOFF.json contains the active sprint id`
+- ❌ Artifact: `test -f hooks/scripts/precompact-handoff.sh`
+
+OR-fallbacks (`test -f path-A || test -f path-B`) remain valid for compatibility but should not be the primary form.
+
+---
+
+## Agent Output Format (legacy — agents now use REPLY CONTRACT JSON)
+
+Pre-v1.11, each research agent wrote findings to a Markdown file in this shape. From v1.11 forward, agents return canonical JSON to the orchestrator AND write Markdown findings (the file uses this format; the JSON references it).
 
 ```markdown
 # <Agent Name> — Research Findings

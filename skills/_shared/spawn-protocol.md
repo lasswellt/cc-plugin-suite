@@ -14,6 +14,7 @@ Authoritative guidance for blitz skills that spawn subagents. Covers subagent ty
 4. [Wave Execution](#4-wave-execution) — topological DAG scheduling, opt-in rules, when NOT to use waves
 5. [Model and Context Inheritance](#5-model-and-context-inheritance) — the `[1m]` trap, resolution order, env override
 6. [Reviewer Checklist Summary](#6-reviewer-checklist-summary) — what sprint-review flags as BLOCKERs
+7. [Token Budget & Reply Contract](#9-token-budget-and-reply-contract) — model routing, caching, JSON return shape (see [token-budget.md](./token-budget.md))
 
 ---
 
@@ -190,6 +191,56 @@ complete, <M> missing" and end.
 - If `PARTIAL: true` is present, treat as partial success. Warn the user.
 - Cross-reference `MISSING` against the expected deliverable list. Flag known-required sections that landed in MISSING.
 - For narrow retry: re-spawn ONLY on items in the MISSING list, not the full task.
+
+### WRAP_UP — 70% context-ceiling signal (autonomous loops)
+
+Add this block verbatim to agent prompts running inside an autonomous loop (sprint --loop, code-sweep --loop, etc.):
+
+```
+WRAP_UP PROTOCOL (autonomous-loop subagents):
+If the orchestrator sends WRAP_UP via SendMessage, OR you detect your own
+context utilization >70% (estimate: tool-output tokens consumed >140K of 200K
+budget), do the following IMMEDIATELY:
+  1. Stop further exploration. Do not start new tool chains.
+  2. Write what you have so far to your output file.
+  3. Append a WRAP_UP marker block:
+     ---
+     WRAP_UP: true
+     REACHED_VIA: <self-detect|orchestrator-signal>
+     COMPLETED: [...]
+     SAFE_TO_RESUME_FROM: <one-line description of next action>
+     ---
+  4. Return the canonical JSON reply with status: "partial".
+
+The orchestrator interprets WRAP_UP as: "this agent is healthy but nearly out
+of context; spawn a fresh agent from SAFE_TO_RESUME_FROM rather than retrying."
+```
+
+**Why pattern-match on WRAP_UP rather than only PARTIAL**: PARTIAL fires on budget exhaustion (failure-adjacent). WRAP_UP fires preemptively on context pressure (healthy). They route to different orchestrator paths — WRAP_UP triggers a fresh-context handoff; PARTIAL triggers narrow retry.
+
+### Three-tier timeout (autonomous spawns)
+
+| Tier | Duration | Signal | Orchestrator action |
+|---|---|---|---|
+| `soft` | 20 min | warning only | Log to activity-feed `event: soft_timeout`. Continue. |
+| `idle` | 10 min without HEARTBEAT update | warning + nudge | SendMessage `STATUS?` to agent. If no reply within 90s, classify as stuck. |
+| `hard` | 30 min total wall-clock | terminate + classify | Kill the agent; classify output per §8 (typically PARTIAL or FAILURE). Do not auto-retry. |
+
+These are defaults for autonomous-loop spawns; one-shot interactive spawns inherit Claude Code's native timeouts and need no application-level enforcement.
+
+### Stuck-loop detection
+
+Track the last 8 dispatch task IDs in the orchestrator state. Detect:
+
+- **Pattern A→B→A→B**: 4 consecutive dispatches alternating between two task IDs. Likely an oscillation between two incomplete fixes that reintroduce each other's bugs.
+- **Pattern A→A→A**: 3 consecutive identical dispatches with no progress signal in activity-feed. The agent is retrying without state change.
+
+On detection:
+1. Inject a diagnostic prompt addendum: "Prior dispatches: <history>. Why is this not converging? Identify the contradiction before retrying."
+2. Dispatch ONE more time with the diagnostic addendum.
+3. If the next dispatch fails the same pattern, **PAUSE and surface to user**. Do not infinite-retry.
+
+Do NOT use a simple counter. A→B→A→B is correct sometimes (refactor A then test then refactor A); the disambiguation comes from "no progress signal in activity-feed."
 
 ---
 
@@ -422,6 +473,36 @@ esac
 
 [ "$MISSING_COUNT" -ge "$THRESHOLD" ] && { echo "ABORT: $MISSING_COUNT/$N agents failed"; exit 1; }
 ```
+
+---
+
+## 9. Token Budget and Reply Contract
+
+Cost-control rules for every spawn. Authoritative protocol is [`token-budget.md`](./token-budget.md). Every Agent() spawn MUST satisfy:
+
+1. **Explicit `model:`** — never inherit. Default Haiku; promote to Sonnet for impl/review; reserve Opus for heavy reasoning. ≈60/35/5 distribution target.
+2. **Canonical JSON reply** — return ONLY `{status, summary≤50w, files_changed, issues, next_blocked_by, metrics}`. Prose forbidden. Files referenced by path; never inlined.
+3. **Cache-friendly system prompts** — long agent bodies (≥1024 tokens) must place static prefix first, dynamic content after, with `{type:"ephemeral", ttl:"1h"}` cache breakpoint.
+4. **Lazy MCP / skill loading** — never bulk-enable; ToolSearch + on-demand grep only.
+5. **PostToolUse output summarization** — verbose tool output (test/build logs) MUST be summarized before reaching the orchestrator.
+
+**Required spawn-prompt boilerplate** (paste verbatim near end of every Agent() prompt):
+
+```
+Return ONLY this JSON, nothing else (no markdown fence, no preamble):
+{
+  "status": "complete|partial|failed",
+  "summary": "<one sentence ≤50 words>",
+  "files_changed": ["..."],
+  "issues": [{"severity": "...", "where": "...", "what": "..."}],
+  "next_blocked_by": []
+}
+Any deviation breaks orchestrator parsing.
+```
+
+Skills that produce rich artifacts (research docs, audit reports) write to a file and reference it in `files_changed[]`.
+
+The orchestrator validates each reply with `jq` per [token-budget.md §3](./token-budget.md). MALFORMED replies are classified per §8 and trigger the standard gate.
 
 ---
 

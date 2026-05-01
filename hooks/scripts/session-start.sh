@@ -22,6 +22,34 @@ SESSIONS_DIR="$ROOT/.cc-sessions"
 # Ensure .cc-sessions exists
 mkdir -p "$SESSIONS_DIR"
 
+# --- HANDOFF.json auto-resume detection ---
+# If a recent PreCompact wrote HANDOFF.json, surface it so Claude resumes
+# the in-flight task instead of starting fresh.
+HANDOFF="$SESSIONS_DIR/HANDOFF.json"
+if [ -f "$HANDOFF" ]; then
+  HANDOFF_AGE_SEC=$(( $(date +%s) - $(stat -c %Y "$HANDOFF" 2>/dev/null || stat -f %m "$HANDOFF" 2>/dev/null || echo 0) ))
+  # Surface only if HANDOFF.json is fresh (≤24h). Older = stale, ignore.
+  if [ "$HANDOFF_AGE_SEC" -le 86400 ]; then
+    HANDOFF_PHASE=$(jq -r '.phase // "unknown"' "$HANDOFF" 2>/dev/null || echo "unknown")
+    HANDOFF_SPRINT=$(jq -r '.sprint // "none"' "$HANDOFF" 2>/dev/null || echo "none")
+    HANDOFF_BRANCH=$(jq -r '.branch // "unknown"' "$HANDOFF" 2>/dev/null || echo "unknown")
+    HANDOFF_UNCOMMITTED_COUNT=$(jq -r '.uncommitted | length' "$HANDOFF" 2>/dev/null || echo 0)
+    HANDOFF_LAST=$(jq -r '.last_activity // ""' "$HANDOFF" 2>/dev/null || echo "")
+    cat <<EOF
+[blitz] HANDOFF detected (compaction-resume artifact):
+  sprint:      $HANDOFF_SPRINT
+  phase:       $HANDOFF_PHASE
+  branch:      $HANDOFF_BRANCH
+  uncommitted: $HANDOFF_UNCOMMITTED_COUNT files
+  last action: $HANDOFF_LAST
+
+To continue prior work: read .cc-sessions/HANDOFF.json (full context), then
+restate the in-flight task in ≤3 sentences and resume from the next dispatch.
+To start fresh instead: archive HANDOFF.json (mv .cc-sessions/HANDOFF.json{,.archived-\$(date +%s)}).
+EOF
+  fi
+fi
+
 # Display recent activity (last 10 entries)
 FEED="$SESSIONS_DIR/activity-feed.jsonl"
 if [ -f "$FEED" ] && [ -s "$FEED" ]; then

@@ -12,6 +12,7 @@ description: |
 tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch
 # Note: permissionMode is not supported for plugin agents (silently ignored by Claude Code)
 maxTurns: 50
+# Sonnet per /_shared/token-budget.md — standard implementation work.
 model: sonnet
 memory: project
 ---

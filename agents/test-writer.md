@@ -13,6 +13,8 @@ description: |
 tools: Read, Write, Edit, Bash, Glob, Grep
 # Note: permissionMode is not supported for plugin agents (silently ignored by Claude Code)
 maxTurns: 35
+# Sonnet per /_shared/token-budget.md — test generation needs to follow patterns
+# AND reason about edge cases. Haiku is too coarse for the latter.
 model: sonnet
 memory: project
 ---

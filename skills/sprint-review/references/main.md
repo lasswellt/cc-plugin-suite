@@ -535,3 +535,74 @@ Next: ${RECOMMENDED_ACTION}
 - **Reviewer agent failure**: Retry once. If still failing, proceed with available reviews and note gap.
 - **Auto-fix makes things worse**: Revert immediately via `git checkout -- <file>`. Move to next issue.
 - **Git diff base not found**: Fall back to `HEAD~20` or ask user for base commit. *(If autonomy is `high` or `full`, use `HEAD~20` without prompting.)*
+
+---
+
+## Invariant 6 — Ratchet Procedures
+
+Authoritative protocol: [`/_shared/ratchet-protocol.md`](/_shared/ratchet-protocol.md).
+
+### Compute current values
+
+```bash
+RATCHET="docs/sweeps/ratchet.json"
+[ -f "$RATCHET" ] || { echo "Invariant 6 SKIP: no ratchet.json (greenfield); bootstrap on first PASS"; exit 0; }
+
+TEST_COUNT=$(grep -rcE '\b(it|test)\(' --include='*.test.*' --include='*.spec.*' . 2>/dev/null | awk -F: '{s+=$2} END {print s+0}')
+TYPE_ERRORS=$(npx --no-install tsc --noEmit 2>&1 | grep -cE 'error TS' || echo 0)
+AS_ANY=$(grep -rEn '\bas any\b' src/ --include='*.ts' --include='*.tsx' --include='*.vue' --exclude-dir=__tests__ 2>/dev/null | wc -l)
+LINT_VIOLATIONS=$(npx --no-install eslint --format=json . 2>/dev/null | jq '[.[].errorCount] | add // 0')
+MOCKS_IN_SRC=$(grep -rEn '\b(vi\.mock|jest\.mock|sinon\.stub)\b' src/ --exclude-dir=__tests__ 2>/dev/null | wc -l)
+TODO_COUNT=$(grep -rEn '\b(TODO|FIXME)\b' src/ 2>/dev/null | wc -l)
+```
+
+### Compare and act
+
+For each metric:
+- direction `down`, `current > max_allowed` AND no carry-forward entry covering it → REGRESSION → BLOCKER
+- direction `up`, `current < min_allowed` AND no carry-forward entry → REGRESSION → BLOCKER
+- direction `down`, `current < max_allowed` → IMPROVEMENT → tighten `max_allowed` to `current`, append history snapshot
+- direction `up`, `current > min_allowed` → IMPROVEMENT → tighten `min_allowed` to `current`, append history snapshot
+
+`type_errors > 0` is an absolute floor regardless of baseline — sprint FAILs.
+
+### History snapshot format
+
+Append to `docs/sweeps/ratchet.json -> history[]`. Never rewrite prior entries:
+
+```json
+{"sprint": "sprint-N", "ts": "2026-05-01T00:00:00Z", "metrics": {"test_count": 158, "type_errors": 0, "as_any_count": 2, "lint_violations": 5, "completeness_score": 94, "mocks_in_src": 3, "todo_count": 7}}
+```
+
+### Multi-agent worktree merge
+
+When two parallel sprint-dev waves modify the ratchet, merge takes `min(max_allowed)` for ↓ metrics and `max(min_allowed)` for ↑ metrics. See [`/_shared/ratchet-protocol.md`](/_shared/ratchet-protocol.md) §4 for the canonical jq merge.
+
+---
+
+## Invariant 7 — Critic Spawn
+
+Canonical Agent() invocation:
+
+```
+Agent({
+  subagent_type: "blitz:critic",
+  description: "Adversarial pre-PASS review",
+  prompt: "Review sprint-${SPRINT_NUMBER}. Run the 8-checklist from agents/critic.md against the changes since ${SPRINT_BASE_SHA}. Reject if ANY of the 19 shortcut signals (skills/_shared/shortcut-taxonomy.md), ratchet regressions, type-error regressions, test deletions, or hallucinated-symbol findings are present. Return canonical JSON reply with verdict (LGTM | REJECT). Output style: terse-technical per /_shared/terse-output.md."
+})
+```
+
+Reply parsing:
+
+```bash
+VERDICT=$(echo "$REPLY" | jq -r '.verdict')
+case "$VERDICT" in
+  LGTM)   echo "Critic: LGTM. Proceeding to PASS." ;;
+  REJECT) echo "Critic: REJECT. Issues:"; echo "$REPLY" | jq '.issues'; exit 1 ;;
+  *)      echo "Critic: malformed reply (no verdict). Treating as REJECT."; exit 1 ;;
+esac
+```
+
+REJECT verdict transitions sprint to FAIL. Re-run sprint-review after the issue is addressed by sprint-dev or the user.
+
+OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.

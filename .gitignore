@@ -33,3 +33,4 @@ docs/retrospective/
 
 # Installer
 installer/node_modules/
+.cc-sessions/KNOWLEDGE.md
