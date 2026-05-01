@@ -582,7 +582,15 @@ When two parallel sprint-dev waves modify the ratchet, merge takes `min(max_allo
 
 ## Invariant 7 — Critic Spawn
 
-Canonical Agent() invocation:
+Three execution modes, selected by env var:
+
+| Env | Mode | Critic | Behaviour |
+|---|---|---|---|
+| (unset, default) | in-Claude | `blitz:critic` agent | Spawn Sonnet subagent. Cheapest. |
+| `BLITZ_USE_GEMINI_CRITIC=1` | cross-model | `gemini` CLI via wrapper | Replace in-Claude critic with Gemini. Different blindspots (Cross-Model Critic per arxiv 2604.19049). |
+| `BLITZ_DUAL_CRITIC=1` | dual-CMC | both | Run both; both must LGTM. Catches the blindspots either model has on its own work. Highest signal, ~2× cost. |
+
+### Default (in-Claude)
 
 ```
 Agent({
@@ -592,7 +600,39 @@ Agent({
 })
 ```
 
-Reply parsing:
+### Cross-model (Gemini)
+
+```bash
+# critic-gemini.sh lifts agents/critic.md body verbatim, appends a JSON-only
+# directive, pipes to `gemini` CLI, validates and emits canonical JSON.
+REPLY=$(${CLAUDE_PLUGIN_ROOT}/hooks/scripts/critic-gemini.sh \
+          --mode pre-pass \
+          --target "${SPRINT_BASE_SHA}")
+GEMINI_RC=$?
+```
+
+Tunable via `BLITZ_GEMINI_BIN` (default `gemini`), `BLITZ_GEMINI_MODEL` (default `gemini-2.5-pro`), `BLITZ_GEMINI_FLAGS`. Requires `@google/gemini-cli` installed and authenticated.
+
+### Dual-CMC (paired)
+
+```bash
+# Run both; require both LGTM. The first REJECT short-circuits to FAIL.
+REPLY_CLAUDE=$(... Agent invocation as default ...)
+REPLY_GEMINI=$(${CLAUDE_PLUGIN_ROOT}/hooks/scripts/critic-gemini.sh --mode pre-pass --target "$SPRINT_BASE_SHA")
+
+VERDICT_CLAUDE=$(echo "$REPLY_CLAUDE" | jq -r '.verdict')
+VERDICT_GEMINI=$(echo "$REPLY_GEMINI" | jq -r '.verdict')
+
+if [ "$VERDICT_CLAUDE" = "LGTM" ] && [ "$VERDICT_GEMINI" = "LGTM" ]; then
+  echo "Dual-CMC: both LGTM. Proceeding to PASS."
+else
+  echo "Dual-CMC: REJECT (claude=$VERDICT_CLAUDE, gemini=$VERDICT_GEMINI)"
+  echo "$REPLY_CLAUDE" "$REPLY_GEMINI" | jq -s '.[].issues'
+  exit 1
+fi
+```
+
+### Reply parsing (single-critic modes)
 
 ```bash
 VERDICT=$(echo "$REPLY" | jq -r '.verdict')

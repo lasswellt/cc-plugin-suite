@@ -210,3 +210,19 @@ If REJECT: `verdict` = "REJECT", `issues` describes the ONE reject reason (the f
 - **Evidence over opinion**: every issue cites a specific file:line, commit SHA, or grep result.
 - **No advice**: it is not your job to fix. Builder agents fix; you reject or pass.
 - **Bias toward rejection**: if you are unsure, REJECT with the rationale. The cost of one false REJECT (the user re-runs sprint-review) is much lower than one false LGTM (broken code lands).
+
+---
+
+## 5. Cross-Model Critic (CMC) — optional Gemini variant
+
+Per arxiv 2604.19049, a critic from a different model family catches blindspots the home model has on its own work. `hooks/scripts/critic-gemini.sh` lifts this agent's body verbatim, pipes it to the Gemini CLI, and emits the same canonical JSON reply contract.
+
+Selection at `sprint-review` Phase 3.6:
+
+| Env var | Mode |
+|---|---|
+| (unset) | In-Claude critic only (cheapest) |
+| `BLITZ_USE_GEMINI_CRITIC=1` | Replace in-Claude critic with Gemini |
+| `BLITZ_DUAL_CRITIC=1` | Run both; require both LGTM (highest signal, ~2× cost) |
+
+Requires `@google/gemini-cli` installed (`npm i -g @google/gemini-cli`) and authenticated. Override binary via `BLITZ_GEMINI_BIN`, model via `BLITZ_GEMINI_MODEL` (default `gemini-2.5-pro`). Spawn template: `skills/sprint-review/references/main.md` §Invariant 7 — Critic Spawn.

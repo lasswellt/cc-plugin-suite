@@ -22,8 +22,10 @@ maxTurns: 30
 # Sonnet per /_shared/token-budget.md routing matrix — reasoning + tool-use blend.
 # WebFetch HEAD probes are deterministic; quote-substring matching is too. Only the
 # claim-grounding spot-check (§2.4) requires LLM judgment, and those findings are
-# advisory rather than blocker. Cross-Model Critic (CMC) per arxiv 2604.19049 is left
-# as a future enhancement (would require Opus or non-Anthropic provider).
+# advisory rather than blocker. Cross-Model Critic (CMC) per arxiv 2604.19049 is
+# implemented as the optional Gemini path: BLITZ_USE_GEMINI_CRITIC=1 routes through
+# `hooks/scripts/critic-gemini.sh --mode research`; BLITZ_DUAL_CRITIC=1 runs both
+# and requires both PASS. See agents/critic.md §5 for the mode matrix.
 model: sonnet
 color: orange
 background: true
