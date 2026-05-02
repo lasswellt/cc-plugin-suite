@@ -2,6 +2,25 @@
 
 All notable changes to the blitz plugin are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.1] — 2026-05-02
+
+Patch release driven by lessons from the first real `/blitz:sprint-dev` run on v1.11.0 (sprint-276 — 8 regressed `@mbk/web` test files). Two structural workload-sizing gaps surfaced; both are now fixed. Also addresses an orchestrator hallucination in sprint-review that misreported the Cross-Model Critic install state.
+
+### Fixed
+
+- **`skills/sprint-dev/SKILL.md` — per-wave file cap.** The existing 4-stories-per-agent cap allowed sprint-276 to assign one test-writer 8 files (3 stories: 2 + 1 + 5). At ~5-7 tool calls per file, that's 48-56 tool calls — exhausts Heavy-class budget mid-work. Added a complementary **6-files-per-agent-per-wave** cap; whichever bites first triggers the split. Sprint-dev now refuses to pack a 5-file story alongside two 1-file siblings even though story count = 3.
+- **`skills/sprint-plan/SKILL.md` §3.1.1 — bulk-story guard tightened.** The file-count heuristic was `> 8 files → mandatory split`. The 5-file S276-003 story sat in the gap between the 1-3 file granularity target and the 8-file guard, slipping through unsplit. Replaced with a two-band heuristic: `> 5` is mandatory split (was `> 8`); `4-5` is soft warn with a `decision` event log; `1-3` is green (matches §3.1 target).
+- **`skills/_shared/spawn-protocol.md` — Resume Protocol.** New canonical `SendMessage` payload for resuming a budget-exhausted (PARTIAL) agent. Must include `COMPLETED` (verbatim from prior reply), `REMAINING` (original task list minus completed), `WORKTREE`, `HEAD`, and `DO NOT` (re-explore, re-read, re-test) lists. Without it, resumed agents burn ~60% of fresh budget rebuilding context — exactly what re-exhausted S276-003 on first SendMessage. If the prior PARTIAL marker is missing or malformed, spawn fresh instead — stateless restart is cheaper than confused continuation.
+- **`skills/sprint-review/references/main.md` §Invariant 7 — explicit mode-resolution algorithm.** During the v1.11.0 dual-CMC sprint-review run, the orchestrator emitted *"Critic agent available (sonnet, in-Claude only — critic-gemini.sh not installed in this plugin version)"* despite both `critic-gemini.sh` and the `gemini` binary being present. Replaced the implicit logic with a 4-step probe (env intent → script existence → binary existence → resolve) and a single canonical `[critic] mode=...` line. Each fallback path produces a precise diagnostic ("gemini binary missing" vs "critic-gemini.sh missing — plugin <v1.11.0?"); orchestrators are forbidden from improvising the message.
+
+### Documentation
+
+- **All skills with sparse `argument-hint:` frontmatter expanded** — 12 skills (`roadmap`, `review`, `ship`, `doc-gen`, `release`, `perf-profile`, `dep-health`, `quality-metrics`, `sprint`, `setup`, `code-doctor`, `conform`) now describe each mode/flag inline in the slash-command UI rather than just naming them. Matches the richer pattern already used by `browse`, `ui-audit`, and `code-sweep`. No behavioral change.
+
+### Compatibility
+
+No breaking changes. Drop-in upgrade from v1.11.0.
+
 ## [1.11.0] — 2026-05-01
 
 The "autonomous holistic-machine" release. Two research investigations (`docs/_research/2026-05-01_skills-to-agents-architecture.md` and `docs/_research/2026-05-01_autonomous-blitz-quality-efficiency.md`) drove a six-wave implementation: P0 anti-shortcut hooks, token-efficiency protocol, autonomy primitives (PreCompact handoff + auto-resume), critic adversarial review, frontend-design integration, and a top-level orchestrator agent that provides freeform-input routing alongside the existing slash commands.
@@ -307,6 +326,7 @@ Carry-forward registry format (`.cc-sessions/carry-forward.jsonl`) validated acr
 - Issues closed: #1-#16 (all stories from Sprint 2-5)
 - Research source: 2 April-18 research docs (full absorption + runtime propagation)
 
+[1.11.1]: https://github.com/lasswellt/cc-plugin-suite/releases/tag/v1.11.1
 [1.11.0]: https://github.com/lasswellt/cc-plugin-suite/releases/tag/v1.11.0
 [1.10.0]: https://github.com/lasswellt/cc-plugin-suite/releases/tag/v1.10.0
 [1.5.0]: https://github.com/lasswellt/cc-plugin-suite/releases/tag/v1.5.0
