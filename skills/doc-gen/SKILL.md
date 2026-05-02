@@ -5,7 +5,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, ToolSearch, TeamC
 model: opus
 effort: medium
 compatibility: ">=2.1.71"
-argument-hint: "<mode: api|components|architecture|changelog|full>"
+argument-hint: "<mode> -- api (TypeDoc/JSDoc → docs/api/) | components (Vue prop+event tables) | architecture (Mermaid graphs) | changelog (commits since last tag) | full (all of the above)"
 ---
 
 ## Project Context

@@ -1,7 +1,7 @@
 ---
 name: review
 description: "Runs the review phase of a sprint by routing to sprint-review. Use when the user says 'review sprint N', 'run quality gates', 'check the sprint', or asks to validate a completed sprint before shipping."
-argument-hint: "--sprint NNN | --auto-fix"
+argument-hint: "[--sprint NNN] [--auto-fix] -- runs sprint-review quality gate (parallel reviewer agents + 7 invariants); --sprint targets a specific sprint number (defaults to current); --auto-fix dispatches sprint-dev to repair findings"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, ToolSearch, Agent
 disable-model-invocation: false
 model: opus

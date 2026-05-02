@@ -5,7 +5,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: opus
 effort: medium
 compatibility: ">=2.1.50"
-argument-hint: "<mode: prepare|verify|publish|rollback> [version]"
+argument-hint: "<mode> [version] -- prepare (bump version + draft CHANGELOG) | verify (validate tag, working tree, registry consistency) | publish (git tag + GitHub release + npm publish if configured) | rollback (revert + delete tag)"
 ---
 
 ## Project Context

@@ -5,7 +5,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch
 model: sonnet
 effort: medium
 compatibility: ">=2.1.50"
-argument-hint: "<mode: audit|upgrade|report>"
+argument-hint: "<mode> -- audit (read-only CVE scan + outdated check) | upgrade (interactive bumps with breaking-change notes) | report (CSV/JSON output with license compliance + transitive risk)"
 ---
 
 ## Project Context

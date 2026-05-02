@@ -5,7 +5,7 @@ allowed-tools: Read, Bash, Glob, Grep
 model: sonnet
 effort: low
 compatibility: ">=2.1.71"
-argument-hint: "[--fix | --check | --scope <global|project|all>]"
+argument-hint: "[--fix | --check] [--scope global|project|all] -- detects conflicts between CLAUDE.md files and blitz behaviors; --check audits read-only, --fix applies safe migrations; --scope chooses global config (~/.claude) / current project / both"
 ---
 
 ## Project Context
