@@ -6,7 +6,7 @@ disable-model-invocation: false
 model: opus
 effort: high
 compatibility: ">=2.1.71"
-argument-hint: "[full | refresh | extend | status]"
+argument-hint: "[mode] -- modes: full (default — generate from scratch) | refresh (re-read research, regenerate phases, preserve completed work) | extend (ingest new research docs, append capabilities) | status (report progress + blockers, no generation)"
 ---
 
 ## Project Context
