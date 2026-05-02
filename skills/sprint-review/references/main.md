@@ -590,6 +590,38 @@ Three execution modes, selected by env var:
 | `BLITZ_USE_GEMINI_CRITIC=1` | cross-model | `gemini` CLI via wrapper | Replace in-Claude critic with Gemini. Different blindspots (Cross-Model Critic per arxiv 2604.19049). |
 | `BLITZ_DUAL_CRITIC=1` | dual-CMC | both | Run both; both must LGTM. Catches the blindspots either model has on its own work. Highest signal, ~2× cost. |
 
+### Mode-resolution algorithm (run BEFORE spawning anything)
+
+```bash
+# Step 1: derive intended mode from env vars (DUAL_CRITIC takes precedence)
+if [ "${BLITZ_DUAL_CRITIC:-0}" = "1" ]; then INTENDED=dual
+elif [ "${BLITZ_USE_GEMINI_CRITIC:-0}" = "1" ]; then INTENDED=gemini
+else INTENDED=claude; fi
+
+# Step 2: probe whether critic-gemini.sh is reachable
+GEMINI_SCRIPT="${CLAUDE_PLUGIN_ROOT}/hooks/scripts/critic-gemini.sh"
+if [ "$INTENDED" != "claude" ] && [ ! -x "$GEMINI_SCRIPT" ]; then
+  GEMINI_AVAILABLE=0
+else
+  GEMINI_AVAILABLE=1
+fi
+
+# Step 3: probe whether the gemini binary is reachable (if script is)
+if [ "$GEMINI_AVAILABLE" = "1" ] && [ "$INTENDED" != "claude" ]; then
+  command -v "${BLITZ_GEMINI_BIN:-gemini}" >/dev/null 2>&1 || GEMINI_AVAILABLE=0
+fi
+
+# Step 4: resolve the actual mode and emit ONE canonical line to stdout
+case "$INTENDED:$GEMINI_AVAILABLE" in
+  claude:*)         MODE=claude; echo "[critic] mode=claude (default in-Claude critic)" ;;
+  gemini:1)         MODE=gemini; echo "[critic] mode=gemini-only (BLITZ_USE_GEMINI_CRITIC=1)" ;;
+  dual:1)           MODE=dual;   echo "[critic] mode=dual-CMC (BLITZ_DUAL_CRITIC=1; in-Claude + Gemini, both must LGTM)" ;;
+  gemini:0|dual:0)  MODE=claude; echo "[critic] mode=claude (FALLBACK: BLITZ_${INTENDED^^}_CRITIC=1 set but $([ -x \"$GEMINI_SCRIPT\" ] && echo 'gemini binary missing' || echo 'critic-gemini.sh missing — plugin <v1.11.0?'))" ;;
+esac
+```
+
+**The orchestrator MUST emit exactly that bracketed `[critic] mode=...` line before spawning.** Do not improvise the message — earlier sessions hallucinated "critic-gemini.sh not installed in this plugin version" when both the script and the binary were present. The probe above is the source of truth.
+
 ### Default (in-Claude)
 
 ```

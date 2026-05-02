@@ -220,7 +220,7 @@ Agent(
 
 **Weight class**: Heavy (per [spawn-protocol.md](/_shared/spawn-protocol.md)). Dev agents implement multiple stories with reads+writes+verify per story.
 
-**Per-wave story cap (CRITICAL)**: distribute at most **4 stories per agent per wave**. If a single wave assigns more than 4 stories to any one agent, split the excess to the next wave — even if this creates an otherwise-empty wave. A 6-story agent needs ~54 tool calls (5 reads + 3 writes + 1 verify × 6), well past the ~20/turn server cap.
+**Per-wave caps (CRITICAL)** — whichever bites first: ≤**4 stories** AND ≤**6 affected files** per agent per wave (sum across stories). A 5-file story + two 1-file siblings = 7 files → split to next wave even with 3-story count. Each file averages 5-7 tool calls; 6 files fits Heavy-class, 8 exhausts mid-work (sprint-276 root cause).
 
 **Agent prompt content** — the full 12-item prompt specification (role, stories, BUDGET block, project conventions, commit format, conventions guide, reusable assets, anti-mock rules, deviation protocol, wave assignment, context management, HEARTBEAT+PARTIAL protocol) is in `references/main.md` section **"Dev Agent Prompt Specification"**. Every spawn must include all 12 items.
 

@@ -292,7 +292,10 @@ After drafting each story but **before** accepting it into the sprint, run the b
 
 **Reject or split** any story that matches **either** of these criteria:
 
-1. **File-count heuristic:** `story.files.length > 8` AND the story is not tagged `type: spike`. Eight files is the upper bound of what one agent can reason about coherently in a single session.
+1. **File-count heuristic** (two-band):
+   - `story.files.length > 5` AND the story is not tagged `type: spike` — **mandatory split**. Six is the upper bound that fits one Heavy-class agent's tool-call budget when paired with 1-2 sibling stories in a wave (sprint-276 root cause: a 5-file story + two 1-file siblings = 7 files in one agent → exhaustion).
+   - `story.files.length` in `{4, 5}` — **soft warn**: log a `decision` event ("planning: 4-5 file story; consider split"), but allow if standalone in its wave (no siblings in the same agent assignment). Sprint-dev's per-wave file cap (6) will block the over-allocation if it materializes.
+   - `story.files.length` in `{1, 2, 3}` — **green** (matches §3.1 granularity target).
 
 2. **Horizontal-scope language:** the story's title or description matches any of these regexes (case-insensitive):
    - `/all \w+ (files|components|modals|routes|tests|pages)/`

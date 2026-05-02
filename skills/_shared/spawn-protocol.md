@@ -218,6 +218,41 @@ of context; spawn a fresh agent from SAFE_TO_RESUME_FROM rather than retrying."
 
 **Why pattern-match on WRAP_UP rather than only PARTIAL**: PARTIAL fires on budget exhaustion (failure-adjacent). WRAP_UP fires preemptively on context pressure (healthy). They route to different orchestrator paths — WRAP_UP triggers a fresh-context handoff; PARTIAL triggers narrow retry.
 
+### Resume Protocol — SendMessage to a budget-exhausted agent
+
+When an agent returns PARTIAL (budget exhaustion) and the orchestrator decides to resume via `SendMessage` rather than spawn fresh, the resume prompt MUST include an explicit "remaining work" block. Without it, the resumed agent burns half its budget re-discovering state it already had.
+
+**Anti-pattern (sprint-276 root cause):**
+
+```
+SendMessage({to: "<agent-id>", body: "continue"})
+# Agent re-reads transcript, re-greps the worktree, re-checks git log,
+# spends 60% of fresh budget rebuilding context, exhausts again.
+```
+
+**Canonical resume payload:**
+
+```
+SendMessage({
+  to: "<agent-id>",
+  body: `RESUME PROTOCOL
+COMPLETED (do not redo):
+  - <bullet list of finished items, verbatim from prior PARTIAL output>
+REMAINING (do these in order):
+  - <story-id-or-file-path>: <one-sentence what to do>
+  - ...
+WORKTREE: <path>
+HEAD: <sha>  # so you can rebase if main moved
+DO NOT:
+  - re-read files you already touched
+  - re-run tests for completed items
+  - explore — go straight to remaining[0]
+EXIT WHEN: remaining is empty OR budget exhausted (then PARTIAL again).`
+})
+```
+
+The orchestrator constructs this from the agent's prior PARTIAL reply: `completed` from its `summary` + `files_changed`, `remaining` from the original task list minus `completed`. If the prior reply was malformed (no PARTIAL marker), spawn fresh instead of resuming — a stateless restart is cheaper than a confused continuation.
+
 ### Three-tier timeout (autonomous spawns)
 
 | Tier | Duration | Signal | Orchestrator action |
