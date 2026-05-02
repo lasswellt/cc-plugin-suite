@@ -2,6 +2,34 @@
 
 All notable changes to the blitz plugin are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.2] — 2026-05-02
+
+Patch release adding a single new shared protocol that closes a high-frequency drift source: agents picking outdated package versions from training memory.
+
+### Added
+
+- **`skills/_shared/package-install-policy.md`** (new shared protocol, 21st `_shared/` file). Single source of truth for `pnpm add` / `npm install` / `yarn add` / `bun add` behavior across every skill and agent that touches `package.json`. Three states with one rule each:
+  1. **Net-new dependency, no user-specified version** → bare `pnpm add <pkg>` (no `@latest`, no invented number) so the package manager resolves the registry's `latest` tag.
+  2. **User explicitly specified a version** → use exactly what they said. Their intent is authoritative.
+  3. **Peer-compatibility constraint** → resolve from the project's existing peer (`node -p "require('./package.json').dependencies['vite']"`), pin to that major.
+
+  Mandatory verification step after install: `npm view <pkg> version` cross-check against the resolved version. Anti-pattern catalog (5 patterns) included for reviewer reference: invented versions, `^1.0.0` "to be safe" pins, direct `package.json` editing without install, copy-pasted snippets from stale tutorials, `"foo": "*"` or `"foo": "latest"` in the manifest.
+
+### Changed
+
+- **`agents/backend-dev.md` + `agents/frontend-dev.md`** — new "Package Install Policy" section in the agent body, two paragraphs above Stack Detection. Inlined summary + reference to the protocol.
+- **`skills/bootstrap/SKILL.md` + `skills/migrate/SKILL.md` + `skills/dep-health/SKILL.md` + `skills/quick/SKILL.md`** — Additional Resources entry pointing to the new protocol. Migrate's note clarifies that the migration target version is the case-2 user-specified exception; secondary deps follow the latest-resolution rule.
+- **`skills/sprint-dev/SKILL.md` + `skills/sprint-dev/references/main.md`** — Dev Agent Prompt Specification now has 13 items (was 12). New item 13 injects a 5-line verbatim PACKAGE INSTALLS block into every backend-dev / frontend-dev / test-writer spawn so dev agents see the policy directly in their system prompt, not via cross-link.
+- **Shared-protocol count**: 21 files (was 20; added `package-install-policy`).
+
+### Future work
+
+- **`hooks/scripts/block-stale-package-add.sh`** (planned for v1.12) — `PreToolUse` hook that intercepts Bash commands of the form `pnpm add foo@<version>` and rejects when `<version>` is more than 1 major behind the registry latest. Override: inline `// blitz:version-pinned: <reason>`.
+
+### Compatibility
+
+No breaking changes. Drop-in upgrade from v1.11.1.
+
 ## [1.11.1] — 2026-05-02
 
 Patch release driven by lessons from the first real `/blitz:sprint-dev` run on v1.11.0 (sprint-276 — 8 regressed `@mbk/web` test files). Two structural workload-sizing gaps surfaced; both are now fixed. Also addresses an orchestrator hallucination in sprint-review that misreported the Cross-Model Critic install state.
@@ -326,6 +354,7 @@ Carry-forward registry format (`.cc-sessions/carry-forward.jsonl`) validated acr
 - Issues closed: #1-#16 (all stories from Sprint 2-5)
 - Research source: 2 April-18 research docs (full absorption + runtime propagation)
 
+[1.11.2]: https://github.com/lasswellt/cc-plugin-suite/releases/tag/v1.11.2
 [1.11.1]: https://github.com/lasswellt/cc-plugin-suite/releases/tag/v1.11.1
 [1.11.0]: https://github.com/lasswellt/cc-plugin-suite/releases/tag/v1.11.0
 [1.10.0]: https://github.com/lasswellt/cc-plugin-suite/releases/tag/v1.10.0
