@@ -11,6 +11,9 @@ compatibility: ">=2.1.50"
 ## Project Context
 !`${CLAUDE_PLUGIN_ROOT}/scripts/detect-stack.sh`
 
+## Additional Resources
+- For package install policy (always resolve to registry latest, never invent versions from training memory), see [/_shared/package-install-policy.md](/_shared/package-install-policy.md). Even quick edits that add a single dep go through the policy.
+
 ---
 
 

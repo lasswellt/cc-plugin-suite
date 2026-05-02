@@ -13,6 +13,7 @@ argument-hint: "<target: e.g. 'vue 3.5', 'vitest', 'eslint 9', 'pinia 3'>"
 
 ## Additional Resources
 - For codemod registry, risk assessment matrix, and rollback procedures, see [references/main.md](references/main.md)
+- For package install policy (always resolve to registry latest unless the user pinned a specific version), see [/_shared/package-install-policy.md](/_shared/package-install-policy.md). Migration target version is user-specified — that's the case-2 exception; secondary deps installed during the migration follow the latest-resolution rule.
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 

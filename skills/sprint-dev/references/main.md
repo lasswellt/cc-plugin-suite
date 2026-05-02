@@ -556,7 +556,7 @@ Full item definitions for the integration agent (Phase 3.5.2):
 
 ## Dev Agent Prompt Specification
 
-Every dev agent prompt (Phase 2.3) must include all 12 items:
+Every dev agent prompt (Phase 2.3) must include all 13 items:
 
 1. Agent role and responsibilities (see the agent-specific prompt templates in this references/main.md).
 2. List of assigned stories in dependency order, with their `verify` and `done` fields. Capped at 4 stories per wave per agent.
@@ -589,6 +589,14 @@ Every dev agent prompt (Phase 2.3) must include all 12 items:
       CONFIDENCE: low|medium|high
     Send PARTIAL: <N> done, <M> remaining to orchestrator via the DONE/BLOCKED
     protocol and end.
+    ```
+13. **Package install policy** — for any new dependency, follow [/_shared/package-install-policy.md](/_shared/package-install-policy.md). Inject this verbatim block:
+    ```
+    PACKAGE INSTALLS: never invent a version number from memory. Use bare
+    `pnpm add <pkg>` (or the project's package manager) so it resolves to
+    the registry latest. Pin to a specific version ONLY if (a) the user
+    asked for that version, OR (b) a peer-compatibility constraint forces it.
+    Verify after install: npm view <pkg> version vs the resolved version.
     ```
 
 ---

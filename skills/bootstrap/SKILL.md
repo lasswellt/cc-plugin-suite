@@ -13,6 +13,7 @@ argument-hint: "<type: project|feature|package> <name>"
 
 ## Additional Resources
 - For pipeline artifact contracts (what bootstrap produces for sprint-plan/sprint-dev), see [/_shared/state-handoff.md](/_shared/state-handoff.md)
+- For package install policy (always resolve to registry latest, never invent versions from training memory), see [/_shared/package-install-policy.md](/_shared/package-install-policy.md). Applies to every `pnpm add` / `npm install` issued during scaffold.
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 

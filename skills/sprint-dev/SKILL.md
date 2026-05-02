@@ -21,6 +21,7 @@ compatibility: ">=2.1.71"
 - For context window hygiene, see [context-management.md](/_shared/context-management.md)
 - For the carry-forward registry (Reader Algorithm + writer contract on story completion in Phase 3.1a), see [carry-forward-registry.md](/_shared/carry-forward-registry.md)
 - For subagent spawning, agent output contract (success/failure/partial thresholds), see [spawn-protocol.md](/_shared/spawn-protocol.md)
+- For package install policy (every dep added by backend-dev / frontend-dev / test-writer agents resolves to registry latest, no invented versions), see [package-install-policy.md](/_shared/package-install-policy.md). Sprint-dev injects this into every dev-agent prompt via the Dev Agent Prompt Specification in references/main.md.
 - For output style (terse-technical, canonical exemptions), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 OUTPUT STYLE: terse-technical per /_shared/terse-output.md. Drop articles, fillers, pleasantries, hedging. Preserve verbatim: code fences, inline code, URLs, file paths, commands, grep patterns, YAML/JSON, headings, table rows, error codes, dates, version numbers. No preamble. No trailing summary of work already evident in the diff or tool output. Format: fragments OK.

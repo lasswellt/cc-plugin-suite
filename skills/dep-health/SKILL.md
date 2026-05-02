@@ -13,6 +13,7 @@ argument-hint: "<mode> -- audit (read-only CVE scan + outdated check) | upgrade 
 
 ## Additional Resources
 - For package manager commands, license tables, and report templates, see [references/main.md](references/main.md)
+- For package install policy (canonical rule for `upgrade` mode resolution), see [/_shared/package-install-policy.md](/_shared/package-install-policy.md). dep-health is the periodic enforcer — every flagged outdated dep gets a recommended bump using the latest-resolution rule.
 - For output style (terse-technical, preservation rules), see [/_shared/terse-output.md](/_shared/terse-output.md)
 
 
