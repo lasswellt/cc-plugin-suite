@@ -130,9 +130,11 @@ character must be `}`. If you cannot satisfy this, return:
 
 FULL_PROMPT="${PROMPT_BODY}${CTX}${JSON_DIRECTIVE}"
 
-# Invoke gemini. Standard Google CLI accepts prompt via stdin or -p flag;
-# stdin is more reliable for long prompts.
-RAW_REPLY="$(printf '%s\n' "$FULL_PROMPT" | "$GEMINI_BIN" --model "$GEMINI_MODEL" "${GEMINI_FLAGS[@]}" 2>&1)" || {
+# Invoke gemini in non-interactive (headless) mode. The CLI defaults to
+# interactive — `-p/--prompt` is required to trigger headless. Long prompts
+# go on stdin (gemini appends stdin to --prompt) so we don't hit shell
+# arg-length limits.
+RAW_REPLY="$(printf '%s\n' "$FULL_PROMPT" | "$GEMINI_BIN" --model "$GEMINI_MODEL" --prompt "" "${GEMINI_FLAGS[@]}" 2>&1)" || {
   echo "[$SCRIPT_NAME] gemini invocation failed:" >&2
   echo "$RAW_REPLY" >&2
   exit 1
