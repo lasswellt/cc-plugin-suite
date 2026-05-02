@@ -34,16 +34,21 @@ The "autonomous holistic-machine" release. Two research investigations (`docs/_r
 - **`ui-build` Phase 3.0 + 5.4.2** — mandatory aesthetic-direction step before wireframe (or invoke `frontend-design:frontend-design`); design-critic vision-iteration loop with up-to-3 revisions on `design_quality: high` stories. Implementation Gate gains banned-font + `prefers-reduced-motion` + `console.log`-zero + inline-style-ban checks.
 - **`completeness-gate` §2.13 + §2.14** — new env-var-fallback detector (matches `process.env.X || '...'` near credential-named identifiers; Major severity in `src/`) and hardcoded-localhost / port detector (matches `https?://localhost|127.0.0.1|0.0.0.0` and 4-5-digit ports outside test fixtures and dev configs). Both have inline escape hatches (`// blitz:fallback-allowed:`, `// blitz:localhost-allowed:`).
 - **`story-frontmatter.md` `acceptance_checks:` schema** — optional executable-predicate array for stories. Four check types: `grep_present` (with `min`), `grep_absent`, `shell` (with `assert_eq`), `ast_absent` (best-effort tree-sitter). `agents/critic.md` §2.5 contains the dispatcher; sprint-review Phase 3.6 Invariant 7 routes through it. Producer/consumer matrix updated with the new fields and the optional `design_quality:` enum (`skip` | `standard` | `high`).
+- **`agents/research-critic.md`** — read-only adversarial citation+claim reviewer for `/blitz:research` Phase 3.2.5. Probes every cited URL via WebFetch, classifies LIVE / DEAD / LIKELY_HALLUCINATED / UNKNOWN per arxiv 2604.03173 urlhealth taxonomy. Verifies `> "..."` quoted spans appear in fetched source content (Deterministic Quoting). Returns `{verdict: PASS | CITATIONS_MISSING}`. CITATIONS_MISSING blocks cleanup so the user can inspect dead URLs before the findings dir is deleted.
+- **`hooks/scripts/agent-frontmatter-validate.sh`** — sibling of `skill-frontmatter-validate.sh` for `agents/*.md`. Enforces required fields (`name` / `description` / `model` / `tools` / `maxTurns`), forbids silently-stripped plugin-agent fields (`hooks` / `mcpServers` / `permissionMode`), caps body at 500 lines, requires canonical OUTPUT STYLE snippet (or `[CANONICAL PREAMBLE]` inheritance marker). Wired into `PostToolUse` alongside the skill validator.
+- **`hooks/scripts/critic-gemini.sh`** — Cross-Model Critic (CMC) wrapper per arxiv 2604.19049. Wraps `@google/gemini-cli`, lifts the in-Claude critic body verbatim (`--mode pre-pass | research | design`), appends a JSON-only directive, validates the reply matches the canonical reply contract, exits 0 on LGTM/PASS or 2 on REJECT/CITATIONS_MISSING. `sprint-review` Phase 3.6 Invariant 7 supports three modes: default (in-Claude only), `BLITZ_USE_GEMINI_CRITIC=1` (Gemini replaces in-Claude), `BLITZ_DUAL_CRITIC=1` (both must LGTM, ~2× cost, highest signal). Tunable via `BLITZ_GEMINI_BIN`, `BLITZ_GEMINI_MODEL` (default `gemini-2.5-pro`), `BLITZ_GEMINI_FLAGS`. Graceful failure when binary missing.
 
 ### Changed
 
 - **`agents/doc-writer.md` → model: haiku** — mechanical pattern-following per the new routing matrix. ~5× per-output-token saving vs prior Sonnet default.
 - **architect / backend-dev / frontend-dev / reviewer / test-writer** — added explicit model rationale comments per `token-budget.md`. Models unchanged (sonnet); now self-documenting.
-- **`CLAUDE.md`** — describes the orchestrator entry point, 5 new shared protocols, 7-invariant Phase 3.6 gate, 26-hook count (was 19). Stays under the 200-line CLAUDE.md token-budget rule.
+- **`CLAUDE.md`** — describes the orchestrator entry point, 5 new shared protocols, 7-invariant Phase 3.6 gate, 27-hook count (was 19). Stays under the 200-line CLAUDE.md token-budget rule.
+- **8 specialist agents updated to canonical OUTPUT STYLE snippet** — replaces the prior `**Output style:**` paraphrase across architect / backend-dev / critic / design-critic / doc-writer / frontend-dev / reviewer / test-writer to satisfy Invariant 5 unification across `skills/` and `agents/`.
+- **README.md** — new "Holistic Machine" section documenting orchestrator, quality gates, and Cross-Model Critic with full Gemini setup. Skills/agents/hooks/protocols counts updated. Architecture tree expanded for v1.11+ artifacts.
 - **Skill count**: 38 (was 37; added `design-extract`).
-- **Agent count**: 9 plugin agents (was 6; added `orchestrator`, `critic`, `design-critic`).
-- **Hook count**: 26 scripts (was 19; added 5 P0 blockers + 2 P1 blockers).
-- **Shared-protocol count**: 19 files (was 14; added `token-budget`, `ratchet-protocol`, `shortcut-taxonomy`, `knowledge-protocol`, `frontend-design-heuristics`, `agent-routing`).
+- **Agent count**: 10 plugin agents (was 6; added `orchestrator`, `critic`, `design-critic`, `research-critic`).
+- **Hook count**: 27 scripts (was 19; added 7 anti-shortcut blockers + `agent-frontmatter-validate.sh`).
+- **Shared-protocol count**: 20 files (was 14; added `token-budget`, `ratchet-protocol`, `shortcut-taxonomy`, `knowledge-protocol`, `frontend-design-heuristics`, `agent-routing`).
 
 ### Compatibility
 
@@ -302,5 +307,7 @@ Carry-forward registry format (`.cc-sessions/carry-forward.jsonl`) validated acr
 - Issues closed: #1-#16 (all stories from Sprint 2-5)
 - Research source: 2 April-18 research docs (full absorption + runtime propagation)
 
+[1.11.0]: https://github.com/lasswellt/cc-plugin-suite/releases/tag/v1.11.0
+[1.10.0]: https://github.com/lasswellt/cc-plugin-suite/releases/tag/v1.10.0
 [1.5.0]: https://github.com/lasswellt/cc-plugin-suite/releases/tag/v1.5.0
 [1.4.1]: https://github.com/lasswellt/cc-plugin-suite/compare/v1.4.0...v1.4.1
